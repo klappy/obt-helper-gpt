@@ -111,3 +111,25 @@ export const getActiveTools = () => {
 export const getToolById = (id) => {
   return mockTools.find((tool) => tool.id === id);
 };
+
+/**
+ * @param {string} id
+ * @param {Partial<Tool>} updates
+ */
+export const updateTool = (id, updates) => {
+  const toolIndex = mockTools.findIndex((tool) => tool.id === id);
+  if (toolIndex !== -1) {
+    mockTools[toolIndex] = { ...mockTools[toolIndex], ...updates };
+    tools.set([...mockTools]); // Trigger reactivity
+
+    // In a real app, this would save to Netlify Blobs
+    console.log("Tool updated:", mockTools[toolIndex]);
+  }
+};
+
+/**
+ * @returns {Tool[]}
+ */
+export const getAllTools = () => {
+  return [...mockTools];
+};
