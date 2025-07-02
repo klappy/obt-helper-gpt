@@ -3,6 +3,7 @@
 	import { getToolById, updateTool } from '$lib/stores/tools.js';
 	import { goto } from '$app/navigation';
 	import { sendChatMessage, parseStreamingResponse } from '$lib/utils/openai.js';
+	import { onMount } from 'svelte';
 
 	$: toolId = $page.params.id;
 	$: tool = getToolById(toolId);
@@ -12,6 +13,7 @@
 	let isDirty = false;
 	let isSaving = false;
 	let saveSuccess = false;
+	let isInitialized = false;
 
 	// Preview functionality
 	let previewMessage = '';
@@ -19,20 +21,24 @@
 	let isPreviewLoading = false;
 	let apiKey = '';
 
-	// Initialize edited tool when tool loads
-	$: if (tool && !isDirty) {
+	// Initialize edited tool when tool loads (only once)
+	$: if (tool && !isInitialized) {
 		editedTool = { ...tool };
+		isInitialized = true;
+		isDirty = false;
 	}
 
-	// Check if form is dirty
-	$: if (tool && editedTool) {
-		isDirty = JSON.stringify(editedTool) !== JSON.stringify(tool);
+	// Watch for changes to mark as dirty
+	function markDirty() {
+		if (isInitialized && tool) {
+			isDirty = JSON.stringify(editedTool) !== JSON.stringify(tool);
+		}
 	}
 
 	// Get API key
-	$: if (typeof window !== 'undefined') {
+	onMount(() => {
 		apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-	}
+	});
 
 	function handleSave() {
 		if (!tool || !isDirty) return;
@@ -142,6 +148,7 @@
 							<input
 								type="text"
 								bind:value={editedTool.name}
+								on:input={markDirty}
 								class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							/>
 						</div>
@@ -153,6 +160,7 @@
 							<input
 								type="text"
 								bind:value={editedTool.description}
+								on:input={markDirty}
 								class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							/>
 						</div>
@@ -165,6 +173,7 @@
 								<input
 									type="text"
 									bind:value={editedTool.icon}
+									on:input={markDirty}
 									class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								/>
 							</div>
@@ -175,6 +184,7 @@
 								</label>
 								<select
 									bind:value={editedTool.model}
+									on:change={markDirty}
 									class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								>
 									<option value="gpt-4o-mini">GPT-4o Mini</option>
@@ -201,6 +211,7 @@
 									max="1"
 									step="0.1"
 									bind:value={editedTool.temperature}
+									on:input={markDirty}
 									class="w-full"
 								/>
 								<div class="flex justify-between text-xs text-gray-500">
@@ -218,6 +229,7 @@
 									min="100"
 									max="4000"
 									bind:value={editedTool.maxTokens}
+									on:input={markDirty}
 									class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								/>
 							</div>
@@ -228,6 +240,7 @@
 								<input
 									type="checkbox"
 									bind:checked={editedTool.isActive}
+									on:change={markDirty}
 									class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
 								/>
 								<span class="text-sm font-medium text-gray-700">Tool is active</span>
@@ -245,6 +258,7 @@
 					
 					<textarea
 						bind:value={editedTool.systemPrompt}
+						on:input={markDirty}
 						rows="12"
 						class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
 						placeholder="You are a helpful assistant..."

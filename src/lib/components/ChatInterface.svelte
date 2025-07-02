@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { sendChatMessage, parseStreamingResponse } from '$lib/utils/openai.js';
+	import VoiceControls from './VoiceControls.svelte';
 	export let tool;
 
 	let messages = [];
@@ -9,6 +10,12 @@
 	let chatContainer;
 	let streamingMessage = '';
 	let isStreaming = false;
+	let voiceControls;
+
+	// Voice settings
+	let voiceEnabled = false;
+	let autoSpeak = false;
+	let interimTranscript = '';
 
 	// Get API key from environment or prompt user
 	let apiKey = '';
@@ -90,6 +97,11 @@
 				}, 10);
 			}
 
+			// Auto-speak the response if enabled
+			if (autoSpeak && voiceControls && streamingMessage) {
+				voiceControls.speak(streamingMessage);
+			}
+
 		} catch (error) {
 			console.error('Error sending message:', error);
 			
@@ -121,6 +133,33 @@
 			apiKey = newKey;
 		}
 	}
+
+	// Voice event handlers
+	function handleTranscript(event) {
+		const { text, isFinal } = event.detail;
+		
+		if (isFinal) {
+			// Add the final transcript to the current message
+			currentMessage = (currentMessage + ' ' + text).trim();
+			interimTranscript = '';
+		} else {
+			// Show interim results
+			interimTranscript = text;
+		}
+	}
+
+	function handleVoiceError(event) {
+		console.error('Voice error:', event.detail.error);
+		// You could show a toast notification here
+	}
+
+	function toggleVoice() {
+		voiceEnabled = !voiceEnabled;
+	}
+
+	function toggleAutoSpeak() {
+		autoSpeak = !autoSpeak;
+	}
 </script>
 
 <div class="flex flex-col h-full">
@@ -133,11 +172,49 @@
 				<p class="text-sm text-gray-500">{tool.description}</p>
 			</div>
 		</div>
-		{#if !apiKey}
-			<button on:click={updateApiKey} class="btn-secondary text-xs">
-				Set API Key
+		<div class="flex items-center space-x-3">
+			<!-- Voice Controls -->
+			{#if voiceEnabled}
+				<VoiceControls 
+					bind:this={voiceControls}
+					{autoSpeak}
+					on:transcript={handleTranscript}
+					on:error={handleVoiceError}
+				/>
+			{/if}
+			
+			<!-- Voice Toggle -->
+			<button
+				on:click={toggleVoice}
+				class="flex items-center space-x-1 px-3 py-1 rounded-md text-sm {
+					voiceEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+				} hover:bg-opacity-80"
+				title="Toggle voice features"
+			>
+				<span class="text-xs">🎤</span>
+				<span>{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
 			</button>
-		{/if}
+
+			<!-- Auto-speak Toggle -->
+			{#if voiceEnabled}
+				<button
+					on:click={toggleAutoSpeak}
+					class="flex items-center space-x-1 px-3 py-1 rounded-md text-sm {
+						autoSpeak ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+					} hover:bg-opacity-80"
+					title="Auto-speak AI responses"
+				>
+					<span class="text-xs">🔊</span>
+					<span>{autoSpeak ? 'Auto-speak' : 'Manual'}</span>
+				</button>
+			{/if}
+
+			{#if !apiKey}
+				<button on:click={updateApiKey} class="btn-secondary text-xs">
+					Set API Key
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Messages Container -->
@@ -153,9 +230,20 @@
 						: 'bg-white text-gray-900 shadow-sm border'
 				}">
 					<p class="text-sm whitespace-pre-wrap">{message.content}</p>
-					<p class="text-xs mt-1 {message.role === 'user' ? 'text-primary-100' : 'text-gray-500'}">
-						{message.timestamp.toLocaleTimeString()}
-					</p>
+					<div class="flex items-center justify-between mt-1">
+						<p class="text-xs {message.role === 'user' ? 'text-primary-100' : 'text-gray-500'}">
+							{message.timestamp.toLocaleTimeString()}
+						</p>
+						{#if message.role === 'assistant' && message.content && voiceEnabled}
+							<button
+								on:click={() => voiceControls?.speak(message.content)}
+								class="text-xs {message.role === 'user' ? 'text-primary-200 hover:text-primary-100' : 'text-gray-400 hover:text-gray-600'}"
+								title="Speak this message"
+							>
+								🔊
+							</button>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/each}
@@ -182,14 +270,21 @@
 		{/if}
 		
 		<div class="flex space-x-3">
-			<textarea
-				bind:value={currentMessage}
-				on:keydown={handleKeydown}
-				placeholder="Type your message here..."
-				class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-				rows="1"
-				disabled={isLoading}
-			></textarea>
+			<div class="flex-1">
+				<textarea
+					bind:value={currentMessage}
+					on:keydown={handleKeydown}
+					placeholder="Type your message here or use voice input..."
+					class="w-full resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+					rows="1"
+					disabled={isLoading}
+				></textarea>
+				{#if interimTranscript}
+					<div class="text-xs text-gray-500 mt-1 italic">
+						🎤 "{interimTranscript}"
+					</div>
+				{/if}
+			</div>
 			<button
 				on:click={sendMessage}
 				disabled={!currentMessage.trim() || isLoading || !apiKey}
