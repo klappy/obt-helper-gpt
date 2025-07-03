@@ -40,21 +40,23 @@
 		apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
 	});
 
-	function handleSave() {
+	async function handleSave() {
 		if (!tool || !isDirty) return;
 		
 		isSaving = true;
-		updateTool(tool.id, editedTool);
+		const success = await updateTool(tool.id, editedTool);
+		isSaving = false;
 		
-		setTimeout(() => {
-			isSaving = false;
+		if (success) {
 			saveSuccess = true;
 			isDirty = false;
 			
 			setTimeout(() => {
 				saveSuccess = false;
 			}, 2000);
-		}, 500);
+		} else {
+			alert('Error saving tool. Please try again.');
+		}
 	}
 
 	function handleCancel() {
@@ -106,8 +108,13 @@
 				<h1 class="text-3xl font-bold text-gray-900 flex items-center space-x-3">
 					<span class="text-4xl">{editedTool.icon}</span>
 					<span>Edit {tool.name}</span>
+					{#if isDirty}
+						<span class="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Unsaved</span>
+					{:else}
+						<span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">💾 Saved</span>
+					{/if}
 				</h1>
-				<p class="text-gray-600">Customize the AI behavior and settings</p>
+				<p class="text-gray-600">Customize the AI behavior and settings • Changes auto-save to localStorage</p>
 			</div>
 			<div class="flex space-x-3">
 				<button 

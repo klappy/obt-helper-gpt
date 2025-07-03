@@ -153,6 +153,13 @@
 		// You could show a toast notification here
 	}
 
+	function handleAutoSend() {
+		// Auto-send the message when voice input completes
+		if (currentMessage.trim()) {
+			sendMessage();
+		}
+	}
+
 	function toggleVoice() {
 		voiceEnabled = !voiceEnabled;
 	}
@@ -180,6 +187,7 @@
 					{autoSpeak}
 					on:transcript={handleTranscript}
 					on:error={handleVoiceError}
+					on:autoSend={handleAutoSend}
 				/>
 			{/if}
 			
@@ -271,19 +279,21 @@
 		
 		<div class="flex space-x-3">
 			<div class="flex-1">
-				<textarea
-					bind:value={currentMessage}
-					on:keydown={handleKeydown}
-					placeholder="Type your message here or use voice input..."
-					class="w-full resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-					rows="1"
-					disabled={isLoading}
-				></textarea>
-				{#if interimTranscript}
-					<div class="text-xs text-gray-500 mt-1 italic">
-						🎤 "{interimTranscript}"
-					</div>
-				{/if}
+				<div class="relative">
+					<textarea
+						bind:value={currentMessage}
+						on:keydown={handleKeydown}
+						placeholder={voiceEnabled ? "Type your message or click the microphone to speak..." : "Type your message here..."}
+						class="w-full resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent {interimTranscript ? 'border-blue-300 bg-blue-50' : ''}"
+						rows="2"
+						disabled={isLoading}
+					></textarea>
+					{#if interimTranscript}
+						<div class="absolute inset-x-0 bottom-0 bg-blue-100 border-t border-blue-200 px-3 py-1 text-sm text-blue-700 italic rounded-b-lg">
+							🎤 "{interimTranscript}"
+						</div>
+					{/if}
+				</div>
 			</div>
 			<button
 				on:click={sendMessage}

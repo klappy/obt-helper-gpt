@@ -1,6 +1,6 @@
 {
   "name": "obt-helper-gpt",
-  "version": "0.0.1",
+  "version": "1.0.0-beta.1",
   "private": true,
   "scripts": {
     "build": "vite build",
@@ -11,19 +11,30 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
-    "format": "prettier --plugin-search-dir . --write ."
+    "format": "prettier --plugin-search-dir . --write .",
+    "version:patch": "node scripts/version.js patch",
+    "version:minor": "node scripts/version.js minor",
+    "version:major": "node scripts/version.js major",
+    "version:beta": "node scripts/version.js beta",
+    "release": "npm run build && echo 'Ready for deployment'"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@sveltejs/adapter-netlify": "^4.3.4",
     "@sveltejs/kit": "^2.8.0",
     "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/svelte": "^4.1.0",
     "@types/eslint": "^9.6.1",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",
+    "@vitest/ui": "^2.1.8",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.46.0",
+    "jsdom": "^25.0.1",
+    "postcss": "^8.4.49",
     "prettier": "^3.3.3",
     "prettier-plugin-svelte": "^3.2.8",
     "svelte": "^4.2.19",
@@ -31,16 +42,10 @@
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
-    "vitest": "^2.1.8",
-    "@vitest/ui": "^2.1.8",
-    "jsdom": "^25.0.1",
-    "@testing-library/svelte": "^4.1.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49"
+    "vitest": "^2.1.8"
   },
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.2.0"
   },
   "type": "module"
 }

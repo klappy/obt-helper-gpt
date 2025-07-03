@@ -10,6 +10,7 @@
 	let isSupported = false;
 	let transcript = '';
 	let confidence = 0;
+	let silenceTimer = null;
 
 	// Text-to-speech
 	let speechSynthesis = null;
@@ -21,6 +22,8 @@
 	export let continuous = false;
 	export let language = 'en-US';
 	export let autoSpeak = false;
+	export let autoSend = true;
+	export let silenceDelay = 2000;
 
 	onMount(() => {
 		// Check for speech recognition support
@@ -28,7 +31,7 @@
 			const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 			recognition = new SpeechRecognition();
 			
-			recognition.continuous = continuous;
+			recognition.continuous = true;
 			recognition.interimResults = true;
 			recognition.lang = language;
 			
@@ -45,6 +48,11 @@
 			recognition.onresult = (event) => {
 				let finalTranscript = '';
 				let interimTranscript = '';
+				
+				if (silenceTimer) {
+					clearTimeout(silenceTimer);
+					silenceTimer = null;
+				}
 				
 				for (let i = event.resultIndex; i < event.results.length; i++) {
 					const result = event.results[i];
@@ -63,6 +71,13 @@
 						confidence: confidence,
 						isFinal: true 
 					});
+					
+					if (autoSend && finalTranscript.trim()) {
+						silenceTimer = setTimeout(() => {
+							dispatch('autoSend');
+							stopListening();
+						}, silenceDelay);
+					}
 				} else if (interimTranscript) {
 					dispatch('transcript', { 
 						text: interimTranscript, 
@@ -100,6 +115,7 @@
 	export function startListening() {
 		if (recognition && !isListening) {
 			try {
+				transcript = '';
 				recognition.start();
 			} catch (error) {
 				console.error('Error starting recognition:', error);
@@ -110,6 +126,10 @@
 	export function stopListening() {
 		if (recognition && isListening) {
 			recognition.stop();
+		}
+		if (silenceTimer) {
+			clearTimeout(silenceTimer);
+			silenceTimer = null;
 		}
 	}
 
@@ -168,19 +188,19 @@
 		<!-- Microphone Button -->
 		<button
 			on:click={toggleListening}
-			class="flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 {
+			class="flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 {
 				isListening 
-					? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-					: 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+					? 'bg-red-500 hover:bg-red-600 text-white shadow-lg ring-4 ring-red-200 animate-pulse' 
+					: 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
 			}"
-			title={isListening ? 'Stop listening' : 'Start voice input'}
+			title={isListening ? 'Stop voice input (will auto-send after pause)' : 'Start voice input'}
 		>
 			{#if isListening}
-				<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+				<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
 					<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
 				</svg>
 			{:else}
-				<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+				<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
 					<path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
 				</svg>
 			{/if}
@@ -192,7 +212,7 @@
 			disabled={!isSpeaking}
 			class="flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 {
 				isSpeaking 
-					? 'bg-blue-500 hover:bg-blue-600 text-white' 
+					? 'bg-green-500 hover:bg-green-600 text-white shadow-md animate-pulse' 
 					: 'bg-gray-200 hover:bg-gray-300 text-gray-700 disabled:opacity-50'
 			}"
 			title={isSpeaking ? 'Stop speaking' : 'Text-to-speech ready'}
@@ -208,14 +228,23 @@
 			{/if}
 		</button>
 	{:else}
-		<div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+		<div class="text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-full">
 			Voice not supported
 		</div>
 	{/if}
 </div>
 
 {#if isListening}
-	<div class="text-xs text-gray-600 mt-1">
-		🎤 Listening... {confidence > 0 ? `(${Math.round(confidence * 100)}% confident)` : ''}
+	<div class="flex items-center space-x-2 mt-2 text-sm">
+		<div class="flex items-center text-red-600">
+			<div class="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+			<span class="font-medium">Listening...</span>
+		</div>
+		{#if confidence > 0}
+			<span class="text-gray-500">({Math.round(confidence * 100)}% confident)</span>
+		{/if}
+		{#if autoSend}
+			<span class="text-xs text-gray-400">• Will auto-send after pause</span>
+		{/if}
 	</div>
 {/if} 

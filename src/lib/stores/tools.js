@@ -1,5 +1,6 @@
 // @ts-check
 import { writable } from "svelte/store";
+import { browser } from "$app/environment";
 
 /**
  * @typedef {Object} Tool
@@ -16,7 +17,7 @@ import { writable } from "svelte/store";
  */
 
 /** @type {Tool[]} */
-const mockTools = [
+const defaultTools = [
   {
     id: "creative-writing",
     name: "Creative Writing Assistant",
@@ -97,11 +98,93 @@ const mockTools = [
   },
 ];
 
-export const tools = writable(mockTools);
+// API endpoints
+const API_BASE = browser ? window.location.origin : "";
+const TOOLS_API = `${API_BASE}/.netlify/functions/tools`;
+
+// Store for tools data
+let currentTools = [...defaultTools];
+export const tools = writable(currentTools);
+
+// Loading state
+export const isLoading = writable(false);
+
+/**
+ * Fetch tools from Netlify Blobs
+ */
+async function fetchTools() {
+  if (!browser) return defaultTools;
+
+  try {
+    isLoading.set(true);
+    const response = await fetch(TOOLS_API);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const toolsData = await response.json();
+
+    if (Array.isArray(toolsData) && toolsData.length > 0) {
+      currentTools = toolsData;
+      tools.set(currentTools);
+      return toolsData;
+    }
+
+    return defaultTools;
+  } catch (error) {
+    console.error("Error fetching tools:", error);
+    // Fallback to localStorage if available
+    return loadFromLocalStorage();
+  } finally {
+    isLoading.set(false);
+  }
+}
+
+/**
+ * Fallback to localStorage (for offline/development)
+ */
+function loadFromLocalStorage() {
+  if (!browser) return defaultTools;
+
+  try {
+    const stored = localStorage.getItem("obt-helper-tools");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        currentTools = parsed;
+        tools.set(currentTools);
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading from localStorage:", error);
+  }
+
+  return defaultTools;
+}
+
+/**
+ * Save to localStorage as backup
+ */
+function saveToLocalStorage(toolsData) {
+  if (!browser) return;
+
+  try {
+    localStorage.setItem("obt-helper-tools", JSON.stringify(toolsData));
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+  }
+}
+
+// Initialize tools on load
+if (browser) {
+  fetchTools();
+}
 
 // Helper functions
 export const getActiveTools = () => {
-  return mockTools.filter((tool) => tool.isActive).sort((a, b) => a.orderIndex - b.orderIndex);
+  return currentTools.filter((tool) => tool.isActive).sort((a, b) => a.orderIndex - b.orderIndex);
 };
 
 /**
@@ -109,21 +192,56 @@ export const getActiveTools = () => {
  * @returns {Tool | undefined}
  */
 export const getToolById = (id) => {
-  return mockTools.find((tool) => tool.id === id);
+  return currentTools.find((tool) => tool.id === id);
 };
 
 /**
  * @param {string} id
  * @param {Partial<Tool>} updates
  */
-export const updateTool = (id, updates) => {
-  const toolIndex = mockTools.findIndex((tool) => tool.id === id);
-  if (toolIndex !== -1) {
-    mockTools[toolIndex] = { ...mockTools[toolIndex], ...updates };
-    tools.set([...mockTools]); // Trigger reactivity
+export const updateTool = async (id, updates) => {
+  if (!browser) return false;
 
-    // In a real app, this would save to Netlify Blobs
-    console.log("Tool updated:", mockTools[toolIndex]);
+  try {
+    isLoading.set(true);
+
+    const response = await fetch(TOOLS_API, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id, updates }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const updatedTool = await response.json();
+
+    // Update local state
+    const toolIndex = currentTools.findIndex((tool) => tool.id === id);
+    if (toolIndex !== -1) {
+      currentTools[toolIndex] = updatedTool;
+      tools.set([...currentTools]);
+      saveToLocalStorage(currentTools); // Backup to localStorage
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error updating tool:", error);
+
+    // Fallback to localStorage update
+    const toolIndex = currentTools.findIndex((tool) => tool.id === id);
+    if (toolIndex !== -1) {
+      currentTools[toolIndex] = { ...currentTools[toolIndex], ...updates };
+      tools.set([...currentTools]);
+      saveToLocalStorage(currentTools);
+    }
+
+    return false;
+  } finally {
+    isLoading.set(false);
   }
 };
 
@@ -131,5 +249,77 @@ export const updateTool = (id, updates) => {
  * @returns {Tool[]}
  */
 export const getAllTools = () => {
-  return [...mockTools];
+  return [...currentTools];
 };
+
+/**
+ * Reset tools to defaults
+ */
+export const resetToolsToDefaults = async () => {
+  if (!browser) return false;
+
+  try {
+    isLoading.set(true);
+
+    const response = await fetch(`${TOOLS_API}?action=reset`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Refresh tools from server
+    await fetchTools();
+    return true;
+  } catch (error) {
+    console.error("Error resetting tools:", error);
+
+    // Fallback to local reset
+    currentTools = [...defaultTools];
+    tools.set(currentTools);
+    saveToLocalStorage(currentTools);
+    return false;
+  } finally {
+    isLoading.set(false);
+  }
+};
+
+/**
+ * Export current tools configuration
+ */
+export const exportTools = () => {
+  return JSON.stringify(currentTools, null, 2);
+};
+
+/**
+ * Import tools configuration from JSON string
+ * @param {string} jsonString
+ */
+export const importTools = async (jsonString) => {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return false;
+    }
+
+    // Update each tool individually
+    for (const tool of parsed) {
+      if (tool.id) {
+        await updateTool(tool.id, tool);
+      }
+    }
+
+    // Refresh from server
+    await fetchTools();
+    return true;
+  } catch (error) {
+    console.error("Error importing tools:", error);
+    return false;
+  }
+};
+
+/**
+ * Refresh tools from server
+ */
+export const refreshTools = fetchTools;
