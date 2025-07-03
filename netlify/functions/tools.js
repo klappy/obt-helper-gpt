@@ -93,7 +93,20 @@ const defaultTools = [
 
 // Check if we're in local development
 function isLocalDevelopment() {
-  return !process.env.DEPLOY_CONTEXT || process.env.DEPLOY_CONTEXT === "dev";
+  // Check multiple indicators for local development
+  const isLocal = !process.env.DEPLOY_CONTEXT || 
+                  process.env.DEPLOY_CONTEXT === "dev" ||
+                  process.env.NODE_ENV === "development" ||
+                  !process.env.NETLIFY;
+  
+  console.log("Environment check:", {
+    DEPLOY_CONTEXT: process.env.DEPLOY_CONTEXT,
+    NODE_ENV: process.env.NODE_ENV,
+    NETLIFY: process.env.NETLIFY,
+    isLocal
+  });
+  
+  return isLocal;
 }
 
 export default async (request, context) => {
@@ -152,12 +165,31 @@ export default async (request, context) => {
 
       case "PUT":
         // Update a tool
-        const updateData = await request.json();
-        const updatedTool = await updateTool(updateData.id, updateData.updates);
-        return new Response(JSON.stringify(updatedTool), {
-          status: 200,
-          headers,
-        });
+        try {
+          const updateData = await request.json();
+          console.log("PUT request received:", updateData);
+          
+          if (!updateData.id) {
+            throw new Error("Tool ID is required");
+          }
+          
+          const updatedTool = await updateTool(updateData.id, updateData.updates);
+          console.log("Tool updated successfully:", updatedTool.id);
+          
+          return new Response(JSON.stringify(updatedTool), {
+            status: 200,
+            headers,
+          });
+        } catch (error) {
+          console.error("PUT request error:", error);
+          return new Response(
+            JSON.stringify({ error: "Failed to update tool", details: error.message }),
+            {
+              status: 400,
+              headers,
+            }
+          );
+        }
 
       case "DELETE":
         // Reset to defaults
@@ -229,24 +261,37 @@ async function getTool(id) {
 }
 
 async function updateTool(id, updates) {
-  const tools = await getAllTools();
-  const toolIndex = tools.findIndex((tool) => tool.id === id);
+  console.log("updateTool called:", { id, updates });
+  
+  try {
+    const tools = await getAllTools();
+    console.log("Current tools count:", tools.length);
+    
+    const toolIndex = tools.findIndex((tool) => tool.id === id);
 
-  if (toolIndex === -1) {
-    throw new Error("Tool not found");
+    if (toolIndex === -1) {
+      console.error("Tool not found:", id);
+      throw new Error(`Tool not found: ${id}`);
+    }
+
+    tools[toolIndex] = { ...tools[toolIndex], ...updates };
+    console.log("Updated tool:", tools[toolIndex]);
+
+    // Handle storage based on environment
+    if (isLocalDevelopment()) {
+      console.log("Development mode: saving to local file storage");
+      await saveToLocalFile(tools);
+    } else {
+      console.log("Production mode: saving to Netlify Blobs");
+      await store.set("tools-data", JSON.stringify(tools));
+      console.log("Successfully saved to Netlify Blobs");
+    }
+
+    return tools[toolIndex];
+  } catch (error) {
+    console.error("Error in updateTool:", error);
+    throw error;
   }
-
-  tools[toolIndex] = { ...tools[toolIndex], ...updates };
-
-  // Handle storage based on environment
-  if (isLocalDevelopment()) {
-    console.log("Development mode: saving to local file storage");
-    await saveToLocalFile(tools);
-  } else {
-    await store.set("tools-data", JSON.stringify(tools));
-  }
-
-  return tools[toolIndex];
 }
 
 async function saveToLocalFile(tools) {

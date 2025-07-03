@@ -214,7 +214,9 @@ export const updateTool = async (id, updates) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`API error: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
     }
 
     const updatedTool = await response.json();
@@ -230,6 +232,7 @@ export const updateTool = async (id, updates) => {
     return true;
   } catch (error) {
     console.error("Error updating tool:", error);
+    console.error("Request details:", { id, updates, apiUrl: TOOLS_API });
 
     // Fallback to localStorage update
     const toolIndex = currentTools.findIndex((tool) => tool.id === id);
