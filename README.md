@@ -3,6 +3,7 @@
 Modern AI-powered tools for everyone. Built with SvelteKit and OpenAI.
 
 ## Features
+
 - 6 specialized AI tools (Creative Writing, Math Tutor, Recipe Helper, Code Helper, Language Learning, Business Strategy)
 - Real-time streaming chat interface
 - Voice input/output support
@@ -11,6 +12,7 @@ Modern AI-powered tools for everyone. Built with SvelteKit and OpenAI.
 - Comprehensive test suite
 
 ## Tech Stack
+
 - SvelteKit + TypeScript
 - Tailwind CSS
 - Netlify Functions + Blobs
@@ -18,14 +20,20 @@ Modern AI-powered tools for everyone. Built with SvelteKit and OpenAI.
 - Playwright testing
 
 ## Development
+
 ```bash
 npm install
 netlify dev
 ```
 
 ## Testing
+
 ```bash
 npm run test:integration
 ```
 
-Built for 2025 ��
+Built for 2025 🚀
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
