@@ -24,3 +24,8 @@ vite.config.ts.timestamp-*
 .env
 .netlify/blobs-local/
 screenshots/
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
