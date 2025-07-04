@@ -4,6 +4,39 @@
 **Audience**: Developers, users, support  
 **Last Updated**: Version 1.0.0-beta.1
 
+## Critical Issues
+
+### Netlify Dev Not Working ("Function not found")
+
+**Symptoms**:
+
+- `netlify dev` starts successfully
+- API functions return 404 or "Function not found"
+- Frontend shows "Function not found" instead of the app
+
+**Root Cause**: Corrupted build cache directories from previous builds, debugging, or package changes.
+
+**Solution**: Clean all build directories before starting:
+
+```bash
+rm -rf .svelte-kit build .netlify
+netlify dev
+```
+
+**Why This Happens**:
+
+- `.svelte-kit/` - SvelteKit build cache
+- `build/` - Production build output
+- `.netlify/` - Netlify function builds and cache
+
+When these get corrupted (during adapter upgrades, manual file changes, etc.), `netlify dev` cannot properly integrate SvelteKit with Netlify Functions.
+
+**Prevention**: Always clean build directories after:
+
+- Package updates (especially SvelteKit or adapter changes)
+- Manual changes to function files
+- Switching git branches with build changes
+
 ## Common Issues
 
 ### Development Environment

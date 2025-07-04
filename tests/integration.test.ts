@@ -67,10 +67,16 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       // Should navigate to a chat page
       await expect(page).toHaveURL(/\/chat\/.+/);
 
+      // Wait for chat interface to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(2000);
+
       // Should have chat interface elements
       await expect(page.locator("textarea")).toBeVisible();
       await expect(page.locator('button:has-text("Send")')).toBeVisible();
-      await expect(page.locator('button:has-text("🎤")')).toBeVisible();
+
+      // Voice controls should show "Voice Off" initially
+      await expect(page.locator('button:has-text("Voice Off")')).toBeVisible();
     });
 
     test("should have functional message input and send button", async ({ page }) => {
@@ -78,6 +84,10 @@ test.describe("OBT Helper GPT Integration Tests", () => {
 
       // Navigate to chat
       await page.locator(".card").first().click();
+
+      // Wait for chat interface to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(2000);
 
       // Type a test message
       const messageInput = page.locator("textarea");
@@ -97,6 +107,10 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       // Navigate to chat
       await page.locator(".card").first().click();
 
+      // Wait for chat interface to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(2000);
+
       // Type and send a message
       const messageInput = page.locator("textarea");
       await messageInput.fill("Test message");
@@ -106,18 +120,24 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       await expect(messageInput).toHaveValue("");
     });
 
-    test("should have voice controls visible", async ({ page }) => {
+    test("should have voice controls available", async ({ page }) => {
       await page.goto(BASE_URL);
 
       // Navigate to chat
       await page.locator(".card").first().click();
 
-      // Voice controls should be present
-      await expect(page.locator('button:has-text("🎤")')).toBeVisible();
+      // Wait for chat interface to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(2000);
 
-      // Check for voice control elements (may be conditional based on browser support)
-      const voiceButton = page.locator('button:has-text("🎤")');
-      await expect(voiceButton).toBeVisible();
+      // Voice controls should be present (initially showing "Voice Off")
+      await expect(page.locator('button:has-text("Voice Off")')).toBeVisible();
+
+      // Click to enable voice
+      await page.locator('button:has-text("Voice Off")').click();
+
+      // Should now show "Voice On"
+      await expect(page.locator('button:has-text("Voice On")')).toBeVisible();
     });
   });
 
@@ -125,42 +145,38 @@ test.describe("OBT Helper GPT Integration Tests", () => {
     test("should load admin login page", async ({ page }) => {
       await page.goto(`${BASE_URL}/admin`);
 
-      // Should show login form if not authenticated
-      const passwordInput = page.locator('input[type="password"]');
-      if (await passwordInput.isVisible()) {
-        await expect(passwordInput).toBeVisible();
-        await expect(page.locator('button:has-text("Login")')).toBeVisible();
-      } else {
-        // Already authenticated, should show admin dashboard
-        await expect(page.locator("h1")).toContainText("Admin Dashboard");
-      }
+      // Should show login form initially
+      await expect(page.locator('input[type="password"]')).toBeVisible();
+      await expect(page.locator('button:has-text("Login")')).toBeVisible();
+      await expect(page.locator("h2")).toContainText("Admin Login");
     });
 
     test("should authenticate with correct password", async ({ page }) => {
       await page.goto(`${BASE_URL}/admin`);
 
-      // If login form is visible, authenticate
-      const passwordInput = page.locator('input[type="password"]');
-      if (await passwordInput.isVisible()) {
-        await passwordInput.fill(ADMIN_PASSWORD);
-        await page.locator('button:has-text("Login")').click();
-      }
+      // Fill in password and login
+      await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+      await page.locator('button:has-text("Login")').click();
+
+      // Wait for dashboard to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
       // Should show admin dashboard
       await expect(page.locator("h1")).toContainText("Admin Dashboard");
-      await expect(page.locator("text=Tool Management")).toBeVisible();
-      await expect(page.locator("text=System Statistics")).toBeVisible();
+      await expect(page.locator("text=AI Tools Management")).toBeVisible();
     });
 
     test("should display all tools in admin panel", async ({ page }) => {
       await page.goto(`${BASE_URL}/admin`);
 
-      // Authenticate if needed
-      const passwordInput = page.locator('input[type="password"]');
-      if (await passwordInput.isVisible()) {
-        await passwordInput.fill(ADMIN_PASSWORD);
-        await page.locator('button:has-text("Login")').click();
-      }
+      // Authenticate
+      await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+      await page.locator('button:has-text("Login")').click();
+
+      // Wait for dashboard to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
       // Should show 6 tools in the management section
       const toolRows = page.locator("table tbody tr");
@@ -174,18 +190,23 @@ test.describe("OBT Helper GPT Integration Tests", () => {
     test("should navigate to tool editor", async ({ page }) => {
       await page.goto(`${BASE_URL}/admin`);
 
-      // Authenticate if needed
-      const passwordInput = page.locator('input[type="password"]');
-      if (await passwordInput.isVisible()) {
-        await passwordInput.fill(ADMIN_PASSWORD);
-        await page.locator('button:has-text("Login")').click();
-      }
+      // Authenticate
+      await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+      await page.locator('button:has-text("Login")').click();
+
+      // Wait for dashboard to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
       // Click first edit link
       await page.locator('a:has-text("Edit")').first().click();
 
       // Should navigate to tool editor
       await expect(page).toHaveURL(/\/admin\/tools\/.+/);
+
+      // Wait for editor to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
       // Should have editor form elements
       await expect(page.locator('input[name="name"]')).toBeVisible();
@@ -220,6 +241,9 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       const tools = await getResponse.json();
       const firstTool = tools[0];
 
+      // Store original description for restoration
+      const originalDescription = firstTool.description;
+
       // Update the tool
       const updatedTool = {
         ...firstTool,
@@ -232,6 +256,9 @@ test.describe("OBT Helper GPT Integration Tests", () => {
 
       expect(putResponse.ok()).toBeTruthy();
 
+      // Wait a moment for storage to persist
+      await page.waitForTimeout(1000);
+
       // Verify the update
       const verifyResponse = await page.request.get(`${BASE_URL}/.netlify/functions/tools`);
       const updatedTools = await verifyResponse.json();
@@ -240,9 +267,11 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       expect(verifyTool.description).toBe("Test updated description");
 
       // Restore original description
-      await page.request.put(`${BASE_URL}/.netlify/functions/tools`, {
-        data: firstTool,
+      const restoreResponse = await page.request.put(`${BASE_URL}/.netlify/functions/tools`, {
+        data: { ...firstTool, description: originalDescription },
       });
+
+      expect(restoreResponse.ok()).toBeTruthy();
     });
   });
 
@@ -257,6 +286,11 @@ test.describe("OBT Helper GPT Integration Tests", () => {
 
       // Navigation should work
       await page.locator(".card").first().click();
+
+      // Wait for chat interface to load
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(2000);
+
       await expect(page.locator("textarea")).toBeVisible();
     });
 
@@ -267,9 +301,9 @@ test.describe("OBT Helper GPT Integration Tests", () => {
       // Should display properly on tablet
       await expect(page.locator(".card")).toHaveCount(6);
 
-      // Grid layout should adapt
-      const grid = page.locator(".grid");
-      await expect(grid).toBeVisible();
+      // Tools grid should be visible (using more specific selector)
+      const toolsGrid = page.locator("main .grid").first();
+      await expect(toolsGrid).toBeVisible();
     });
   });
 
