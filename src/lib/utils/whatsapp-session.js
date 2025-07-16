@@ -20,7 +20,8 @@ function getStoreInstance() {
 
 // Check if we're in local development
 function isLocalDevelopment() {
-  return !process.env.DEPLOY_CONTEXT || process.env.DEPLOY_CONTEXT === "dev";
+  // In Netlify Functions, NETLIFY is always set to "true"
+  return process.env.NETLIFY !== "true";
 }
 
 // Session structure
