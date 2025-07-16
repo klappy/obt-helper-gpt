@@ -1,4 +1,4 @@
-import { getTwilioClient } from "../../src/lib/utils/twilio.js";
+import twilioClient from "../../src/lib/utils/twilio.js";
 import {
   getSession,
   saveSession,
@@ -22,14 +22,14 @@ export default async (req, context) => {
   };
 
   try {
-    // Get Twilio config with fallback
-    let twilioClient;
-    try {
-      twilioClient = getTwilioClient();
-    } catch (error) {
-      console.error("Twilio client initialization failed:", error);
-      // Still acknowledge the webhook to prevent retries
-      return respondToTwilio(200, "Configuration error");
+    // Check Twilio config
+    if (
+      !process.env.TWILIO_ACCOUNT_SID ||
+      !process.env.TWILIO_AUTH_TOKEN ||
+      !process.env.TWILIO_PHONE_NUMBER
+    ) {
+      console.error("Missing Twilio environment variables");
+      return respondToTwilio(200, "Configuration error - missing Twilio credentials");
     }
 
     // Parse the request
