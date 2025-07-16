@@ -20,8 +20,9 @@ function getStoreInstance() {
 
 // Check if we're in local development
 function isLocalDevelopment() {
-  // In Netlify Functions, NETLIFY is always set to "true"
-  return process.env.NETLIFY !== "true";
+  // EMERGENCY FIX: Force production mode for demo
+  // TODO: Fix environment detection after demo
+  return false; // Always use Netlify Blobs
 }
 
 export default async (request, context) => {
