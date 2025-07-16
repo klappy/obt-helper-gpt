@@ -54,23 +54,47 @@
 					
 					// Add the actual response (this would be the AI response that gets sent to WhatsApp)
 					let aiResponse = "";
-					if (userMessage.toLowerCase() === 'help' || userMessage.toLowerCase() === 'menu') {
+					const lowerMsg = userMessage.toLowerCase();
+					if (lowerMsg === 'help' || lowerMsg === 'menu' || lowerMsg === 'tools' ||
+						lowerMsg.includes('what can you do') || lowerMsg.includes('what do you do') ||
+						lowerMsg.includes('capabilities') || lowerMsg === 'hello' || lowerMsg === 'hi') {
 						aiResponse = `🤖 *OBT Helper GPT* 🤖
 
-I can help you with:
+I'm your intelligent AI assistant! I can help you with:
 
-1. *Creative Writing Assistant* - Help with stories, scripts, and creative content
-2. *Social Media Content Creator* - Create engaging posts, captions, and social media strategies
-3. *Email Assistant* - Draft professional emails, replies, and communication
-4. *Data Analyst* - Analyze data, create insights, and generate reports
-5. *Math Tutor* - Step-by-step math problem solving
-6. *Recipe Helper* - Cooking ideas and recipe modifications
-7. *Code Helper* - Programming assistance and debugging
-8. *Language Learning Buddy* - Practice conversations and learn new languages
-9. *Business Strategy Advisor* - Business planning and strategy guidance
-10. *Travel Planner* - Plan trips, find destinations, and travel advice
+✍️ *1. Creative Writing Assistant*
+   Help with stories, scripts, and creative content
 
-Reply with a number to switch tools, or just start chatting!`;
+📱 *2. Social Media Content Creator*
+   Create engaging posts, captions, and social media strategies
+
+📧 *3. Email Assistant*
+   Draft professional emails, replies, and communication
+
+📊 *4. Data Analyst*
+   Analyze data, create insights, and generate reports
+
+🧮 *5. Math Tutor*
+   Step-by-step math problem solving
+
+🍳 *6. Recipe Helper*
+   Cooking ideas and recipe modifications
+
+💻 *7. Code Helper*
+   Programming assistance and debugging
+
+🌍 *8. Language Learning Buddy*
+   Practice conversations and learn new languages
+
+🏢 *9. Business Strategy Advisor*
+   Business planning and strategy guidance
+
+✈️ *10. Travel Planner*
+   Plan trips, find destinations, and travel advice
+
+💬 *Just start chatting!* I'll automatically switch to the right tool based on what you need.
+
+🔢 Or reply with a number (1-10) to manually select a tool.`;
 					} else if (/^[1-9]$/.test(userMessage.trim())) {
 						const toolNames = [
 							"Creative Writing Assistant",

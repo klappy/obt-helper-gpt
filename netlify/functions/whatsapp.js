@@ -207,15 +207,32 @@ export default async (req, context) => {
     // Intelligent tool detection based on user intent
     const lowerMessage = messageBody.toLowerCase();
 
-    // Check for explicit commands first
-    if (lowerMessage === "help" || lowerMessage === "menu" || lowerMessage === "tools") {
+    // Check for help requests and capability questions
+    if (
+      lowerMessage === "help" ||
+      lowerMessage === "menu" ||
+      lowerMessage === "tools" ||
+      lowerMessage.includes("what can you do") ||
+      lowerMessage.includes("what do you do") ||
+      lowerMessage.includes("capabilities") ||
+      lowerMessage.includes("features") ||
+      lowerMessage.includes("options") ||
+      lowerMessage === "hello" ||
+      lowerMessage === "hi"
+    ) {
       const tools = await getAllTools();
       responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
-      responseText += "I can help you with:\n\n";
+      responseText += "I'm your intelligent AI assistant! I can help you with:\n\n";
+
+      // Add emojis for each tool
+      const toolEmojis = ["✍️", "📱", "📧", "📊", "🧮", "🍳", "💻", "🌍", "🏢", "✈️"];
       tools.forEach((tool, index) => {
-        responseText += `${index + 1}. *${tool.name}* - ${tool.description}\n`;
+        const emoji = toolEmojis[index] || "🔧";
+        responseText += `${emoji} *${index + 1}. ${tool.name}*\n   ${tool.description}\n\n`;
       });
-      responseText += "\nReply with a number to switch tools, or just start chatting!";
+      responseText +=
+        "💬 *Just start chatting!* I'll automatically switch to the right tool based on what you need.\n\n";
+      responseText += "🔢 Or reply with a number (1-10) to manually select a tool.";
     } else if (/^[1-9]$/.test(lowerMessage.trim())) {
       // User sent a single digit
       const tools = await getAllTools();
@@ -227,7 +244,22 @@ export default async (req, context) => {
     } else {
       // Auto-detect best tool based on user intent
       const detectedTool = detectBestTool(messageBody);
-      if (detectedTool && detectedTool !== session.currentTool) {
+
+      if (detectedTool === "show-menu") {
+        // Show the full capabilities menu for greetings/unclear messages
+        const tools = await getAllTools();
+        responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
+        responseText += "I'm your intelligent AI assistant! I can help you with:\n\n";
+
+        const toolEmojis = ["✍️", "📱", "📧", "📊", "🧮", "🍳", "💻", "🌍", "🏢", "✈️"];
+        tools.forEach((tool, index) => {
+          const emoji = toolEmojis[index] || "🔧";
+          responseText += `${emoji} *${index + 1}. ${tool.name}*\n   ${tool.description}\n\n`;
+        });
+        responseText +=
+          "💬 *Just start chatting!* I'll automatically switch to the right tool based on what you need.\n\n";
+        responseText += "🔢 Or reply with a number (1-10) to manually select a tool.";
+      } else if (detectedTool && detectedTool !== session.currentTool) {
         console.log(
           `Auto-switching from ${session.currentTool} to ${detectedTool} based on user intent`
         );
@@ -397,6 +429,18 @@ export default async (req, context) => {
         msg.includes("trends")
       ) {
         return "data-analyst";
+      }
+
+      // Check for greetings or unclear messages
+      if (
+        msg.includes("hello") ||
+        msg.includes("hi") ||
+        msg.includes("hey") ||
+        msg.includes("what") ||
+        msg.includes("how") ||
+        msg.length < 10
+      ) {
+        return "show-menu"; // Special flag to show capabilities
       }
 
       // Default: keep current tool
