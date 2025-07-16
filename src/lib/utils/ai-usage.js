@@ -19,7 +19,9 @@ function getStoreInstance() {
 }
 
 function isLocalDevelopment() {
-  return !process.env.NETLIFY || process.env.NETLIFY === "false";
+  // EMERGENCY FIX: Force production mode for demo
+  // TODO: Fix environment detection after demo
+  return false; // Always use Netlify Blobs
 }
 
 async function ensureLocalFile() {
