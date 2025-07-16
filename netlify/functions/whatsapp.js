@@ -1,10 +1,42 @@
 import twilioClient from "../../src/lib/utils/twilio.js";
-import { getSession, saveSession } from "../../src/lib/utils/whatsapp-session.js";
+// Using direct Netlify Blobs storage instead of utility
+import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 import { sendChatMessage } from "../../src/lib/utils/openai.js";
 import { getAllTools } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Storage functions that match the admin dashboard
+function getStoreInstance() {
+  return getStore({
+    name: "obt-helper-whatsapp",
+    consistency: "strong",
+  });
+}
+
+async function getSessionFromStore(phoneNumber) {
+  try {
+    const sessionId = `whatsapp_${phoneNumber.replace(/[^\d]/g, "")}`;
+    const store = getStoreInstance();
+    const session = await store.get(sessionId, { type: "json" });
+    return session;
+  } catch (error) {
+    console.error("Error getting session from store:", error);
+    return null;
+  }
+}
+
+async function saveSessionToStore(session) {
+  try {
+    const store = getStoreInstance();
+    await store.setJSON(session.sessionId, session);
+    console.log("Session saved to store:", session.sessionId);
+  } catch (error) {
+    console.error("Error saving session to store:", error);
+    throw error;
+  }
+}
 
 export default async (req, context) => {
   console.log("WhatsApp webhook called");
@@ -43,17 +75,27 @@ export default async (req, context) => {
     // Get or create session with fallback
     let session;
     try {
-      session = await getSession(from);
+      session = await getSessionFromStore(from);
     } catch (error) {
       console.error("Session error (using temp session):", error);
-      // Create a temporary in-memory session
+      // Create a temporary in-memory session matching admin dashboard format
+      const now = new Date().toISOString();
+      const sessionId = `whatsapp_${from.replace(/[^\d]/g, "")}`;
       session = {
+        sessionId,
         phoneNumber: from,
-        currentTool: null,
+        currentTool: "creative-writing",
+        language: "en",
         conversationHistory: [],
-        createdAt: new Date().toISOString(),
-        usage: { totalTokens: 0, totalCost: 0, messageCount: 0 },
-        metadata: {},
+        metadata: {
+          startTime: now,
+          lastActivity: now,
+          messageCount: 0,
+        },
+        usage: {
+          cost: 0,
+          tokens: 0,
+        },
       };
     }
 
@@ -66,10 +108,10 @@ export default async (req, context) => {
       content: messageBody,
     });
 
-    // Update metadata
+    // Update metadata to match admin dashboard format
     if (!session.metadata) {
       session.metadata = {
-        startTime: session.createdAt || new Date().toISOString(),
+        startTime: new Date().toISOString(),
         lastActivity: new Date().toISOString(),
         messageCount: 0,
       };
@@ -77,11 +119,9 @@ export default async (req, context) => {
     session.metadata.lastActivity = new Date().toISOString();
     session.metadata.messageCount = (session.metadata.messageCount || 0) + 1;
 
-    // Ensure usage tracking
+    // Ensure usage tracking matches admin dashboard format
     if (!session.usage) {
       session.usage = {
-        totalTokens: 0,
-        totalCost: 0,
         cost: 0,
         tokens: 0,
       };
@@ -163,7 +203,7 @@ export default async (req, context) => {
 
     // Try to save session but don't fail if it doesn't work
     try {
-      await saveSession(session);
+      await saveSessionToStore(session);
     } catch (error) {
       console.error("Failed to save session (will continue):", error);
     }
@@ -180,7 +220,7 @@ export default async (req, context) => {
 
     // Try to save session but don't fail if it doesn't work
     try {
-      await saveSession(session);
+      await saveSessionToStore(session);
     } catch (error) {
       console.error("Failed to save session (will continue):", error);
     }
@@ -191,8 +231,6 @@ export default async (req, context) => {
 
     session.usage.tokens += estimatedTokens;
     session.usage.cost += estimatedCost;
-    session.usage.totalTokens = session.usage.tokens;
-    session.usage.totalCost = session.usage.cost;
 
     try {
       await logAIUsage({
