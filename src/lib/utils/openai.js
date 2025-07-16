@@ -43,7 +43,7 @@ export async function sendChatMessage(messages, tool, apiKey) {
         ],
         temperature: tool.temperature || 0.7,
         max_tokens: tool.maxTokens || 2048,
-        stream: true,
+        stream: false,
       }),
     });
 

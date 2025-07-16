@@ -140,11 +140,7 @@ export default async (req, context) => {
 
     // Send response with multiple fallbacks
     try {
-      await twilioClient.messages.create({
-        body: responseText,
-        from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
-        to: from,
-      });
+      await twilioClient.sendMessage(from.replace("whatsapp:", ""), responseText);
     } catch (error) {
       console.error("Failed to send WhatsApp message:", error);
       // Could implement email notification or other fallback here
@@ -177,11 +173,10 @@ export default async (req, context) => {
     try {
       // We already have the 'from' variable from earlier, no need to re-read body
       if (from && twilioClient) {
-        await twilioClient.messages.create({
-          body: "Sorry, I'm having technical difficulties right now. Please try again later.",
-          from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
-          to: from,
-        });
+        await twilioClient.sendMessage(
+          from.replace("whatsapp:", ""),
+          "Sorry, I'm having technical difficulties right now. Please try again later."
+        );
       }
     } catch (innerError) {
       console.error("Failed to send error message:", innerError);
