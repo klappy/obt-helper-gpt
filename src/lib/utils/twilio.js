@@ -11,8 +11,8 @@ if (!accountSid || !authToken || !twilioPhoneNumber) {
 
 const client = twilio(accountSid, authToken);
 
-// WhatsApp message chunking (4,096 char limit)
-function chunkMessage(message, maxLength = 4000) {
+// WhatsApp message chunking (1600 char limit for WhatsApp)
+function chunkMessage(message, maxLength = 1500) {
   if (message.length <= maxLength) {
     return [message];
   }

@@ -42,7 +42,7 @@ export async function sendChatMessage(messages, tool, apiKey) {
           })),
         ],
         temperature: tool.temperature || 0.7,
-        max_tokens: tool.maxTokens || 2048,
+        max_tokens: Math.min(tool.maxTokens || 1000, 1000), // Limit to 1000 tokens for WhatsApp
         stream: false,
       }),
     });
