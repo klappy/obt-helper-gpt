@@ -204,8 +204,10 @@ export default async (req, context) => {
       responseText = "I'm having trouble thinking right now. Could you try again?";
     }
 
-    // Check if user wants help or to change tools
+    // Intelligent tool detection based on user intent
     const lowerMessage = messageBody.toLowerCase();
+
+    // Check for explicit commands first
     if (lowerMessage === "help" || lowerMessage === "menu" || lowerMessage === "tools") {
       const tools = await getAllTools();
       responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
@@ -222,6 +224,183 @@ export default async (req, context) => {
         session.currentTool = tools[toolIndex].id;
         responseText = `Switched to *${tools[toolIndex].name}*! ${tools[toolIndex].description}\n\nHow can I help you?`;
       }
+    } else {
+      // Auto-detect best tool based on user intent
+      const detectedTool = detectBestTool(messageBody);
+      if (detectedTool && detectedTool !== session.currentTool) {
+        console.log(
+          `Auto-switching from ${session.currentTool} to ${detectedTool} based on user intent`
+        );
+        session.currentTool = detectedTool;
+
+        // Find tool name for user feedback
+        const tools = await getAllTools();
+        const toolInfo = tools.find((t) => t.id === detectedTool);
+        const toolName = toolInfo ? toolInfo.name : detectedTool;
+
+        // Add a subtle notification about the switch
+        responseText = `*[Switched to ${toolName}]*\n\n`;
+      }
+    }
+
+    // Function to detect the best tool based on user message
+    function detectBestTool(message) {
+      const msg = message.toLowerCase();
+
+      // Recipe/Food keywords
+      if (
+        msg.includes("hungry") ||
+        msg.includes("recipe") ||
+        msg.includes("cook") ||
+        msg.includes("food") ||
+        msg.includes("eat") ||
+        msg.includes("meal") ||
+        msg.includes("dinner") ||
+        msg.includes("lunch") ||
+        msg.includes("breakfast") ||
+        msg.includes("ingredient") ||
+        msg.includes("bake") ||
+        msg.includes("kitchen")
+      ) {
+        return "recipe-helper";
+      }
+
+      // Math keywords
+      if (
+        msg.includes("calculate") ||
+        msg.includes("math") ||
+        msg.includes("solve") ||
+        msg.includes("equation") ||
+        msg.includes("algebra") ||
+        msg.includes("geometry") ||
+        /\d+\s*[\+\-\*\/]\s*\d+/.test(msg) ||
+        msg.includes("percent") ||
+        msg.includes("formula") ||
+        msg.includes("statistics")
+      ) {
+        return "math-tutor";
+      }
+
+      // Code keywords
+      if (
+        msg.includes("code") ||
+        msg.includes("program") ||
+        msg.includes("debug") ||
+        msg.includes("javascript") ||
+        msg.includes("python") ||
+        msg.includes("html") ||
+        msg.includes("css") ||
+        msg.includes("function") ||
+        msg.includes("variable") ||
+        msg.includes("api") ||
+        msg.includes("database") ||
+        msg.includes("git")
+      ) {
+        return "code-helper";
+      }
+
+      // Writing keywords
+      if (
+        msg.includes("story") ||
+        msg.includes("write") ||
+        msg.includes("essay") ||
+        msg.includes("poem") ||
+        msg.includes("script") ||
+        msg.includes("novel") ||
+        msg.includes("character") ||
+        msg.includes("plot") ||
+        msg.includes("creative")
+      ) {
+        return "creative-writing";
+      }
+
+      // Business keywords
+      if (
+        msg.includes("business") ||
+        msg.includes("strategy") ||
+        msg.includes("marketing") ||
+        msg.includes("startup") ||
+        msg.includes("revenue") ||
+        msg.includes("profit") ||
+        msg.includes("investment") ||
+        msg.includes("competitor") ||
+        msg.includes("plan")
+      ) {
+        return "business-strategy";
+      }
+
+      // Travel keywords
+      if (
+        msg.includes("travel") ||
+        msg.includes("trip") ||
+        msg.includes("vacation") ||
+        msg.includes("visit") ||
+        msg.includes("flight") ||
+        msg.includes("hotel") ||
+        msg.includes("destination") ||
+        msg.includes("itinerary") ||
+        msg.includes("country")
+      ) {
+        return "travel-planner";
+      }
+
+      // Email keywords
+      if (
+        msg.includes("email") ||
+        msg.includes("letter") ||
+        msg.includes("formal") ||
+        msg.includes("professional") ||
+        msg.includes("communication") ||
+        msg.includes("reply")
+      ) {
+        return "email-assistant";
+      }
+
+      // Social media keywords
+      if (
+        msg.includes("social") ||
+        msg.includes("post") ||
+        msg.includes("instagram") ||
+        msg.includes("twitter") ||
+        msg.includes("linkedin") ||
+        msg.includes("caption") ||
+        msg.includes("hashtag") ||
+        msg.includes("viral")
+      ) {
+        return "social-media";
+      }
+
+      // Language learning keywords
+      if (
+        msg.includes("translate") ||
+        msg.includes("language") ||
+        msg.includes("spanish") ||
+        msg.includes("french") ||
+        msg.includes("german") ||
+        msg.includes("practice") ||
+        msg.includes("pronunciation") ||
+        msg.includes("grammar")
+      ) {
+        return "language-buddy";
+      }
+
+      // Data analysis keywords
+      if (
+        msg.includes("data") ||
+        msg.includes("analyze") ||
+        msg.includes("chart") ||
+        msg.includes("graph") ||
+        msg.includes("excel") ||
+        msg.includes("spreadsheet") ||
+        msg.includes("report") ||
+        msg.includes("insights") ||
+        msg.includes("trends")
+      ) {
+        return "data-analyst";
+      }
+
+      // Default: keep current tool
+      return null;
     }
 
     // Add assistant response to conversation history

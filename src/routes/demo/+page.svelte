@@ -89,7 +89,59 @@ Reply with a number to switch tools, or just start chatting!`;
 							aiResponse = `Switched to *${toolNames[toolIndex]}*! How can I help you?`;
 						}
 					} else {
-						aiResponse = "Thanks for your message! I'm ready to help you with whatever you need.";
+						// Simulate intelligent tool detection
+						const detectedTool = detectBestTool(userMessage);
+						if (detectedTool) {
+							const toolNames = {
+								'recipe-helper': 'Recipe Helper',
+								'math-tutor': 'Math Tutor',
+								'code-helper': 'Code Helper',
+								'creative-writing': 'Creative Writing Assistant',
+								'business-strategy': 'Business Strategy Advisor',
+								'travel-planner': 'Travel Planner',
+								'email-assistant': 'Email Assistant',
+								'social-media': 'Social Media Content Creator',
+								'language-buddy': 'Language Learning Buddy',
+								'data-analyst': 'Data Analyst'
+							};
+							aiResponse = `*[Switched to ${toolNames[detectedTool]}]*\n\nGreat! I can help you with that. What specifically would you like to know?`;
+						} else {
+							aiResponse = "Thanks for your message! I'm ready to help you with whatever you need.";
+						}
+					}
+					
+					// Function to detect the best tool (same logic as backend)
+					function detectBestTool(message) {
+						const msg = message.toLowerCase();
+						
+						if (msg.includes('hungry') || msg.includes('recipe') || msg.includes('cook') || 
+							msg.includes('food') || msg.includes('eat') || msg.includes('meal')) {
+							return 'recipe-helper';
+						}
+						
+						if (msg.includes('calculate') || msg.includes('math') || msg.includes('solve') ||
+							/\d+\s*[\+\-\*\/]\s*\d+/.test(msg)) {
+							return 'math-tutor';
+						}
+						
+						if (msg.includes('code') || msg.includes('program') || msg.includes('debug') ||
+							msg.includes('javascript') || msg.includes('python')) {
+							return 'code-helper';
+						}
+						
+						if (msg.includes('story') || msg.includes('write') || msg.includes('creative')) {
+							return 'creative-writing';
+						}
+						
+						if (msg.includes('business') || msg.includes('strategy') || msg.includes('marketing')) {
+							return 'business-strategy';
+						}
+						
+						if (msg.includes('travel') || msg.includes('trip') || msg.includes('vacation')) {
+							return 'travel-planner';
+						}
+						
+						return null;
 					}
 					
 					messages = [...messages, {
