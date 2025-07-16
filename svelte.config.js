@@ -16,10 +16,6 @@ const config = {
       edge: false,
       split: false,
     }),
-    paths: {
-      base: "",
-      assets: "",
-    },
   },
 };
 
