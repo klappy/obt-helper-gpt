@@ -67,12 +67,18 @@ const twilioClient = {
   // Send WhatsApp message with chunking and formatting
   sendMessage: async (to, body) => {
     try {
+      console.log("Twilio sendMessage called with:", { to, bodyLength: body.length });
+
       const formattedBody = formatForWhatsApp(body);
       const chunks = chunkMessage(formattedBody);
+
+      console.log("Message chunked into", chunks.length, "parts");
 
       const results = [];
       for (let i = 0; i < chunks.length; i++) {
         const message = chunks.length > 1 ? `(${i + 1}/${chunks.length}) ${chunks[i]}` : chunks[i];
+
+        console.log(`Sending chunk ${i + 1}/${chunks.length} to whatsapp:${to}`);
 
         const result = await client.messages.create({
           from: `whatsapp:${twilioPhoneNumber}`,
@@ -80,9 +86,11 @@ const twilioClient = {
           body: message,
         });
 
+        console.log(`Chunk ${i + 1} sent successfully, SID:`, result.sid);
         results.push(result);
       }
 
+      console.log("All chunks sent successfully");
       return results;
     } catch (error) {
       console.error("Error sending WhatsApp message:", error);
