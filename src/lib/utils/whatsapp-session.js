@@ -90,6 +90,16 @@ async function saveAllSessions(sessions) {
   }
 }
 
+// Wrapper for safe session operations
+async function safeSessionOperation(operation, fallbackValue) {
+  try {
+    return await operation();
+  } catch (error) {
+    console.error("Session operation failed, using fallback:", error.message);
+    return fallbackValue;
+  }
+}
+
 // Get or create a session for a phone number
 export async function getSession(phoneNumber, language = "en") {
   const sessions = await loadAllSessions();
@@ -158,7 +168,29 @@ export async function clearSession(phoneNumber) {
 
 // Get all active sessions (for admin/monitoring)
 export async function getAllSessions() {
-  return await loadAllSessions();
+  return safeSessionOperation(async () => {
+    if (isLocalDevelopment()) {
+      try {
+        await ensureLocalFile();
+        const data = await fs.readFile(LOCAL_STORAGE_PATH, "utf-8");
+        return JSON.parse(data);
+      } catch (error) {
+        console.error("Local file read failed:", error);
+        return {};
+      }
+    } else {
+      const store = getStoreInstance();
+      if (!store) return {};
+
+      try {
+        const sessions = await store.get("sessions", { type: "json" });
+        return sessions || {};
+      } catch (error) {
+        console.error("Netlify Blobs read failed:", error);
+        return {};
+      }
+    }
+  }, {});
 }
 
 // Clean up old inactive sessions (older than 30 days)

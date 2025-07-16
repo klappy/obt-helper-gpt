@@ -4,52 +4,52 @@ import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-export default async (request, context) => {
-  // Only handle POST requests
-  if (request.method !== "POST") {
-    return new Response("Method Not Allowed", {
-      status: 405,
+export default async (req, context) => {
+  console.log("WhatsApp webhook called");
+
+  // Always try to respond to Twilio to avoid retries
+  const respondToTwilio = (statusCode = 200, message = "") => {
+    return new Response(message, {
+      status: statusCode,
+      headers: { "Content-Type": "text/plain" },
     });
-  }
+  };
 
   try {
-    // Parse the request body
-    const body = await request.text();
+    // Get Twilio config with fallback
+    let twilioClient;
+    try {
+      twilioClient = getTwilioClient();
+    } catch (error) {
+      console.error("Twilio client initialization failed:", error);
+      // Still acknowledge the webhook to prevent retries
+      return respondToTwilio(200, "Configuration error");
+    }
+
+    // Parse the request
+    const body = await req.text();
     const params = new URLSearchParams(body);
     const from = params.get("From");
     const messageBody = params.get("Body");
 
-    console.log("WhatsApp message received:", { from, body: messageBody });
-
-    // Verify this is a WhatsApp message
-    if (!from || !from.startsWith("whatsapp:")) {
-      return new Response("Invalid WhatsApp message", {
-        status: 400,
-      });
+    if (!from || !messageBody) {
+      return respondToTwilio(400, "Missing required parameters");
     }
 
-    // Extract phone number from the 'from' field
-    const phoneNumber = from;
-    const sessionId = `whatsapp_${phoneNumber.replace(/[^0-9]/g, "")}`;
+    console.log("WhatsApp message received:", { from, body: messageBody });
 
-    // Get or create session
-    let session = await getSession(sessionId);
-    if (!session) {
+    // Get or create session with fallback
+    let session;
+    try {
+      session = await getOrCreateSession(from);
+    } catch (error) {
+      console.error("Session error (using temp session):", error);
+      // Create a temporary in-memory session
       session = {
-        sessionId,
-        phoneNumber,
-        currentTool: "creative-writing", // Default tool
-        language: "en",
-        conversationHistory: [],
-        metadata: {
-          startTime: new Date().toISOString(),
-          lastActivity: new Date().toISOString(),
-          messageCount: 0,
-        },
-        usage: {
-          cost: 0,
-          tokens: 0,
-        },
+        phoneNumber: from,
+        currentToolId: null,
+        history: [],
+        createdAt: new Date().toISOString(),
       };
     }
 
@@ -122,34 +122,56 @@ export default async (request, context) => {
       phoneNumber: phoneNumber,
     });
 
-    // Send response via Twilio
+    // Send response with multiple fallbacks
     try {
       await twilioClient.messages.create({
         body: responseText,
-        from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`, // Your Twilio WhatsApp number
+        from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: from,
       });
-    } catch (twilioError) {
-      console.error("Error sending Twilio message:", twilioError);
-      // Continue even if Twilio fails in development
+    } catch (error) {
+      console.error("Failed to send WhatsApp message:", error);
+      // Could implement email notification or other fallback here
     }
 
-    // Return TwiML response
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>${responseText}</Message>
-</Response>`;
+    // Try to save session but don't fail if it doesn't work
+    try {
+      await saveSession(session);
+    } catch (error) {
+      console.error("Failed to save session (will continue):", error);
+    }
 
-    return new Response(twiml, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/xml",
-      },
-    });
+    // Try to log usage but don't fail if it doesn't work
+    try {
+      await logAIUsage({
+        toolId: session.currentToolId || "unknown",
+        model: "gpt-4o-mini",
+        tokensUsed: responseText.length * 0.25, // Rough estimate
+        feature: "whatsapp",
+      });
+    } catch (error) {
+      console.error("Failed to log usage (will continue):", error);
+    }
+
+    return respondToTwilio(200);
   } catch (error) {
     console.error("Error processing WhatsApp message:", error);
-    return new Response("Internal Server Error", {
-      status: 500,
-    });
+
+    // Try to send error message to user
+    try {
+      const from = new URLSearchParams(await req.text()).get("From");
+      if (from && twilioClient) {
+        await twilioClient.messages.create({
+          body: "Sorry, I'm having technical difficulties right now. Please try again later.",
+          from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+          to: from,
+        });
+      }
+    } catch (innerError) {
+      console.error("Failed to send error message:", innerError);
+    }
+
+    // Always return 200 to prevent Twilio retries
+    return respondToTwilio(200, "Error handled");
   }
 };
