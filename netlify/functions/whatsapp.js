@@ -1,12 +1,8 @@
 import twilioClient from "../../src/lib/utils/twilio.js";
-import {
-  getSession,
-  saveSession,
-  getOrCreateSession,
-} from "../../src/lib/utils/whatsapp-session.js";
+import { getSession, saveSession } from "../../src/lib/utils/whatsapp-session.js";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 import { sendChatMessage } from "../../src/lib/utils/openai.js";
-import { getToolsData } from "./tools.js";
+import { getAllTools } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -47,7 +43,7 @@ export default async (req, context) => {
     // Get or create session with fallback
     let session;
     try {
-      session = await getOrCreateSession(from);
+      session = await getSession(from);
     } catch (error) {
       console.error("Session error (using temp session):", error);
       // Create a temporary in-memory session
@@ -77,7 +73,7 @@ export default async (req, context) => {
       }
 
       // Get tool configuration
-      const tools = await getToolsData();
+      const tools = await getAllTools();
       const currentTool = tools.find((t) => t.id === session.currentToolId) || tools[0];
 
       // Prepare messages for OpenAI
@@ -107,7 +103,7 @@ export default async (req, context) => {
     // Check if user wants help or to change tools
     const lowerMessage = messageBody.toLowerCase();
     if (lowerMessage === "help" || lowerMessage === "menu" || lowerMessage === "tools") {
-      const tools = await getToolsData();
+      const tools = await getAllTools();
       responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
       responseText += "I can help you with:\n\n";
       tools.forEach((tool, index) => {
@@ -116,7 +112,7 @@ export default async (req, context) => {
       responseText += "\nReply with a number to switch tools, or just start chatting!";
     } else if (/^[1-9]$/.test(lowerMessage.trim())) {
       // User sent a single digit
-      const tools = await getToolsData();
+      const tools = await getAllTools();
       const toolIndex = parseInt(lowerMessage.trim()) - 1;
       if (toolIndex >= 0 && toolIndex < tools.length) {
         session.currentToolId = tools[toolIndex].id;

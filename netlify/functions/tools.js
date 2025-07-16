@@ -253,7 +253,7 @@ export default async (request, context) => {
   }
 };
 
-async function getAllTools() {
+export async function getAllTools() {
   try {
     // Use local file storage for development
     if (isLocalDevelopment()) {
