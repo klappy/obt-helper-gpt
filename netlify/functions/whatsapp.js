@@ -126,7 +126,7 @@ export default async (request, context) => {
     try {
       await twilioClient.messages.create({
         body: responseText,
-        from: "whatsapp:+15558025035", // Your Twilio WhatsApp number
+        from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`, // Your Twilio WhatsApp number
         to: from,
       });
     } catch (twilioError) {
