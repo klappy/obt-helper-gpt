@@ -49,6 +49,10 @@ export default async (req, context) => {
     });
   };
 
+  // Declare variables in outer scope for error handler access
+  let from = null;
+  let messageBody = null;
+
   try {
     // Check Twilio config
     if (
@@ -63,8 +67,8 @@ export default async (req, context) => {
     // Parse the request
     const body = await req.text();
     const params = new URLSearchParams(body);
-    const from = params.get("From");
-    const messageBody = params.get("Body");
+    from = params.get("From");
+    messageBody = params.get("Body");
 
     if (!from || !messageBody) {
       return respondToTwilio(400, "Missing required parameters");
@@ -76,6 +80,31 @@ export default async (req, context) => {
     let session;
     try {
       session = await getSessionFromStore(from);
+
+      // If session is null, create a new one
+      if (!session) {
+        console.log("No existing session found, creating new session");
+        const now = new Date().toISOString();
+        const sessionId = `whatsapp_${from.replace(/[^\d]/g, "")}`;
+        session = {
+          sessionId,
+          phoneNumber: from,
+          currentTool: "creative-writing",
+          language: "en",
+          conversationHistory: [],
+          metadata: {
+            startTime: now,
+            lastActivity: now,
+            messageCount: 0,
+          },
+          usage: {
+            cost: 0,
+            tokens: 0,
+          },
+        };
+      } else {
+        console.log("Existing session found:", session.sessionId);
+      }
     } catch (error) {
       console.error("Session error (using temp session):", error);
       // Create a temporary in-memory session matching admin dashboard format
