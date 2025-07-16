@@ -37,3 +37,4 @@ Built for 2025 🚀
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+# Trigger deploy with env vars
