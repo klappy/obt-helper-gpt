@@ -66,8 +66,26 @@ export default async (req, context) => {
       content: messageBody,
     });
 
-    // Update last active time
-    session.lastActive = new Date().toISOString();
+    // Update metadata
+    if (!session.metadata) {
+      session.metadata = {
+        startTime: session.createdAt || new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+        messageCount: 0,
+      };
+    }
+    session.metadata.lastActivity = new Date().toISOString();
+    session.metadata.messageCount = (session.metadata.messageCount || 0) + 1;
+
+    // Ensure usage tracking
+    if (!session.usage) {
+      session.usage = {
+        totalTokens: 0,
+        totalCost: 0,
+        cost: 0,
+        tokens: 0,
+      };
+    }
 
     // Get AI response based on current tool
     let responseText;
@@ -153,12 +171,20 @@ export default async (req, context) => {
       console.error("Failed to save session (will continue):", error);
     }
 
-    // Try to log usage but don't fail if it doesn't work
+    // Update session usage and log AI usage
+    const estimatedTokens = Math.ceil(responseText.length * 0.25);
+    const estimatedCost = estimatedTokens * 0.000002; // Rough GPT-4o-mini pricing
+
+    session.usage.tokens += estimatedTokens;
+    session.usage.cost += estimatedCost;
+    session.usage.totalTokens = session.usage.tokens;
+    session.usage.totalCost = session.usage.cost;
+
     try {
       await logAIUsage({
         toolId: session.currentTool || "unknown",
         model: "gpt-4o-mini",
-        tokensUsed: responseText.length * 0.25, // Rough estimate
+        tokensUsed: estimatedTokens,
         feature: "whatsapp",
       });
     } catch (error) {
