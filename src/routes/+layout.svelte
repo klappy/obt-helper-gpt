@@ -16,6 +16,9 @@
 					<a href="/admin" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
 						Admin
 					</a>
+					<a href="/demo" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+						WhatsApp Demo
+					</a>
 				</div>
 			</div>
 		</div>
