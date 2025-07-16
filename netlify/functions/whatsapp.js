@@ -1,6 +1,12 @@
-import twilioClient from "../../src/lib/utils/twilio.js";
-import { getSession, saveSession, addUsage } from "../../src/lib/utils/whatsapp-session.js";
+import { getTwilioClient } from "../../src/lib/utils/twilio.js";
+import {
+  getSession,
+  saveSession,
+  getOrCreateSession,
+} from "../../src/lib/utils/whatsapp-session.js";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
+import { sendChatMessage } from "../../src/lib/utils/openai.js";
+import { getToolsData } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -53,74 +59,83 @@ export default async (req, context) => {
       };
     }
 
-    // Add user message to conversation history
-    session.conversationHistory.push({
+    // Add user message to history
+    session.history.push({
       role: "user",
       content: messageBody,
-      timestamp: new Date().toISOString(),
-      type: "text",
     });
 
-    // Update metadata
-    session.metadata.lastActivity = new Date().toISOString();
-    session.metadata.messageCount++;
+    // Update last active time
+    session.lastActive = new Date().toISOString();
 
-    // Simple response for now (you'd integrate with OpenAI here)
-    let responseText = "I received your message! This is a test response from the WhatsApp bot.";
+    // Get AI response based on current tool
+    let responseText;
+    try {
+      // Default tool if none selected
+      if (!session.currentToolId) {
+        session.currentToolId = "creative-writing";
+      }
 
-    // Check if user wants to change tools
-    if (messageBody.toLowerCase().includes("help") || messageBody.toLowerCase().includes("tools")) {
-      responseText = `Available tools: Creative Writing, Math Tutor, Code Helper, Recipe Helper, Language Buddy. Say something like "use math tutor" to switch tools.`;
-    } else if (messageBody.toLowerCase().includes("use ")) {
-      const toolMatch = messageBody.toLowerCase().match(/use (\w+)/);
-      if (toolMatch) {
-        const toolName = toolMatch[1];
-        // Simple tool mapping
-        const toolMap = {
-          math: "math-tutor",
-          code: "code-helper",
-          recipe: "recipe-helper",
-          writing: "creative-writing",
-          language: "language-buddy",
-        };
+      // Get tool configuration
+      const tools = await getToolsData();
+      const currentTool = tools.find((t) => t.id === session.currentToolId) || tools[0];
 
-        if (toolMap[toolName]) {
-          session.currentTool = toolMap[toolName];
-          responseText = `Switched to ${toolName} tool! How can I help you with ${toolName}?`;
-        }
+      // Prepare messages for OpenAI
+      const messages = [
+        { role: "system", content: currentTool.systemPrompt },
+        ...session.history.slice(-10).map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        { role: "user", content: messageBody },
+      ];
+
+      // Get AI response
+      const aiResponse = await sendChatMessage(messages, currentTool, OPENAI_API_KEY);
+      const aiData = await aiResponse.json();
+
+      if (aiData.choices && aiData.choices[0]) {
+        responseText = aiData.choices[0].message.content;
+      } else {
+        throw new Error("Invalid AI response");
+      }
+    } catch (error) {
+      console.error("AI generation failed:", error);
+      responseText = "I'm having trouble thinking right now. Could you try again?";
+    }
+
+    // Check if user wants help or to change tools
+    const lowerMessage = messageBody.toLowerCase();
+    if (lowerMessage === "help" || lowerMessage === "menu" || lowerMessage === "tools") {
+      const tools = await getToolsData();
+      responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
+      responseText += "I can help you with:\n\n";
+      tools.forEach((tool, index) => {
+        responseText += `${index + 1}. *${tool.name}* - ${tool.description}\n`;
+      });
+      responseText += "\nReply with a number to switch tools, or just start chatting!";
+    } else if (/^[1-9]$/.test(lowerMessage.trim())) {
+      // User sent a single digit
+      const tools = await getToolsData();
+      const toolIndex = parseInt(lowerMessage.trim()) - 1;
+      if (toolIndex >= 0 && toolIndex < tools.length) {
+        session.currentToolId = tools[toolIndex].id;
+        responseText = `Switched to *${tools[toolIndex].name}*! ${tools[toolIndex].description}\n\nHow can I help you?`;
       }
     }
 
-    // Add assistant response to conversation history
-    session.conversationHistory.push({
+    // Add assistant response to history
+    session.history.push({
       role: "assistant",
       content: responseText,
-      timestamp: new Date().toISOString(),
-      type: "text",
     });
 
-    // Mock usage tracking
-    const usage = {
-      tokens: 50,
-      estimatedCost: 0.001,
-    };
-
-    session.usage.tokens += usage.tokens;
-    session.usage.cost += usage.estimatedCost;
-
-    // Save session
-    await saveSession(session);
-
-    // Log AI usage
-    await logAIUsage({
-      sessionId,
-      toolId: session.currentTool,
-      model: "gpt-4o-mini",
-      tokens: usage.tokens,
-      estimatedCost: usage.estimatedCost,
-      source: "whatsapp",
-      phoneNumber: phoneNumber,
-    });
+    // Try to save session but don't fail if it doesn't work
+    try {
+      await saveSession(session);
+    } catch (error) {
+      console.error("Failed to save session (will continue):", error);
+    }
 
     // Send response with multiple fallbacks
     try {
