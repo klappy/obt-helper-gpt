@@ -90,14 +90,21 @@ export default async (req, context) => {
     // Get AI response based on current tool
     let responseText;
     try {
+      console.log("Starting AI generation...");
+
       // Default tool if none selected
       if (!session.currentTool) {
         session.currentTool = "creative-writing";
+        console.log("Set default tool: creative-writing");
       }
 
       // Get tool configuration
+      console.log("Getting tools...");
       const tools = await getAllTools();
+      console.log("Tools loaded:", tools.length);
+
       const currentTool = tools.find((t) => t.id === session.currentTool) || tools[0];
+      console.log("Current tool:", currentTool ? currentTool.name : "NONE");
 
       // Prepare messages for OpenAI
       const messages = [
@@ -110,11 +117,16 @@ export default async (req, context) => {
       ];
 
       // Get AI response
+      console.log("Calling OpenAI...");
       const aiResponse = await sendChatMessage(messages, currentTool, OPENAI_API_KEY);
+      console.log("OpenAI response status:", aiResponse.status);
+
       const aiData = await aiResponse.json();
+      console.log("AI data received, has choices:", !!aiData.choices);
 
       if (aiData.choices && aiData.choices[0]) {
         responseText = aiData.choices[0].message.content;
+        console.log("AI response length:", responseText.length);
       } else {
         throw new Error("Invalid AI response");
       }
@@ -158,7 +170,9 @@ export default async (req, context) => {
 
     // Send response with multiple fallbacks
     try {
+      console.log("Sending WhatsApp message...");
       await twilioClient.sendMessage(from.replace("whatsapp:", ""), responseText);
+      console.log("WhatsApp message sent successfully");
     } catch (error) {
       console.error("Failed to send WhatsApp message:", error);
       // Could implement email notification or other fallback here
