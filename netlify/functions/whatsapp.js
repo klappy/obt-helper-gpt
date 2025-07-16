@@ -49,14 +49,19 @@ export default async (req, context) => {
       // Create a temporary in-memory session
       session = {
         phoneNumber: from,
-        currentToolId: null,
-        history: [],
+        currentTool: null,
+        conversationHistory: [],
         createdAt: new Date().toISOString(),
+        usage: { totalTokens: 0, totalCost: 0, messageCount: 0 },
+        metadata: {},
       };
     }
 
-    // Add user message to history
-    session.history.push({
+    // Add user message to conversation history
+    if (!session.conversationHistory) {
+      session.conversationHistory = [];
+    }
+    session.conversationHistory.push({
       role: "user",
       content: messageBody,
     });
@@ -68,18 +73,18 @@ export default async (req, context) => {
     let responseText;
     try {
       // Default tool if none selected
-      if (!session.currentToolId) {
-        session.currentToolId = "creative-writing";
+      if (!session.currentTool) {
+        session.currentTool = "creative-writing";
       }
 
       // Get tool configuration
       const tools = await getAllTools();
-      const currentTool = tools.find((t) => t.id === session.currentToolId) || tools[0];
+      const currentTool = tools.find((t) => t.id === session.currentTool) || tools[0];
 
       // Prepare messages for OpenAI
       const messages = [
         { role: "system", content: currentTool.systemPrompt },
-        ...session.history.slice(-10).map((msg) => ({
+        ...session.conversationHistory.slice(-10).map((msg) => ({
           role: msg.role,
           content: msg.content,
         })),
@@ -115,13 +120,13 @@ export default async (req, context) => {
       const tools = await getAllTools();
       const toolIndex = parseInt(lowerMessage.trim()) - 1;
       if (toolIndex >= 0 && toolIndex < tools.length) {
-        session.currentToolId = tools[toolIndex].id;
+        session.currentTool = tools[toolIndex].id;
         responseText = `Switched to *${tools[toolIndex].name}*! ${tools[toolIndex].description}\n\nHow can I help you?`;
       }
     }
 
-    // Add assistant response to history
-    session.history.push({
+    // Add assistant response to conversation history
+    session.conversationHistory.push({
       role: "assistant",
       content: responseText,
     });
@@ -155,7 +160,7 @@ export default async (req, context) => {
     // Try to log usage but don't fail if it doesn't work
     try {
       await logAIUsage({
-        toolId: session.currentToolId || "unknown",
+        toolId: session.currentTool || "unknown",
         model: "gpt-4o-mini",
         tokensUsed: responseText.length * 0.25, // Rough estimate
         feature: "whatsapp",
@@ -170,7 +175,7 @@ export default async (req, context) => {
 
     // Try to send error message to user
     try {
-      const from = new URLSearchParams(await req.text()).get("From");
+      // We already have the 'from' variable from earlier, no need to re-read body
       if (from && twilioClient) {
         await twilioClient.messages.create({
           body: "Sorry, I'm having technical difficulties right now. Please try again later.",
