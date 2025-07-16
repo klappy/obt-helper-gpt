@@ -1,0 +1,10 @@
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/_app/immutable/*
+  cache-control: public, immutable, max-age=31536000
+
+/api/*
+  cache-control: no-cache 
