@@ -50,7 +50,8 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "@netlify/blobs": "^8.2.0"
+    "@netlify/blobs": "^8.2.0",
+    "twilio": "^5.7.3"
   },
   "type": "module"
 }

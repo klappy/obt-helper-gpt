@@ -4,123 +4,152 @@ import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-export default async (event) => {
+export default async (request, context) => {
   // Only handle POST requests
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: "Method Not Allowed",
-    };
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", {
+      status: 405,
+    });
   }
 
   try {
     // Parse the request body
-    const params = new URLSearchParams(event.body);
+    const body = await request.text();
+    const params = new URLSearchParams(body);
     const from = params.get("From");
-    const body = params.get("Body");
+    const messageBody = params.get("Body");
 
-    console.log("WhatsApp message received:", { from, body });
+    console.log("WhatsApp message received:", { from, body: messageBody });
 
     // Verify this is a WhatsApp message
     if (!from || !from.startsWith("whatsapp:")) {
-      return {
-        statusCode: 400,
-        body: "Invalid WhatsApp message",
+      return new Response("Invalid WhatsApp message", {
+        status: 400,
+      });
+    }
+
+    // Extract phone number from the 'from' field
+    const phoneNumber = from;
+    const sessionId = `whatsapp_${phoneNumber.replace(/[^0-9]/g, "")}`;
+
+    // Get or create session
+    let session = await getSession(sessionId);
+    if (!session) {
+      session = {
+        sessionId,
+        phoneNumber,
+        currentTool: "creative-writing", // Default tool
+        language: "en",
+        conversationHistory: [],
+        metadata: {
+          startTime: new Date().toISOString(),
+          lastActivity: new Date().toISOString(),
+          messageCount: 0,
+        },
+        usage: {
+          cost: 0,
+          tokens: 0,
+        },
       };
     }
 
-    // Extract phone number
-    const phoneNumber = from.replace("whatsapp:", "");
-
-    // Get or create session for this user
-    const session = await getSession(phoneNumber, "en");
-
-    // Prepare OpenAI messages
-    const messages = [
-      {
-        role: "system",
-        content:
-          "You are a helpful AI assistant accessible via WhatsApp. Provide helpful, concise responses. Keep messages brief since this is WhatsApp.",
-      },
-      {
-        role: "user",
-        content: body,
-      },
-    ];
-
-    // Call OpenAI
-    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: messages,
-        max_tokens: 1000,
-        temperature: 0.7,
-      }),
+    // Add user message to conversation history
+    session.conversationHistory.push({
+      role: "user",
+      content: messageBody,
+      timestamp: new Date().toISOString(),
+      type: "text",
     });
 
-    const openaiData = await openaiResponse.json();
+    // Update metadata
+    session.metadata.lastActivity = new Date().toISOString();
+    session.metadata.messageCount++;
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiData.error?.message || "Unknown error"}`);
+    // Simple response for now (you'd integrate with OpenAI here)
+    let responseText = "I received your message! This is a test response from the WhatsApp bot.";
+
+    // Check if user wants to change tools
+    if (messageBody.toLowerCase().includes("help") || messageBody.toLowerCase().includes("tools")) {
+      responseText = `Available tools: Creative Writing, Math Tutor, Code Helper, Recipe Helper, Language Buddy. Say something like "use math tutor" to switch tools.`;
+    } else if (messageBody.toLowerCase().includes("use ")) {
+      const toolMatch = messageBody.toLowerCase().match(/use (\w+)/);
+      if (toolMatch) {
+        const toolName = toolMatch[1];
+        // Simple tool mapping
+        const toolMap = {
+          math: "math-tutor",
+          code: "code-helper",
+          recipe: "recipe-helper",
+          writing: "creative-writing",
+          language: "language-buddy",
+        };
+
+        if (toolMap[toolName]) {
+          session.currentTool = toolMap[toolName];
+          responseText = `Switched to ${toolName} tool! How can I help you with ${toolName}?`;
+        }
+      }
     }
 
-    const aiResponse = openaiData.choices[0].message.content;
-    const usage = openaiData.usage;
+    // Add assistant response to conversation history
+    session.conversationHistory.push({
+      role: "assistant",
+      content: responseText,
+      timestamp: new Date().toISOString(),
+      type: "text",
+    });
 
-    // Calculate cost
-    const cost = (usage.prompt_tokens * 0.00015 + usage.completion_tokens * 0.0006) / 1000;
+    // Mock usage tracking
+    const usage = {
+      tokens: 50,
+      estimatedCost: 0.001,
+    };
 
-    // Log AI usage
-    try {
-      await logAIUsage({
-        source: "whatsapp",
-        model: "gpt-4o-mini",
-        prompt_tokens: usage.prompt_tokens,
-        completion_tokens: usage.completion_tokens,
-        total_tokens: usage.total_tokens,
-        cost: cost,
-        tool_id: "whatsapp-assistant",
-        tool_name: "WhatsApp Assistant",
-        session: phoneNumber,
-      });
-    } catch (logError) {
-      console.error("Failed to log AI usage:", logError);
-    }
+    session.usage.tokens += usage.tokens;
+    session.usage.cost += usage.estimatedCost;
 
-    // Update session
-    addUsage(session, usage.total_tokens, cost);
+    // Save session
     await saveSession(session);
 
+    // Log AI usage
+    await logAIUsage({
+      sessionId,
+      toolId: session.currentTool,
+      model: "gpt-4o-mini",
+      tokens: usage.tokens,
+      estimatedCost: usage.estimatedCost,
+      source: "whatsapp",
+      phoneNumber: phoneNumber,
+    });
+
     // Send response via Twilio
-    await twilioClient.sendMessage(from, aiResponse);
+    try {
+      await twilioClient.messages.create({
+        body: responseText,
+        from: "whatsapp:+15558025035", // Your Twilio WhatsApp number
+        to: from,
+      });
+    } catch (twilioError) {
+      console.error("Error sending Twilio message:", twilioError);
+      // Continue even if Twilio fails in development
+    }
 
-    return {
-      statusCode: 200,
+    // Return TwiML response
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>${responseText}</Message>
+</Response>`;
+
+    return new Response(twiml, {
+      status: 200,
       headers: {
         "Content-Type": "text/xml",
       },
-      body: `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>Message processed successfully</Message>
-</Response>`,
-    };
+    });
   } catch (error) {
-    console.error("WhatsApp function error:", error);
-
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "text/xml",
-      },
-      body: `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>Sorry, I'm experiencing technical difficulties.</Message>
-</Response>`,
-    };
+    console.error("Error processing WhatsApp message:", error);
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 };
