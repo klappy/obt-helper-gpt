@@ -1,4 +1,14 @@
 [build]
   command = "npm run build"
   functions = "netlify/functions"
-  publish = "build" 
+  publish = ".svelte-kit/output/client"
+
+# Function configuration
+[functions]
+  node_bundler = "esbuild"
+
+# Environment variables (set these in Netlify UI)
+# OPENAI_API_KEY = "your_openai_key"
+# TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxx"
+# TWILIO_AUTH_TOKEN = "your_twilio_token"  
+# TWILIO_PHONE_NUMBER = "+1234567890" 

@@ -13,6 +13,17 @@
 	let isResetting = false;
 	let isImporting = false;
 
+	// WhatsApp stats
+	let whatsappStats = {};
+	let whatsappLoading = true;
+
+	// Global AI usage stats
+	let aiUsageStats = {};
+	let aiUsageLoading = true;
+	
+	// Demo enhancement flags
+	let showDetailedStats = false;
+
 	// Update last saved time
 	function updateLastSaved() {
 		if (browser) {
@@ -25,7 +36,39 @@
 		updateLastSaved();
 		await refreshTools();
 		tools = getAllTools();
+		await fetchWhatsAppStats();
+		await fetchAIUsageStats();
 	});
+	
+	async function fetchWhatsAppStats() {
+		try {
+			const response = await fetch('/.netlify/functions/whatsapp-sessions');
+			const data = await response.json();
+			
+			if (response.ok) {
+				whatsappStats = data.stats || {};
+			}
+		} catch (err) {
+			console.error('Error fetching WhatsApp stats:', err);
+		} finally {
+			whatsappLoading = false;
+		}
+	}
+
+	async function fetchAIUsageStats() {
+		try {
+			const response = await fetch('/.netlify/functions/ai-usage-stats?days=30');
+			const data = await response.json();
+			
+			if (response.ok) {
+				aiUsageStats = data;
+			}
+		} catch (err) {
+			console.error('Error fetching AI usage stats:', err);
+		} finally {
+			aiUsageLoading = false;
+		}
+	}
 
 	async function handleReset() {
 		isResetting = true;
@@ -108,7 +151,7 @@
 	</div>
 
 	<!-- Stats Cards -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
 		<div class="card">
 			<div class="flex items-center">
 				<div class="text-2xl mr-3">🤖</div>
@@ -135,6 +178,54 @@
 				<div>
 					<p class="text-2xl font-bold text-blue-600">{tools.filter(t => t.model === 'gpt-4o').length}</p>
 					<p class="text-sm text-gray-600">GPT-4o Tools</p>
+				</div>
+			</div>
+		</div>
+		
+		<div class="card">
+			<div class="flex items-center">
+				<div class="text-2xl mr-3">📱</div>
+				<div>
+					<p class="text-2xl font-bold text-purple-600">
+						{whatsappLoading ? '...' : (whatsappStats.active || 0)}
+					</p>
+					<p class="text-sm text-gray-600">WhatsApp Sessions</p>
+				</div>
+			</div>
+		</div>
+		
+		<div class="card">
+			<div class="flex items-center">
+				<div class="text-2xl mr-3">💰</div>
+				<div>
+					<p class="text-2xl font-bold text-green-600">
+						{whatsappLoading ? '...' : ('$' + (whatsappStats.totalCost || 0).toFixed(2))}
+					</p>
+					<p class="text-sm text-gray-600">WhatsApp Costs</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="card">
+			<div class="flex items-center">
+				<div class="text-2xl mr-3">🤖</div>
+				<div>
+					<p class="text-2xl font-bold text-indigo-600">
+						{aiUsageLoading ? '...' : ('$' + (aiUsageStats.totalCost || 0).toFixed(2))}
+					</p>
+					<p class="text-sm text-gray-600">Total AI Costs (30d)</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="card">
+			<div class="flex items-center">
+				<div class="text-2xl mr-3">⚡</div>
+				<div>
+					<p class="text-2xl font-bold text-orange-600">
+						{aiUsageLoading ? '...' : (Math.round((aiUsageStats.totalTokens || 0) / 1000) + 'K')}
+					</p>
+					<p class="text-sm text-gray-600">Total Tokens (30d)</p>
 				</div>
 			</div>
 		</div>
@@ -194,7 +285,7 @@
 	</div>
 
 	<!-- Quick Actions -->
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 		<div class="card">
 			<h3 class="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
 			<div class="space-y-2">
@@ -229,6 +320,83 @@
 				<p>Storage: {browser && window.location.hostname === 'localhost' ? 'Local File (.netlify/blobs-local/)' : 'Netlify Blobs'} (persistent)</p>
 				<p>API Status: {$isLoading ? 'Syncing...' : 'Connected'}</p>
 				<p>Last Updated: {lastSaved}</p>
+			</div>
+		</div>
+		
+		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+			<h3 class="text-lg font-semibold text-gray-900 mb-3">WhatsApp Status</h3>
+			
+			<div class="space-y-3">
+				<button 
+					class="w-full text-left bg-gray-50 hover:bg-gray-100 rounded-lg p-3 transition-colors"
+					type="button"
+					on:click={() => window.open('/admin/whatsapp', '_blank')}
+				>
+					<div class="flex justify-between items-center">
+						<span class="font-medium">Sessions Management</span>
+						<span class="text-blue-600">→</span>
+					</div>
+				</button>
+				
+				<div class="space-y-2 bg-gray-50 rounded-lg p-3">
+					<div class="flex justify-between">
+						<span>Active Sessions:</span>
+						<span>{whatsappLoading ? '...' : (whatsappStats.active || 0)}</span>
+					</div>
+					<div class="flex justify-between">
+						<span>Total Messages:</span>
+						<span>{whatsappLoading ? '...' : (whatsappStats.totalMessages || 0)}</span>
+					</div>
+					<div class="flex justify-between">
+						<span>Total Cost:</span>
+						<span>{whatsappLoading ? '...' : ('$' + (whatsappStats.totalCost || 0).toFixed(4))}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+			<h3 class="text-lg font-semibold text-gray-900 mb-3">AI Usage Overview (30 days)</h3>
+			
+			<div class="space-y-3">
+				<div class="space-y-2 bg-gray-50 rounded-lg p-3">
+					<div class="flex justify-between font-medium">
+						<span>Total Cost:</span>
+						<span class="text-green-600">{aiUsageLoading ? '...' : ('$' + (aiUsageStats.totalCost || 0).toFixed(4))}</span>
+					</div>
+					<div class="flex justify-between">
+						<span>Total Tokens:</span>
+						<span>{aiUsageLoading ? '...' : ((aiUsageStats.totalTokens || 0).toLocaleString())}</span>
+					</div>
+					<div class="flex justify-between">
+						<span>Total Requests:</span>
+						<span>{aiUsageLoading ? '...' : (aiUsageStats.recordCount || 0)}</span>
+					</div>
+				</div>
+
+				{#if !aiUsageLoading && aiUsageStats.sources}
+					<div class="space-y-2">
+						<h4 class="font-medium text-gray-700">By Source:</h4>
+						{#each Object.entries(aiUsageStats.sources) as [source, stats]}
+							<div class="flex justify-between text-sm bg-white rounded p-2 border">
+								<span class="capitalize">{source.replace('-', ' ')}:</span>
+								<span>${stats.cost.toFixed(4)} ({stats.count} calls)</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				{#if !aiUsageLoading && aiUsageStats.models}
+					<div class="space-y-2">
+						<h4 class="font-medium text-gray-700">By Model:</h4>
+						{#each Object.entries(aiUsageStats.models) as [model, stats]}
+							<div class="flex justify-between text-sm bg-white rounded p-2 border">
+								<span>{model}:</span>
+								<span>${stats.cost.toFixed(4)} ({stats.count} calls)</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

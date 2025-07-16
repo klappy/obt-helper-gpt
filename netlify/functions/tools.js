@@ -5,10 +5,18 @@ import { join } from "path";
 // Local file storage path
 const LOCAL_STORAGE_PATH = join(process.cwd(), ".netlify", "blobs-local", "tools-data.json");
 
-const store = getStore({
-  name: "obt-helper-tools",
-  consistency: "strong", // Ensures immediate consistency for collaboration
-});
+// Store will be initialized only when needed in production
+let store = null;
+
+function getStoreInstance() {
+  if (!store && !isLocalDevelopment()) {
+    store = getStore({
+      name: "obt-helper-tools",
+      consistency: "strong", // Ensures immediate consistency for collaboration
+    });
+  }
+  return store;
+}
 
 const defaultTools = [
   {
@@ -25,6 +33,45 @@ const defaultTools = [
     orderIndex: 1,
   },
   {
+    id: "social-media-creator",
+    name: "Social Media Content Creator",
+    description: "Create engaging posts, captions, and social media strategies",
+    icon: "📱",
+    systemPrompt:
+      "You are a social media expert who creates viral content. Help users craft engaging posts, write compelling captions, plan content calendars, and develop social media strategies. Focus on current trends, platform-specific best practices, and audience engagement. Always include relevant hashtags and call-to-action suggestions.",
+    model: "gpt-4o",
+    temperature: 0.8,
+    maxTokens: 2000,
+    isActive: true,
+    orderIndex: 2,
+  },
+  {
+    id: "email-assistant",
+    name: "Email Assistant",
+    description: "Draft professional emails, replies, and communication",
+    icon: "📧",
+    systemPrompt:
+      "You are a professional email assistant. Help users draft clear, professional emails for business communication. Adjust tone based on context (formal, casual, sales, support). Provide subject line suggestions and ensure proper email etiquette. Handle follow-ups, meeting requests, and difficult conversations with tact.",
+    model: "gpt-4o",
+    temperature: 0.4,
+    maxTokens: 1500,
+    isActive: true,
+    orderIndex: 3,
+  },
+  {
+    id: "data-analyst",
+    name: "Data Analyst",
+    description: "Analyze data, create insights, and generate reports",
+    icon: "📊",
+    systemPrompt:
+      "You are a data analyst expert. Help users understand their data, identify trends, create visualizations concepts, and generate actionable business insights. Ask clarifying questions about the data context and business goals. Provide statistical analysis, recommendations, and explain findings in plain language.",
+    model: "gpt-4o",
+    temperature: 0.3,
+    maxTokens: 3000,
+    isActive: true,
+    orderIndex: 4,
+  },
+  {
     id: "math-tutor",
     name: "Math Tutor",
     description: "Step-by-step math problem solving",
@@ -35,7 +82,7 @@ const defaultTools = [
     temperature: 0.3,
     maxTokens: 1500,
     isActive: true,
-    orderIndex: 2,
+    orderIndex: 5,
   },
   {
     id: "recipe-helper",
@@ -48,7 +95,7 @@ const defaultTools = [
     temperature: 0.8,
     maxTokens: 2000,
     isActive: true,
-    orderIndex: 3,
+    orderIndex: 6,
   },
   {
     id: "code-helper",
@@ -61,7 +108,7 @@ const defaultTools = [
     temperature: 0.2,
     maxTokens: 3000,
     isActive: true,
-    orderIndex: 4,
+    orderIndex: 7,
   },
   {
     id: "language-buddy",
@@ -74,7 +121,7 @@ const defaultTools = [
     temperature: 0.6,
     maxTokens: 1800,
     isActive: true,
-    orderIndex: 5,
+    orderIndex: 8,
   },
   {
     id: "business-advisor",
@@ -87,7 +134,20 @@ const defaultTools = [
     temperature: 0.4,
     maxTokens: 2500,
     isActive: true,
-    orderIndex: 6,
+    orderIndex: 9,
+  },
+  {
+    id: "travel-planner",
+    name: "Travel Planner",
+    description: "Plan trips, find destinations, and travel advice",
+    icon: "✈️",
+    systemPrompt:
+      "You are a professional travel planner with extensive knowledge of destinations worldwide. Help users plan trips, find accommodations, suggest itineraries, and provide local insights. Consider budget, travel style, and personal preferences. Include practical tips for transportation, dining, and cultural experiences.",
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    maxTokens: 2500,
+    isActive: true,
+    orderIndex: 10,
   },
 ];
 
@@ -208,7 +268,8 @@ async function getAllTools() {
     }
 
     // Use Netlify Blobs in production
-    const toolsData = await store.get("tools-data", { type: "json" });
+    const storeInstance = getStoreInstance();
+    const toolsData = await storeInstance.get("tools-data", { type: "json" });
 
     if (!toolsData) {
       // Initialize with defaults on first access
@@ -243,7 +304,8 @@ async function updateTool(id, updates) {
     console.log("Development mode: saving to local file storage");
     await saveToLocalFile(tools);
   } else {
-    await store.set("tools-data", JSON.stringify(tools));
+    const storeInstance = getStoreInstance();
+    await storeInstance.set("tools-data", JSON.stringify(tools));
   }
 
   return tools[toolIndex];
@@ -266,7 +328,8 @@ async function initializeDefaultTools() {
     console.log("Development mode: initializing local file storage");
     await saveToLocalFile(defaultTools);
   } else {
-    await store.set("tools-data", JSON.stringify(defaultTools));
+    const storeInstance = getStoreInstance();
+    await storeInstance.set("tools-data", JSON.stringify(defaultTools));
   }
 }
 
@@ -275,6 +338,7 @@ async function resetToDefaults() {
     console.log("Development mode: resetting local file storage");
     await saveToLocalFile(defaultTools);
   } else {
-    await store.set("tools-data", JSON.stringify(defaultTools));
+    const storeInstance = getStoreInstance();
+    await storeInstance.set("tools-data", JSON.stringify(defaultTools));
   }
 }
