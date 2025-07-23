@@ -153,12 +153,23 @@ const defaultTools = [
 
 // Check if we're in local development
 function isLocalDevelopment() {
-  // Fixed: Proper environment detection for local vs production
-  return (
-    process.env.NETLIFY_DEV === "true" ||
-    process.env.NODE_ENV === "development" ||
-    !process.env.DEPLOY_URL
-  );
+  // More robust environment detection for Netlify
+  const isNetlifyDev = process.env.NETLIFY_DEV === "true";
+  const isNodeDev = process.env.NODE_ENV === "development";
+  const hasNetlifyContext = process.env.CONTEXT; // Netlify sets this in production
+  const hasNetlifyUrl = process.env.URL; // Netlify also sets this
+
+  // If we're explicitly in Netlify dev mode, it's local
+  if (isNetlifyDev) return true;
+
+  // If we're in Node development mode, it's local
+  if (isNodeDev) return true;
+
+  // If we have Netlify production indicators, it's NOT local
+  if (hasNetlifyContext || hasNetlifyUrl) return false;
+
+  // Fallback: if no Netlify indicators at all, assume local
+  return true;
 }
 
 export default async (request, context) => {

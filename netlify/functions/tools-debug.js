@@ -1,11 +1,23 @@
 import { getStore } from "@netlify/blobs";
 
 function isLocalDevelopment() {
-  return (
-    process.env.NETLIFY_DEV === "true" ||
-    process.env.NODE_ENV === "development" ||
-    !process.env.DEPLOY_URL
-  );
+  // More robust environment detection for Netlify
+  const isNetlifyDev = process.env.NETLIFY_DEV === "true";
+  const isNodeDev = process.env.NODE_ENV === "development";
+  const hasNetlifyContext = process.env.CONTEXT; // Netlify sets this in production
+  const hasNetlifyUrl = process.env.URL; // Netlify also sets this
+
+  // If we're explicitly in Netlify dev mode, it's local
+  if (isNetlifyDev) return true;
+
+  // If we're in Node development mode, it's local
+  if (isNodeDev) return true;
+
+  // If we have Netlify production indicators, it's NOT local
+  if (hasNetlifyContext || hasNetlifyUrl) return false;
+
+  // Fallback: if no Netlify indicators at all, assume local
+  return true;
 }
 
 function getStoreInstance() {
@@ -36,6 +48,9 @@ export default async (request, context) => {
         NETLIFY_DEV: process.env.NETLIFY_DEV,
         NODE_ENV: process.env.NODE_ENV,
         DEPLOY_URL: process.env.DEPLOY_URL ? "SET" : "UNSET",
+        CONTEXT: process.env.CONTEXT ? "SET" : "UNSET",
+        URL: process.env.URL ? "SET" : "UNSET",
+        NETLIFY: process.env.NETLIFY ? "SET" : "UNSET",
         isLocalDevelopment: isLocalDevelopment(),
       },
       storage: {
