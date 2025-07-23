@@ -13,6 +13,7 @@
     "test:integration:headed": "playwright test --headed",
     "test:integration:debug": "playwright test --debug",
     "test:whatsapp-sync": "node scripts/test-whatsapp-sync.js",
+    "test:tool-update": "node scripts/test-tool-update.js",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
