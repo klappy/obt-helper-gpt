@@ -2,8 +2,6 @@
 	import { page } from '$app/stores';
 	import { getToolById, updateTool } from '$lib/stores/tools.js';
 	import { goto } from '$app/navigation';
-	import { sendChatMessage, parseStreamingResponse } from '$lib/utils/openai.js';
-	import { onMount } from 'svelte';
 
 	$: toolId = $page.params.id;
 	$: tool = getToolById(toolId);
@@ -19,7 +17,6 @@
 	let previewMessage = '';
 	let previewResponse = '';
 	let isPreviewLoading = false;
-	let apiKey = '';
 
 	// Initialize edited tool when tool loads (only once)
 	$: if (tool && !isInitialized) {
@@ -34,11 +31,6 @@
 			isDirty = JSON.stringify(editedTool) !== JSON.stringify(tool);
 		}
 	}
-
-	// Get API key
-	onMount(() => {
-		apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-	});
 
 	async function handleSave() {
 		if (!tool || !isDirty) return;
@@ -67,21 +59,29 @@
 	}
 
 	async function handlePreview() {
-		if (!previewMessage.trim() || !apiKey) return;
+		if (!previewMessage.trim()) return;
 		
 		isPreviewLoading = true;
 		previewResponse = '';
 		
 		try {
-			const testMessages = [{
-				role: 'user',
-				content: previewMessage
-			}];
+			const response = await fetch('/.netlify/functions/tool-preview', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					tool: editedTool,
+					message: previewMessage
+				})
+			});
 			
-			const response = await sendChatMessage(testMessages, editedTool, apiKey);
+			const data = await response.json();
 			
-			for await (const chunk of parseStreamingResponse(response)) {
-				previewResponse += chunk;
+			if (data.success) {
+				previewResponse = data.response;
+			} else {
+				previewResponse = `Error: ${data.error}`;
 			}
 		} catch (error) {
 			previewResponse = `Error: ${error.message}`;
@@ -300,17 +300,11 @@
 						
 						<button
 							on:click={handlePreview}
-							disabled={!previewMessage.trim() || isPreviewLoading || !apiKey}
+							disabled={!previewMessage.trim() || isPreviewLoading}
 							class="btn-primary disabled:opacity-50"
 						>
 							{isPreviewLoading ? 'Testing...' : 'Test Prompt'}
 						</button>
-						
-						{#if !apiKey}
-							<div class="text-sm text-yellow-600">
-								⚠️ API key required for preview
-							</div>
-						{/if}
 						
 						{#if previewResponse}
 							<div class="border rounded-lg p-4 bg-gray-50">
