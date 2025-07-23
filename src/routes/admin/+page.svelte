@@ -143,7 +143,7 @@
 		<div class="text-right text-sm text-gray-500">
 			<p>💾 Saved to {browser && window.location.hostname === 'localhost' ? 'Local File Storage' : 'Netlify Blobs'}</p>
 			<p>Last updated: {lastSaved}</p>
-			<p>Version: 1.0.0-beta.1</p>
+			<p>Version: 1.1.0</p>
 			{#if $isLoading}
 				<p class="text-blue-600">🔄 Syncing...</p>
 			{/if}

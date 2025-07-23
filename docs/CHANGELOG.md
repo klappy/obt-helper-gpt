@@ -7,9 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-07-23
+
 ### Added
 
-- Version tracking and changelog system
+- **Secure Email-Based Authentication**: Replace hardcoded "admin123" password with environment-based authentication
+- **Email Whitelist System**: Only specified emails can access admin panel (VITE_ALLOWED_ADMIN_EMAILS)
+- **Tool Persistence Fix**: Fixed tools not saving properly in local development
+- **Session Management**: Proper session persistence across page refreshes
+- **Admin Email Display**: Show logged-in admin email in navigation header
+- **Sync Verification Endpoint**: New `/verify-sync` function to check tool synchronization status
+- **Comprehensive Testing**: Scripts for testing WhatsApp-tool synchronization
+- **Documentation Updates**: Email auth setup guide, Google SSO migration plan, troubleshooting updates
+
+### Changed
+
+- Admin login now requires both email and password (breaking change)
+- Fixed `isLocalDevelopment()` detection for proper local tool storage
+- Improved error messages in admin login form
+- Updated authentication store with email validation
+
+### Security
+
+- Environment-based password storage (VITE_ADMIN_PASSWORD)
+- Email whitelist authorization (VITE_ALLOWED_ADMIN_EMAILS)
+- Removed hardcoded credentials
+- Secure session token management
+
+### Fixed
+
+- Tool edits now persist correctly in development environment
+- WhatsApp integration properly accesses updated tools
+- Storage backend detection for local vs production
+- Admin authentication flow
+
+### Documentation
+
+- Added EMAIL_AUTH_SETUP.md for quick setup guide
+- Added GOOGLE_SSO_IMPLEMENTATION_PLAN.md for future OAuth migration
+- Updated TROUBLESHOOTING.md with persistence issues
+- Added testing and verification scripts
 
 ## [1.0.0-beta.1] - 2025-01-02
 

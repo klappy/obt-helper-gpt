@@ -32,7 +32,7 @@
 		<div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
 			<div class="text-center text-gray-500">
 				<p>&copy; 2025 OBT Helper. Built with SvelteKit and powered by AI.</p>
-				<p class="text-xs mt-2">Version 1.0.0-beta.1</p>
+				<p class="text-xs mt-2">Version 1.1.0</p>
 			</div>
 		</div>
 	</footer>
