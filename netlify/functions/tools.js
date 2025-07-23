@@ -295,6 +295,9 @@ async function getTool(id) {
 }
 
 async function updateTool(id, updates) {
+  console.log(`updateTool called for ${id} with updates:`, updates);
+  console.log(`Environment: isLocalDevelopment=${isLocalDevelopment()}`);
+
   const tools = await getAllTools();
   const toolIndex = tools.findIndex((tool) => tool.id === id);
 
@@ -309,8 +312,23 @@ async function updateTool(id, updates) {
     console.log("Development mode: saving to local file storage");
     await saveToLocalFile(tools);
   } else {
-    const storeInstance = getStoreInstance();
-    await storeInstance.set("tools-data", JSON.stringify(tools));
+    console.log("Production mode: saving to Netlify Blobs");
+    try {
+      const storeInstance = getStoreInstance();
+      const serialized = JSON.stringify(tools);
+      console.log(
+        `Saving ${tools.length} tools to Netlify Blobs, data length: ${serialized.length}`
+      );
+      await storeInstance.set("tools-data", serialized);
+      console.log("Successfully saved to Netlify Blobs");
+
+      // Verify the save worked
+      const verification = await storeInstance.get("tools-data", { type: "json" });
+      console.log(`Verification: retrieved ${verification?.length || 0} tools from storage`);
+    } catch (blobError) {
+      console.error("Error saving to Netlify Blobs:", blobError);
+      throw new Error(`Storage error: ${blobError.message}`);
+    }
   }
 
   return tools[toolIndex];
