@@ -1,13 +1,15 @@
 <script>
-	import { isAdmin, login, logout } from '$lib/stores/auth.js';
+	import { isAdmin, adminEmail, login, logout } from '$lib/stores/auth.js';
 	import { goto } from '$app/navigation';
 	
+	let email = '';
 	let password = '';
 	let loginError = false;
 
 	function handleLogin() {
-		if (login(password)) {
+		if (login(email, password)) {
 			loginError = false;
+			email = '';
 			password = '';
 		} else {
 			loginError = true;
@@ -31,7 +33,7 @@
 						<span class="text-xl font-bold text-gray-900">🛠️ Admin Panel</span>
 					</div>
 					<div class="flex items-center space-x-4">
-						<span class="text-sm text-gray-600">Welcome, Admin</span>
+						<span class="text-sm text-gray-600">Welcome, {$adminEmail}</span>
 						<button on:click={handleLogout} class="btn-secondary">
 							Logout
 						</button>
@@ -54,6 +56,20 @@
 			
 			<form on:submit|preventDefault={handleLogin} class="space-y-4">
 				<div>
+					<label for="email" class="block text-sm font-medium text-gray-700">
+						Email
+					</label>
+					<input
+						type="email"
+						id="email"
+						bind:value={email}
+						class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+						placeholder="your.email@example.com"
+						required
+					/>
+				</div>
+				
+				<div>
 					<label for="password" class="block text-sm font-medium text-gray-700">
 						Password
 					</label>
@@ -62,14 +78,14 @@
 						id="password"
 						bind:value={password}
 						class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-						placeholder="Enter admin password"
+						placeholder="Enter password"
 						required
 					/>
 				</div>
 				
 				{#if loginError}
 					<div class="text-red-600 text-sm">
-						Invalid password. Try "admin123"
+						Invalid email or password. Make sure your email is authorized.
 					</div>
 				{/if}
 				

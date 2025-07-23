@@ -153,9 +153,12 @@ const defaultTools = [
 
 // Check if we're in local development
 function isLocalDevelopment() {
-  // EMERGENCY FIX: Force production mode for demo
-  // TODO: Fix environment detection after demo
-  return false; // Always use Netlify Blobs
+  // Fixed: Proper environment detection for local vs production
+  return (
+    process.env.NETLIFY_DEV === "true" ||
+    process.env.NODE_ENV === "development" ||
+    !process.env.DEPLOY_URL
+  );
 }
 
 export default async (request, context) => {

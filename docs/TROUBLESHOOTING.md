@@ -135,6 +135,42 @@ netlify dev  # Watch for storage errors
 cp .netlify/blobs-local/tools-data.json backup.json
 ```
 
+#### WhatsApp Not Using Updated Tools
+
+**Symptoms**: WhatsApp uses old prompts after admin updates
+**Solutions**:
+
+```bash
+# Test sync status
+npm run test:whatsapp-sync
+
+# Check sync endpoint
+curl http://localhost:8888/.netlify/functions/verify-sync
+
+# Debug storage backend
+# Look for "EMERGENCY FIX" comment in tools.js
+grep -n "EMERGENCY FIX" netlify/functions/tools.js
+```
+
+**Root Causes**:
+
+- Environment detection hardcoded to production mode
+- Storage backend mismatch between dev and prod
+- Caching issues in Netlify Blobs
+
+**Quick Fix**:
+
+```javascript
+// In netlify/functions/tools.js, update:
+function isLocalDevelopment() {
+  return (
+    process.env.NETLIFY_DEV === "true" ||
+    process.env.NODE_ENV === "development" ||
+    !process.env.DEPLOY_URL
+  );
+}
+```
+
 ## Error Messages
 
 ### Function Errors
