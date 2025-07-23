@@ -50,17 +50,15 @@ After making the change:
 3. Test with WhatsApp
 4. Run `npm run test:whatsapp-sync` again
 
-## 📊 How It Works
+## 📊 How It Works (PRD-Aligned)
 
-```
-Admin Panel → Save Tool → Netlify Blobs/Local File
-                              ↓
-                      WhatsApp Function
-                              ↓
-                    getAllTools() from storage
-                              ↓
-                      Use tool prompts
-```
+Admin → Save Tool → Edge Storage
+↓
+WhatsApp Function (with intent inference)
+↓
+Session Linking & Mirroring
+↓
+Use tool with context sync
 
 ## 🐛 Common Issues
 
@@ -70,9 +68,8 @@ Admin Panel → Save Tool → Netlify Blobs/Local File
 
 ## ✅ Success Indicators
 
-- `verify-sync` endpoint shows correct tool count
-- Test script shows "SYNC SUCCESSFUL"
-- WhatsApp responses reflect admin changes immediately
+- Intent switches work
+- Sessions link across web/WA
 
 ## 🚀 Production Deployment
 

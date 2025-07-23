@@ -93,6 +93,16 @@ console.log(`WhatsApp: Loaded ${tools.length} tools from storage`);
 console.log(`Current tool (${session.currentTool}):`, currentTool?.name);
 ```
 
+## PRD Alignment Additions
+
+### Intent Inference
+- Add LLM call in whatsapp.js for tool matching
+- Test: Simulate message, verify switch confirmation
+
+### Web <-> WA Linking
+- Implement code generation and verification
+- Test: Curl sim for phone linking flow
+
 ## Testing Script
 
 Create `scripts/test-whatsapp-sync.js`:
@@ -166,3 +176,6 @@ testSync().catch(console.error);
 - [ ] Update TROUBLESHOOTING.md with sync issues
 - [ ] Add sync status to admin panel
 - [ ] Set up monitoring alerts
+- [ ] Implement intent inference
+- [ ] Add linking mechanisms
+- [ ] Update tests for PRD features

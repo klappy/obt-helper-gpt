@@ -18,72 +18,61 @@
 
 ## Overview
 
-We're rebuilding obthelper.com from a ThingLink-based site to a modern web application. The new version will host AI-powered tools internally instead of redirecting to ChatGPT, with a clean 2025 design and an admin panel for managing system prompts.
+We're building a self-hostable AI-powered WhatsApp Bot Manager Site, enabling admins to deploy and manage AI assistants via web and WhatsApp, without user ChatGPT accounts. It extends the original OBT Helper GPT with PRD-aligned features like episodic memory, cost tracking, and multimodal readiness.
 
 ## Tech Stack
 
-- **Frontend**: SvelteKit (because we want to try something new)
-- **Styling**: Tailwind CSS (for that 2025 polish)
-- **Hosting**: Netlify (with serverless functions)
-- **Database**: Netlify Blobs (simple key-value storage)
-- **AI**: OpenAI API (GPT-4o and GPT-4o-mini)
-- **Auth**: Netlify Identity (for admin access)
-- **Voice**: Web Speech API (Chrome built-in features)
+- **Frontend**: SvelteKit (modern, fast)
+- **Styling**: Tailwind CSS
+- **Hosting**: Netlify (serverless functions) or Cloudflare Workers
+- **Storage**: Netlify Blobs (MVP) with migration to Cloudflare KV
+- **AI**: OpenAI API (GPT-4o family), modular for alternatives
+- **Auth**: Simple password + email/phone verification
+- **Voice**: Web Speech API (with fallbacks)
+- **Testing**: Vitest (unit), Playwright (E2E)
 
 ## Core Features
 
 ### 1. Public-Facing Website
 
-- Modern landing page with tool grid
-- Individual chat interface for each AI tool
-- Voice input/output capabilities
-- Mobile-responsive design
-- No login required for users
+- Homepage with tool grid
+- Sandboxed chat per tool
+- Voice input/output
+- Responsive design
+- Anonymous access
 
 ### 2. AI Tools
 
-Each tool consists of:
+Each tool includes:
 
-- Name and description
-- Icon/emoji
+- Name, description, icon
 - Custom system prompt
-- Model selection (4o or 4o-mini)
-- Temperature and token settings
-
-Example tools might include:
-
-- Creative Writing Assistant
-- Math Tutor
-- Recipe Helper
-- Code Debugger
-- Language Learning Buddy
-- Business Strategy Advisor
+- Model, temperature, max tokens
+- Cost ceilings with downgrade
+- Exportable templates
 
 ### 3. Chat Interface
 
-- Real-time streaming responses
-- Message history (session-based)
-- Copy/export functionality
-- Voice transcription toggle
-- Token usage indicator
-- Clean, minimal design
+- Streaming responses
+- Episodic memory summaries
+- Natural language recall
+- Tool switching warnings
+- Token/cost indicators
 
 ### 4. Admin Panel
 
-- Secure login (Netlify Identity)
-- CRUD operations for tools
-- System prompt editor with preview
-- Model and parameter configuration
-- Tool ordering/organization
-- Usage analytics (optional)
+- Simple auth
+- Tool CRUD with previews
+- Usage analytics and viz
+- Cost management
+- Human overrides
 
-### 5. Voice Features
+### 5. WhatsApp Integration
 
-- Speech-to-text input (Web Speech API)
-- Text-to-speech output (speechSynthesis)
-- Push-to-talk or continuous mode
-- Language selection
-- Fallback for non-Chrome browsers
+- Intent-based tool inference
+- Web <-> WA linking via codes
+- Session syncing
+- Unified bot interface
 
 ## Architecture
 
@@ -186,46 +175,7 @@ netlify/functions/
 
 ## Development Phases
 
-### Phase 1: Foundation (Week 1) ✅ COMPLETED
-
-- [x] Set up SvelteKit project
-- [x] Configure Netlify deployment (local dev with netlify CLI)
-- [x] Implement Netlify Blobs storage (with local file fallback)
-- [x] Create basic landing page
-- [x] Set up Tailwind CSS
-
-### Phase 2: Core Features (Week 2) ✅ COMPLETED
-
-- [x] Build chat interface component
-- [x] Implement OpenAI integration
-- [x] Create Netlify functions
-- [x] Add streaming responses
-- [x] Test with hardcoded tools (6 default tools implemented)
-
-### Phase 3: Admin Panel (Week 3) ✅ COMPLETED
-
-- [x] Set up authentication (simple password-based for now)
-- [x] Build admin routes
-- [x] Create tool management UI
-- [x] Implement CRUD operations
-- [x] Add prompt preview feature (live testing with OpenAI)
-
-### Phase 4: Voice & Polish (Week 4) ✅ COMPLETED
-
-- [x] Integrate Web Speech API
-- [x] Add TTS functionality
-- [x] Improve UI/UX (modern design with proper states)
-- [x] Add loading states
-- [x] Error handling (graceful fallbacks)
-- [x] Mobile optimization (responsive design)
-
-### Phase 5: Launch Prep 🚧 IN PROGRESS
-
-- [ ] Testing across browsers
-- [ ] Performance optimization
-- [ ] Documentation
-- [ ] Set up error tracking
-- [ ] Deploy to production
+See detailed roadmap in docs/ROADMAP.md for phased refactoring to PRD specs.
 
 ## Environment Variables
 
@@ -237,31 +187,25 @@ PUBLIC_SITE_URL=https://obthelper.com
 
 ## Future Enhancements
 
-- Analytics dashboard
-- User accounts (optional)
-- Conversation history
-- Custom voices for TTS
-- Multi-language support
-- Rate limiting
-- Export conversations
-- Prompt templates library
-- A/B testing for prompts
+- Multimodal (image/audio) support
+- Offline capabilities
+- Vendor-agnostic LLM adapters
+- Tool template sharing
+- Real-time cost tracking for users
 
 ## Success Metrics
 
-- Page load time < 2s
-- Time to first AI response < 1s
-- Mobile-friendly score > 95
-- Zero ChatGPT redirects
-- Admin changes reflect instantly
+- Deployment <30min
+- Response <1s
+- Costs <$5/month moderate use
+- 99% uptime
+- Full PRD feature coverage
 
 ## Notes
 
-- Keep the UI simple and clean
-- Focus on speed and reliability
-- Make prompt editing intuitive
-- Ensure voice features degrade gracefully
-- Plan for scale but start simple
+- Align all development to PRD in docs/SELF_HOSTABLE_AI_WHATSAPP_BOT_MANAGER_PRD.md
+- Maintain antifragile, serverless design
+- Document only current implementation
 
 ---
 

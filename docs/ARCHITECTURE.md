@@ -5,18 +5,23 @@
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │                 │     │                  │     │                 │
-│   SvelteKit     │────▶│ Netlify          │────▶│  OpenAI API     │
-│   Frontend      │     │ Functions        │     │  (GPT-4o)       │
+│   SvelteKit     │◀───▶│ Edge Functions   │◀───▶│  LLM Provider   │
+│   Frontend      │     │ (Netlify/Workers)│     │  (OpenAI, etc.) │
 │                 │     │                  │     │                 │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
-         │                       │
-         │                       ▼
-         │              ┌──────────────────┐
+         │                       │                       │
+         │                       ▼                       │
+         │              ┌──────────────────┐             │
+         │              │ Edge Storage     │◀───────────┘
+         │              │ (Blobs/KV/R2)   │
          │              │                  │
-         └─────────────▶│  Netlify Blobs   │
-                        │  (Storage)       │
-                        │                  │
-                        └──────────────────┘
+         └─────────────▶└──────────────────┘
+                        │
+                        ▼
+                 ┌──────────────────┐
+                 │ WhatsApp Webhook │
+                 │ (Twilio, etc.)   │
+                 └──────────────────┘
 ```
 
 ## Key Design Decisions
@@ -29,11 +34,9 @@
 - Easy integration with Netlify
 
 ### 2. Why Netlify Blobs?
-- No external database needed
-- Integrated with Netlify Functions
-- Simple key-value storage perfect for our use case
-- No connection strings or migrations
-- Free with Netlify account
+- Edge-compatible storage
+- Simple KV for configs/summaries
+- Migration path to Cloudflare KV
 
 ### 3. Why Serverless Functions?
 - No server management
@@ -88,15 +91,14 @@
 ## Scalability Considerations
 
 ### Current Design (MVP)
-- Single blob for all tools config
-- In-memory chat sessions
-- Direct OpenAI API calls
+- Edge KV for tools/summaries
+- Browser/edge cache for sessions
+- Modular OpenAI calls
 
 ### Future Scaling Options
-- Move to external database if needed (Supabase)
-- Add Redis for session management
-- Implement caching layer
-- Use OpenAI's batch API for cost savings
+- Auto-downgrade models on costs
+- Service workers for offline
+- Vendor adapters for LLMs
 
 ## Performance Optimizations
 

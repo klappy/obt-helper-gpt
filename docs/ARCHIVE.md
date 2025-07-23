@@ -140,3 +140,9 @@
 ---
 
 _This archive prevents us from repeating these mistakes. Refer to current documentation for working approaches._
+
+### [Current Date] Google SSO and Email Auth Plans
+
+**Replaced by**: PRD's simple password + email/phone auth
+**Why abandoned**: Conflicts with PRD's minimal auth requirements; too complex for single-org toolkit.
+**Key lesson**: Stick to simple auth for antifragile design.
