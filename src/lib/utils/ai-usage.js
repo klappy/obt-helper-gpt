@@ -1,18 +1,29 @@
 import { getStore } from "@netlify/blobs";
-import { promises as fs } from "fs";
-import { join } from "path";
+import { browser } from '$app/environment';
 
-// Issue 1.2.1: Import tiktoken for accurate token counting
+// Issue 1.2.1: Import tiktoken for accurate token counting (server-side only)
 let tiktoken;
-try {
-  // Dynamic import for tiktoken to handle potential import issues
-  tiktoken = await import('tiktoken');
-} catch (error) {
-  console.warn('tiktoken not available, falling back to estimation:', error.message);
+
+// Only import tiktoken on server-side
+async function initializeTiktoken() {
+  if (browser || tiktoken) return tiktoken;
+  
+  try {
+    // Dynamic import for tiktoken to handle potential import issues
+    tiktoken = await import('tiktoken');
+    return tiktoken;
+  } catch (error) {
+    console.warn('tiktoken not available, falling back to estimation:', error.message);
+    return null;
+  }
 }
 
-// Local file storage path
-const LOCAL_STORAGE_PATH = join(process.cwd(), ".netlify", "blobs-local", "ai-usage.json");
+// Local file storage path helper (server-side only)
+function getLocalStoragePath() {
+  if (browser) return null;
+  const { join } = require('path');
+  return join(process.cwd(), ".netlify", "blobs-local", "ai-usage.json");
+}
 
 // Store will be initialized only when needed in production
 let store = null;
@@ -50,14 +61,20 @@ const MODEL_PRICING = {
 };
 
 // Issue 1.2.1: Accurate token counting with tiktoken
-function countTokens(text, model = 'gpt-4o-mini') {
-  if (!tiktoken || !text) {
+async function countTokens(text, model = 'gpt-4o-mini') {
+  if (browser || !text) {
+    // Always use fallback in browser
+    return Math.ceil(text.length * 0.25);
+  }
+
+  const tiktokenModule = await initializeTiktoken();
+  if (!tiktokenModule) {
     // Fallback to rough estimation if tiktoken unavailable
     return Math.ceil(text.length * 0.25);
   }
 
   try {
-    const encoding = tiktoken.encoding_for_model(model);
+    const encoding = tiktokenModule.encoding_for_model(model);
     const tokens = encoding.encode(text);
     encoding.free(); // Free memory
     return tokens.length;
@@ -86,8 +103,8 @@ function calculateCost(promptTokens, responseTokens, model = 'gpt-4o-mini') {
 export async function logAIUsage(toolId, model, prompt, response, userId = 'anonymous', source = 'web') {
   try {
     // Count tokens accurately
-    const promptTokens = countTokens(prompt, model);
-    const responseTokens = countTokens(response, model);
+    const promptTokens = await countTokens(prompt, model);
+    const responseTokens = await countTokens(response, model);
     
     // Calculate precise costs
     const costs = calculateCost(promptTokens, responseTokens, model);
@@ -122,6 +139,14 @@ export async function logAIUsage(toolId, model, prompt, response, userId = 'anon
 }
 
 async function ensureLocalFile() {
+  if (browser) return;
+  
+  const LOCAL_STORAGE_PATH = getLocalStoragePath();
+  if (!LOCAL_STORAGE_PATH) return;
+  
+  const { promises: fs } = require('fs');
+  const { join } = require('path');
+  
   try {
     await fs.access(LOCAL_STORAGE_PATH);
   } catch {
@@ -133,12 +158,27 @@ async function ensureLocalFile() {
 }
 
 async function loadFromLocalFile() {
+  if (browser) return [];
+  
+  const LOCAL_STORAGE_PATH = getLocalStoragePath();
+  if (!LOCAL_STORAGE_PATH) return [];
+  
+  const { promises: fs } = require('fs');
+  
   await ensureLocalFile();
   const data = await fs.readFile(LOCAL_STORAGE_PATH, "utf-8");
   return JSON.parse(data);
 }
 
 async function saveToLocalFile(record) {
+  if (browser) return;
+  
+  const LOCAL_STORAGE_PATH = getLocalStoragePath();
+  if (!LOCAL_STORAGE_PATH) return;
+  
+  const { promises: fs } = require('fs');
+  const { join } = require('path');
+  
   try {
     const existing = await loadFromLocalFile();
     existing.push(record);
