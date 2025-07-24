@@ -24,13 +24,10 @@ export default async (req, context) => {
   }
 
   try {
-    // Handle both string and already-parsed body
+    // Handle both string and already-parsed body - FIXED VERSION
     let bodyData;
-    if (typeof req.body === "string") {
-      bodyData = JSON.parse(req.body);
-    } else {
-      bodyData = req.body;
-    }
+    const bodyText = typeof req.body === "string" ? req.body : await req.text();
+    bodyData = JSON.parse(bodyText);
 
     const { phoneNumber, code, sessionId } = bodyData;
 
@@ -47,9 +44,17 @@ export default async (req, context) => {
       );
     }
 
-    // Get stored code data
+    // Clean phone number to match send-link-code storage key format
+    const cleanPhoneNumber = phoneNumber ? phoneNumber.trim() : "";
+
+    console.log("=== VERIFY CODE DEBUG ===");
+    console.log("Original phoneNumber:", JSON.stringify(phoneNumber));
+    console.log("Cleaned phoneNumber:", JSON.stringify(cleanPhoneNumber));
+    console.log("Looking for key:", `link-code-${cleanPhoneNumber}`);
+
+    // Get stored code data using cleaned phone number
     const codeStore = getCodeStore();
-    const storedDataStr = await codeStore.get(`link-code-${phoneNumber}`);
+    const storedDataStr = await codeStore.get(`link-code-${cleanPhoneNumber}`);
 
     if (!storedDataStr) {
       return new Response(
