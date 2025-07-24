@@ -25,12 +25,8 @@
 	let currentSessionId = `web_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	let linkedWhatsAppSession = null;
 
-	// Get API key from environment or prompt user
-	let apiKey = '';
-	
 	onMount(() => {
-		// Check if API key is available
-		apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+		// No need for client-side API key - using serverless functions
 		
 		// Add welcome message
 		messages = [{
@@ -185,14 +181,9 @@
 		linkingStatus = '';
 	}
 
-	// Real AI response using OpenAI API
+	// Real AI response using serverless function
 	async function sendMessage() {
 		if (!currentMessage.trim() || isLoading) return;
-		
-		if (!apiKey) {
-			alert('Please set your OpenAI API key in the environment variables or enter it below.');
-			return;
-		}
 
 		// Issue 1.1.3: Check for recall query before sending to OpenAI
 		const recallResult = await handleRecallQuery(currentMessage);
@@ -257,8 +248,8 @@
 				body: JSON.stringify({
 					messages,
 					tool,
-					sessionId: currentSessionId,
-					apiKey
+					sessionId: currentSessionId
+					// No API key needed - server has it
 				})
 			});
 			
@@ -303,12 +294,7 @@
 		}
 	}
 
-	function updateApiKey() {
-		const newKey = prompt('Enter your OpenAI API key:');
-		if (newKey) {
-			apiKey = newKey;
-		}
-	}
+	// No longer needed - using serverless functions
 
 	// Voice event handlers
 	function handleTranscript(event) {
@@ -405,11 +391,7 @@
 				</button>
 			{/if}
 
-			{#if !apiKey}
-				<button on:click={updateApiKey} class="btn-secondary text-xs">
-					Set API Key
-				</button>
-			{/if}
+			<!-- API key no longer needed - using serverless functions -->
 		</div>
 	</div>
 
@@ -484,11 +466,7 @@
 
 	<!-- Input Area -->
 	<div class="bg-white border-t p-4">
-		{#if !apiKey}
-			<div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-				⚠️ OpenAI API key required. Click "Set API Key" above or add VITE_OPENAI_API_KEY to your environment.
-			</div>
-		{/if}
+		<!-- No API key warning needed - using serverless functions -->
 		
 		<!-- Issue 1.1.3: Hint about recall functionality -->
 		<div class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
@@ -515,7 +493,7 @@
 			</div>
 			<button
 				on:click={sendMessage}
-				disabled={!currentMessage.trim() || isLoading || !apiKey || $isRecalling}
+				disabled={!currentMessage.trim() || isLoading || $isRecalling}
 				class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{isLoading ? 'Sending...' : $isRecalling ? 'Recalling...' : 'Send'}

@@ -66,14 +66,25 @@ export default async (req, context) => {
   }
 
   try {
-    const { messages, tool, sessionId, apiKey } = JSON.parse(req.body);
+    const { messages, tool, sessionId } = JSON.parse(req.body);
     
     // Validate required fields
-    if (!messages || !tool || !apiKey) {
+    if (!messages || !tool) {
       return new Response(JSON.stringify({ 
-        error: 'Missing required fields (messages, tool, apiKey)' 
+        error: 'Missing required fields (messages, tool)' 
       }), { 
         status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Use server-side API key
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured on server' 
+      }), { 
+        status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
