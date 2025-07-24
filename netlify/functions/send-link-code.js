@@ -1,7 +1,17 @@
 import twilio from 'twilio';
 import { getStore } from "@netlify/blobs";
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// Initialize Twilio client with validation
+let client;
+try {
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    console.error('Missing Twilio credentials');
+  } else {
+    client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  }
+} catch (error) {
+  console.error('Failed to initialize Twilio client:', error);
+}
 
 // Storage for verification codes
 function getStoreInstance() {
@@ -16,6 +26,14 @@ export default async function handler(req, context) {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+
+  // Debug environment variables
+  console.log('Environment check:', {
+    hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasTwilioPhone: !!process.env.TWILIO_PHONE_NUMBER,
+    hasNetlifySiteId: !!process.env.NETLIFY_SITE_ID
+  });
 
   try {
     const { phoneNumber, sessionId, toolId } = JSON.parse(req.body);
@@ -38,6 +56,16 @@ export default async function handler(req, context) {
     };
     
     await store.set(`link-code-${phoneNumber}`, JSON.stringify(codeData));
+    
+    // Check if Twilio client is available
+    if (!client) {
+      return new Response(JSON.stringify({ 
+        error: 'Twilio service unavailable. Please check configuration.' 
+      }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     try {
       // Send via WhatsApp
@@ -69,7 +97,11 @@ Use this code on the website to sync your web chat with WhatsApp! 🚀`
     }
   } catch (error) {
     console.error('Send link code error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { 
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: error.stack
+    }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
