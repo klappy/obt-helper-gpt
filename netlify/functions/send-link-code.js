@@ -104,15 +104,15 @@ export default async (req, context) => {
       expires: Date.now() + 10 * 60 * 1000, // 10 minutes
     };
 
-    await store.set(`link-code-${phoneNumber}`, JSON.stringify(codeData));
+    await store.set(`link-code-${validatedPhoneNumber}`, JSON.stringify(codeData));
 
     // Send verification code via WhatsApp
-    console.log(`Link code generated for ${phoneNumber}: ${code}`);
+    console.log(`Link code generated for ${validatedPhoneNumber}: ${code}`);
 
     try {
       const message = `Your OBT Helper verification code is: ${code}\n\nThis code will expire in 10 minutes.`;
-      await twilioClient.sendMessage(phoneNumber, message);
-      console.log(`Verification code sent via WhatsApp to ${phoneNumber}`);
+      await twilioClient.sendMessage(validatedPhoneNumber, message);
+      console.log(`Verification code sent via WhatsApp to ${validatedPhoneNumber}`);
 
       return new Response(
         JSON.stringify({
