@@ -13,7 +13,7 @@
 **Why This Matters**: PRD requires episodic memory so users can recall past conversations and admins can analyze usage patterns.
 
 ### Issue 1.1.1: Add 30-min timeout logic to `utils/whatsapp-session.js`
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/utils/whatsapp-session.js`
 - **Dependencies**: None
 - **PRD Connection**: Implements session lifecycle from PRD Section "Session Lifecycle and Memory Management"
@@ -43,17 +43,17 @@ function resetSessionTimeout(sessionId, callback) {
 - Test timeout callback triggers
 
 **Validation Criteria**:
-- [ ] Session auto-expires after 30min idle in local dev
-- [ ] Timeout callback gets called with sessionId
-- [ ] New messages reset the timeout counter
-- [ ] Multiple sessions can have independent timeouts
+- [x] Session auto-expires after 30min idle in local dev
+- [x] Timeout callback gets called with sessionId
+- [x] New messages reset the timeout counter
+- [x] Multiple sessions can have independent timeouts
 
 **Success Definition**: Sessions automatically trigger summary generation after 30 minutes of inactivity
 
 ---
 
 ### Issue 1.1.2: Integrate LLM summary generation
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/utils/whatsapp-session.js`, `netlify/functions/chat.js`
 - **Dependencies**: Existing OpenAI integration in `src/lib/utils/openai.js`
 - **PRD Connection**: "LLM-generated summary stored in KV" from Session Management section
@@ -99,17 +99,17 @@ export async function generateSummary(chatHistory) {
 - Test Blobs storage with key format
 
 **Validation Criteria**:
-- [ ] Summary generated when session expires
-- [ ] Summary stored in Blobs with correct key format
-- [ ] Summary is coherent 2-3 sentence text
-- [ ] Failed summaries don't crash session cleanup
+- [x] Summary generated when session expires
+- [x] Summary stored in Blobs with correct key format
+- [x] Summary is coherent 2-3 sentence text
+- [x] Failed summaries don't crash session cleanup
 
 **Success Definition**: Every expired session produces a stored summary accessible for later recall
 
 ---
 
 ### Issue 1.1.3: Implement natural-language recall in `ChatInterface.svelte`
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/components/ChatInterface.svelte`, `src/lib/stores/chat.js`
 - **Dependencies**: Issue 1.1.2 (summary storage)
 - **PRD Connection**: "Query via natural language" from Memory Management
@@ -170,17 +170,17 @@ export async function handleRecallQuery(message) {
 - Test message formatting
 
 **Validation Criteria**:
-- [ ] Typing "recall last chat" shows previous summaries
-- [ ] Non-recall messages go to OpenAI normally
-- [ ] Empty summaries show appropriate message
-- [ ] Summaries display in readable format
+- [x] Typing "recall last chat" shows previous summaries
+- [x] Non-recall messages go to OpenAI normally
+- [x] Empty summaries show appropriate message
+- [x] Summaries display in readable format
 
 **Success Definition**: Users can naturally ask to recall previous conversations and get meaningful responses
 
 ---
 
 ### Issue 1.1.4: Update docs with Memory section
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `docs/ARCHITECTURE.md`
 - **Dependencies**: Issues 1.1.1-1.1.3 complete
 - **PRD Connection**: Documentation of implemented memory system
@@ -217,10 +217,10 @@ Add new section to ARCHITECTURE.md:
 **Testing Requirements**: Manual review of documentation
 
 **Validation Criteria**:
-- [ ] Memory section clearly explains timeout behavior
-- [ ] Recall functionality documented with examples
-- [ ] Storage format specified for future reference
-- [ ] Links to relevant code files included
+- [x] Memory section clearly explains timeout behavior
+- [x] Recall functionality documented with examples
+- [x] Storage format specified for future reference
+- [x] Links to relevant code files included
 
 **Success Definition**: Documentation provides clear understanding of memory implementation for future developers
 

@@ -28,13 +28,29 @@ export default async (request, context) => {
   try {
     // Get query parameters
     const url = new URL(request.url);
-    const days = parseInt(url.searchParams.get("days") || "30");
-    const source = url.searchParams.get("source") || "all";
+    const days = parseInt(url.searchParams.get("days") || "7");
+    const toolId = url.searchParams.get("toolId") || null;
+    
+    // Validate days parameter
+    const validDays = Math.min(Math.max(days, 1), 90); // Limit between 1-90 days
+    
+    console.log(`Getting usage stats for ${validDays} days, toolId: ${toolId || 'all'}`);
 
-    // Get usage statistics
-    const stats = await getUsageStats(days, source);
+    // Get enhanced usage statistics
+    const stats = await getUsageStats(toolId, validDays);
 
-    return new Response(JSON.stringify(stats), {
+    // Add metadata for the response
+    const response = {
+      ...stats,
+      metadata: {
+        requestedDays: validDays,
+        requestedTool: toolId || 'all',
+        generatedAt: new Date().toISOString(),
+        timezone: 'UTC'
+      }
+    };
+
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers,
     });
@@ -44,6 +60,7 @@ export default async (request, context) => {
       JSON.stringify({
         error: "Failed to get usage statistics",
         details: error.message,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
