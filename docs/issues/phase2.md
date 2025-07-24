@@ -512,7 +512,7 @@ Update both files with new sections:
 **Why This Matters**: PRD requires community sharing and easy deployment for maximum platform adoption and ecosystem growth.
 
 ### Issue 2.2.1: Add export JSON button
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/routes/admin/tools/[id]/+page.svelte`
 - **Dependencies**: None
 - **PRD Connection**: "All tools exportable as JSON templates" from Tool Sharing
