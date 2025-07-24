@@ -23,6 +23,9 @@
 	let overrideResponse = '';
 	let showOverrideModal = false;
 	let lastMessageIndex = -1;
+	
+	// Issue 2.2.1: Tool export/import functionality
+	let showImportModal = false;
 
 	// Initialize edited tool when tool loads (only once)
 	$: if (tool && !isInitialized) {
@@ -61,6 +64,55 @@
 		if (tool) {
 			editedTool = { ...tool };
 			isDirty = false;
+		}
+	}
+	
+	// Issue 2.2.1: Export tool as JSON
+	async function exportTool() {
+		// Clean tool data for export
+		const exportData = {
+			name: editedTool.name,
+			description: editedTool.description,
+			icon: editedTool.icon,
+			systemPrompt: editedTool.systemPrompt,
+			model: editedTool.model,
+			temperature: editedTool.temperature,
+			maxTokens: editedTool.maxTokens,
+			costCeiling: editedTool.costCeiling,
+			fallbackModel: editedTool.fallbackModel,
+			// Metadata
+			exportedAt: new Date().toISOString(),
+			exportedBy: 'OBT Helper GPT',
+			version: '1.0',
+			// Don't export: id, createdAt, updatedAt, usage stats
+		};
+		
+		// Create downloadable file
+		const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+			type: 'application/json'
+		});
+		
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${editedTool.name.toLowerCase().replace(/\s+/g, '-')}-tool.json`;
+		a.click();
+		
+		URL.revokeObjectURL(url);
+		
+		// Log export action
+		try {
+			await fetch('/.netlify/functions/log-action', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					action: 'export_tool',
+					toolId: tool.id,
+					toolName: editedTool.name
+				})
+			});
+		} catch (error) {
+			console.log('Could not log export action:', error);
 		}
 	}
 
@@ -195,6 +247,27 @@
 					class="btn-primary disabled:opacity-50"
 				>
 					{isSaving ? 'Saving...' : 'Save Changes'}
+				</button>
+			</div>
+		</div>
+		
+		<!-- Issue 2.2.1: Tool Export/Import Section -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+			<h2 class="text-lg font-semibold text-gray-900 mb-3">Tool Sharing</h2>
+			<p class="text-sm text-gray-600 mb-4">Export this tool as a JSON template to share with others, or import a tool from a JSON file.</p>
+			<div class="flex gap-4">
+				<button 
+					on:click={exportTool}
+					class="btn-secondary flex items-center gap-2"
+				>
+					📄 Export Tool
+				</button>
+				
+				<button 
+					on:click={() => showImportModal = true}
+					class="btn-secondary flex items-center gap-2"
+				>
+					📂 Import Tool
 				</button>
 			</div>
 		</div>
