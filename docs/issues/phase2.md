@@ -343,7 +343,7 @@ export default async function handler(req, context) {
 ---
 
 ### Issue 2.1.3: Enable bidirectional mirroring
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `netlify/functions/whatsapp.js`, `netlify/functions/chat.js`
 - **Dependencies**: Issue 2.1.2 (session linking)
 - **PRD Connection**: "Mirror messages bidirectionally" from Linking Design
