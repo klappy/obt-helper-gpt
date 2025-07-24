@@ -334,8 +334,7 @@ I'm your intelligent AI assistant! I can help you with:
 					webSessionId: currentSessionId,
 					timestamp: Date.now()
 				};
-				localStorage.setItem('whatsapp-link-state', JSON.stringify(linkState));
-				console.log('Saved WhatsApp link state:', linkState);
+							localStorage.setItem('whatsapp-link-state', JSON.stringify(linkState));
 				
 				// Add system message to demo chat
 				const linkMessage = {
@@ -380,7 +379,6 @@ I'm your intelligent AI assistant! I can help you with:
 					if (response.ok) {
 						const syncData = await response.json();
 						if (syncData.messages.length > 0) {
-							console.log(`Received ${syncData.messages.length} synced messages from WhatsApp`);
 							
 							// Add synced messages to demo chat
 							syncData.messages.forEach(msg => {
@@ -417,7 +415,6 @@ I'm your intelligent AI assistant! I can help you with:
 	
 	onMount(async () => {
 		currentSessionId = `demo_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-		console.log('Demo session ID:', currentSessionId);
 		
 		// Load tools
 		const availableTools = await getActiveTools();
@@ -541,9 +538,8 @@ I'm your intelligent AI assistant! I can help you with:
 							linkedWhatsAppSession = null;
 							linkingStep = 'phone';
 							
-							// Clear localStorage
-							localStorage.removeItem('whatsapp-link-state');
-							console.log('Cleared WhatsApp link state');
+										// Clear localStorage
+			localStorage.removeItem('whatsapp-link-state');
 							
 							// Stop polling
 							if (syncInterval) {
