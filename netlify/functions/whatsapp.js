@@ -4,24 +4,23 @@ import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 import { sendChatMessage } from "../../src/lib/utils/openai.js";
 import { getAllTools } from "./tools.js";
-import { getStore } from "@netlify/blobs";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Storage instances for mirroring
 function getSessionStore() {
   return getStore({
-    name: "obt-helper-sessions", 
+    name: "obt-helper-sessions",
     consistency: "strong",
-    siteID: process.env.NETLIFY_SITE_ID || 'local'
+    siteID: process.env.NETLIFY_SITE_ID || "local",
   });
 }
 
 function getSyncStore() {
   return getStore({
-    name: "obt-helper-sync", 
+    name: "obt-helper-sync",
     consistency: "strong",
-    siteID: process.env.NETLIFY_SITE_ID || 'local'
+    siteID: process.env.NETLIFY_SITE_ID || "local",
   });
 }
 
@@ -32,7 +31,7 @@ async function getLinkedWebSession(whatsappSessionId) {
     const linkDataStr = await sessionStore.get(`whatsapp-to-web-${whatsappSessionId}`);
     return linkDataStr ? JSON.parse(linkDataStr) : null;
   } catch (error) {
-    console.error('Error getting linked web session:', error);
+    console.error("Error getting linked web session:", error);
     return null;
   }
 }
@@ -42,25 +41,24 @@ async function mirrorToWeb(linkedSession, userMessage, aiResponse) {
   try {
     const syncStore = getSyncStore();
     const syncData = {
-      direction: 'whatsapp-to-web',
+      direction: "whatsapp-to-web",
       webSessionId: linkedSession.webSessionId,
       userMessage,
       aiResponse,
       tool: linkedSession.toolId,
       timestamp: Date.now(),
-      phoneNumber: linkedSession.phoneNumber
+      phoneNumber: linkedSession.phoneNumber,
     };
-    
+
     console.log(`Would mirror to Web ${linkedSession.webSessionId}:`, {
-      user: userMessage.substring(0, 50) + '...',
-      ai: aiResponse.substring(0, 50) + '...'
+      user: userMessage.substring(0, 50) + "...",
+      ai: aiResponse.substring(0, 50) + "...",
     });
-    
+
     // Store for web client to poll
     await syncStore.set(`whatsapp-mirror-${Date.now()}`, JSON.stringify(syncData));
-    
   } catch (error) {
-    console.error('Error mirroring to web:', error);
+    console.error("Error mirroring to web:", error);
   }
 }
 
@@ -68,23 +66,22 @@ async function mirrorToWeb(linkedSession, userMessage, aiResponse) {
 async function inferToolFromMessage(message, currentTool) {
   try {
     const tools = await getAllTools();
-    
+
     // Create tool descriptions for the LLM
-    const toolDescriptions = tools.map(t => 
-      `${t.id}: ${t.name} - ${t.description}`
-    ).join('\n');
-    
+    const toolDescriptions = tools.map((t) => `${t.id}: ${t.name} - ${t.description}`).join("\n");
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Cheaper model for classification
-        messages: [{
-          role: 'system',
-          content: `You are a tool classifier for an AI assistant platform. Given a user message and available tools, suggest the BEST tool ID or return "none" if the current tool is fine.
+        model: "gpt-4o-mini", // Cheaper model for classification
+        messages: [
+          {
+            role: "system",
+            content: `You are a tool classifier for an AI assistant platform. Given a user message and available tools, suggest the BEST tool ID or return "none" if the current tool is fine.
 
 Available tools:
 ${toolDescriptions}
@@ -95,13 +92,15 @@ Rules:
 - Only suggest a switch if the new tool is CLEARLY better for this specific message
 - Return ONLY the tool ID (e.g. "creative-writing") or "none"
 - Be conservative - don't switch unless the message obviously needs a different tool
-- Consider the context: if someone is mid-conversation, prefer keeping the current tool unless very obvious switch needed`
-        }, {
-          role: 'user',
-          content: `Message: "${message}"`
-        }],
+- Consider the context: if someone is mid-conversation, prefer keeping the current tool unless very obvious switch needed`,
+          },
+          {
+            role: "user",
+            content: `Message: "${message}"`,
+          },
+        ],
         max_tokens: 50,
-        temperature: 0.1 // Low temperature for consistent classification
+        temperature: 0.1, // Low temperature for consistent classification
       }),
     });
 
@@ -112,10 +111,10 @@ Rules:
 
     const data = await response.json();
     const suggestion = data.choices?.[0]?.message?.content?.trim();
-    
-    console.log(`Intent inference: "${message}" -> suggested tool: ${suggestion || 'none'}`);
-    
-    return suggestion === 'none' ? null : suggestion;
+
+    console.log(`Intent inference: "${message}" -> suggested tool: ${suggestion || "none"}`);
+
+    return suggestion === "none" ? null : suggestion;
   } catch (error) {
     console.error("Intent inference failed:", error);
     return null; // Graceful fallback - no tool switch
@@ -311,9 +310,9 @@ export default async (req, context) => {
       if (aiData.choices && aiData.choices[0]) {
         responseText = aiData.choices[0].message.content;
         console.log("AI response length:", responseText.length);
-        
+
         // Issue 2.1.3: Mirror to linked web session if exists
-        const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, '')}`;
+        const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, "")}`;
         const linkedSession = await getLinkedWebSession(whatsappSessionId);
         if (linkedSession) {
           console.log(`Mirroring WhatsApp message to web session ${linkedSession.webSessionId}`);
@@ -332,16 +331,16 @@ export default async (req, context) => {
 
     // Handle pending tool switch confirmations first
     if (session.pendingSwitch) {
-      if (lowerMessage.includes('yes') || lowerMessage.includes('y')) {
+      if (lowerMessage.includes("yes") || lowerMessage.includes("y")) {
         // User confirmed switch
         const tools = await getAllTools();
-        const toolInfo = tools.find(t => t.id === session.pendingSwitch.to);
+        const toolInfo = tools.find((t) => t.id === session.pendingSwitch.to);
         session.currentTool = session.pendingSwitch.to;
-        
+
         // Process original message with new tool
         const originalMessage = session.pendingSwitch.originalMessage;
         session.pendingSwitch = null;
-        
+
         // Regenerate AI response with new tool
         const messages = [
           { role: "system", content: toolInfo.systemPrompt },
@@ -357,9 +356,9 @@ export default async (req, context) => {
           const aiData = await aiResponse.json();
           const aiContent = aiData.choices[0].message.content;
           responseText = `✅ *Switched to ${toolInfo.name}*\n\n${aiContent}`;
-          
+
           // Issue 2.1.3: Mirror tool switch to linked web session
-          const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, '')}`;
+          const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, "")}`;
           const linkedSession = await getLinkedWebSession(whatsappSessionId);
           if (linkedSession) {
             console.log(`Mirroring tool switch to web session ${linkedSession.webSessionId}`);
@@ -369,14 +368,15 @@ export default async (req, context) => {
           console.error("AI generation after switch failed:", error);
           responseText = `✅ *Switched to ${toolInfo.name}*\n\nHow can I help you?`;
         }
-      } else if (lowerMessage.includes('no') || lowerMessage.includes('n')) {
+      } else if (lowerMessage.includes("no") || lowerMessage.includes("n")) {
         // User declined switch
         const currentToolName = session.currentTool;
         session.pendingSwitch = null;
         responseText = `👍 Staying with ${currentToolName}. How can I help?`;
       } else {
         // Unclear response, ask again
-        responseText = "Please reply *YES* to switch tools or *NO* to continue with the current tool.";
+        responseText =
+          "Please reply *YES* to switch tools or *NO* to continue with the current tool.";
       }
     } else {
       // Check for help requests and capability questions
@@ -417,22 +417,22 @@ export default async (req, context) => {
         // Issue 2.1.1: Use LLM to intelligently infer best tool for message
         try {
           const suggestedTool = await inferToolFromMessage(messageBody, session.currentTool);
-          
+
           if (suggestedTool && suggestedTool !== session.currentTool) {
             // LLM suggests a different tool - ask for confirmation
             const tools = await getAllTools();
-            const toolInfo = tools.find(t => t.id === suggestedTool);
-            
+            const toolInfo = tools.find((t) => t.id === suggestedTool);
+
             if (toolInfo) {
               console.log(`LLM suggests switching from ${session.currentTool} to ${suggestedTool}`);
-              
+
               // Store pending switch with original message
               session.pendingSwitch = {
                 to: suggestedTool,
                 originalMessage: messageBody,
-                timestamp: Date.now()
+                timestamp: Date.now(),
               };
-              
+
               responseText = `🤔 I think *${toolInfo.name}* would be better for this request.\n\n*Switch tools?*\n\n✅ Reply *YES* to switch\n❌ Reply *NO* to continue with ${session.currentTool}`;
             }
           }
@@ -443,8 +443,6 @@ export default async (req, context) => {
         }
       }
     }
-
-
 
     // Add assistant response to conversation history
     session.conversationHistory.push({
