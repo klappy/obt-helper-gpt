@@ -1,6 +1,7 @@
 // @ts-check
 
 import { getStore } from "@netlify/blobs";
+import { getTodayCostForTool } from "./ai-usage.js";
 
 /**
  * @typedef {Object} Message
@@ -14,6 +15,8 @@ import { getStore } from "@netlify/blobs";
  * @property {string} model
  * @property {number} temperature
  * @property {number} maxTokens
+ * @property {number} costCeiling
+ * @property {string} fallbackModel
  */
 
 // Store instance for summaries
@@ -29,6 +32,52 @@ function getSummaryStore() {
   return summaryStore;
 }
 
+// Issue 1.2.3: Get tool configuration from storage
+async function getTool(toolId) {
+  try {
+    // This would typically fetch from the same store as tools.js
+    // For now, we'll need to implement a way to access tool configs
+    const { getAllTools } = await import('../stores/tools.js');
+    const tools = getAllTools();
+    return tools.find(t => t.id === toolId);
+  } catch (error) {
+    console.error(`Error getting tool ${toolId}:`, error);
+    return null;
+  }
+}
+
+// Issue 1.2.3: Select appropriate model based on cost ceiling
+export async function selectModelForTool(toolId, originalModel) {
+  try {
+    const todayCost = await getTodayCostForTool(toolId);
+    const tool = await getTool(toolId);
+    
+    if (!tool) {
+      console.warn(`Tool ${toolId} not found, using original model ${originalModel}`);
+      return originalModel;
+    }
+    
+    // Check if cost ceiling is set and exceeded
+    if (tool.costCeiling && tool.costCeiling > 0 && todayCost >= tool.costCeiling) {
+      console.log(`Cost ceiling hit for ${toolId}: $${todayCost} >= $${tool.costCeiling}`);
+      
+      if (tool.fallbackModel) {
+        console.log(`Downgrading from ${originalModel} to ${tool.fallbackModel}`);
+        return tool.fallbackModel;
+      } else {
+        console.log(`No fallback model configured for ${toolId}, tool disabled`);
+        throw new Error(`Tool ${toolId} has exceeded its daily cost limit of $${tool.costCeiling}`);
+      }
+    }
+    
+    return originalModel;
+  } catch (error) {
+    console.error(`Error selecting model for tool ${toolId}:`, error);
+    // Fail gracefully - return original model
+    return originalModel;
+  }
+}
+
 /**
  * Send a chat message to OpenAI API
  * @param {Message[]} messages
@@ -38,6 +87,9 @@ function getSummaryStore() {
  */
 export async function sendChatMessage(messages, tool, apiKey) {
   try {
+    // Issue 1.2.3: Apply cost ceiling check and model selection
+    const selectedModel = await selectModelForTool(tool.id, tool.model);
+    
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -45,7 +97,7 @@ export async function sendChatMessage(messages, tool, apiKey) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: tool.model || "gpt-4o-mini",
+        model: selectedModel, // Use selected model instead of tool.model
         messages: [
           {
             role: "system",

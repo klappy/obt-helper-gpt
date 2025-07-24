@@ -242,6 +242,72 @@
 							</div>
 						</div>
 						
+						<!-- Issue 1.2.3: Cost Ceiling Controls -->
+						<div class="border-t pt-4">
+							<h3 class="text-lg font-medium text-gray-900 mb-3">Cost Control</h3>
+							<div class="space-y-4">
+								<div class="grid grid-cols-2 gap-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">
+											Daily Cost Ceiling ($)
+										</label>
+										<input
+											type="number"
+											min="0"
+											max="10"
+											step="0.01"
+											bind:value={editedTool.costCeiling}
+											on:input={markDirty}
+											placeholder="e.g., 0.50"
+											class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+										/>
+										<p class="text-xs text-gray-500 mt-1">
+											Auto-downgrade to cheaper model when exceeded
+										</p>
+									</div>
+									
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">
+											Fallback Model
+										</label>
+										<select
+											bind:value={editedTool.fallbackModel}
+											on:change={markDirty}
+											class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+										>
+											<option value="">No fallback (disable tool)</option>
+											<option value="gpt-4o-mini">GPT-4o Mini (Cheaper)</option>
+											<option value="gpt-3.5-turbo">GPT-3.5 Turbo (Cheapest)</option>
+										</select>
+										<p class="text-xs text-gray-500 mt-1">
+											Model to use when cost ceiling is hit
+										</p>
+									</div>
+								</div>
+								
+								{#if editedTool.costCeiling && editedTool.costCeiling > 0}
+									<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+										<div class="flex items-start space-x-2">
+											<div class="text-blue-600">💡</div>
+											<div class="text-sm text-blue-800">
+												<p class="font-medium">Cost Ceiling Active</p>
+												<p>When daily usage exceeds ${editedTool.costCeiling}, this tool will {editedTool.fallbackModel ? `switch to ${editedTool.fallbackModel}` : 'be disabled'} until the next day.</p>
+												<p class="mt-1 text-blue-600">Current model pricing: 
+													{#if editedTool.model === 'gpt-4o'}
+														~$0.06/1K tokens
+													{:else if editedTool.model === 'gpt-4o-mini'}
+														~$0.0006/1K tokens
+													{:else}
+														~$0.002/1K tokens
+													{/if}
+												</p>
+											</div>
+										</div>
+									</div>
+								{/if}
+							</div>
+						</div>
+						
 						<div>
 							<label class="flex items-center space-x-2">
 								<input
@@ -250,7 +316,7 @@
 									on:change={markDirty}
 									class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
 								/>
-								<span class="text-sm font-medium text-gray-700">Tool is active</span>
+								<span class="text-sm text-gray-700">Tool is active and available to users</span>
 							</label>
 						</div>
 					</div>
