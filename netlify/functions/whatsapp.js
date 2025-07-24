@@ -2,10 +2,68 @@ import twilioClient from "../../src/lib/utils/twilio.js";
 // Using direct Netlify Blobs storage instead of utility
 import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
-import { sendChatMessage, inferToolFromMessage } from "../../src/lib/utils/openai.js";
+import { sendChatMessage } from "../../src/lib/utils/openai.js";
 import { getAllTools } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Issue 2.1.1: Intelligent tool inference using LLM (server-side function)
+async function inferToolFromMessage(message, currentTool) {
+  try {
+    const tools = await getAllTools();
+    
+    // Create tool descriptions for the LLM
+    const toolDescriptions = tools.map(t => 
+      `${t.id}: ${t.name} - ${t.description}`
+    ).join('\n');
+    
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini', // Cheaper model for classification
+        messages: [{
+          role: 'system',
+          content: `You are a tool classifier for an AI assistant platform. Given a user message and available tools, suggest the BEST tool ID or return "none" if the current tool is fine.
+
+Available tools:
+${toolDescriptions}
+
+Current tool: ${currentTool}
+
+Rules:
+- Only suggest a switch if the new tool is CLEARLY better for this specific message
+- Return ONLY the tool ID (e.g. "creative-writing") or "none"
+- Be conservative - don't switch unless the message obviously needs a different tool
+- Consider the context: if someone is mid-conversation, prefer keeping the current tool unless very obvious switch needed`
+        }, {
+          role: 'user',
+          content: `Message: "${message}"`
+        }],
+        max_tokens: 50,
+        temperature: 0.1 // Low temperature for consistent classification
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Intent inference API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const suggestion = data.choices?.[0]?.message?.content?.trim();
+    
+    console.log(`Intent inference: "${message}" -> suggested tool: ${suggestion || 'none'}`);
+    
+    return suggestion === 'none' ? null : suggestion;
+  } catch (error) {
+    console.error("Intent inference failed:", error);
+    return null; // Graceful fallback - no tool switch
+  }
+}
 
 // Storage functions that match the admin dashboard
 function getStoreInstance() {
@@ -284,7 +342,7 @@ export default async (req, context) => {
       } else {
         // Issue 2.1.1: Use LLM to intelligently infer best tool for message
         try {
-          const suggestedTool = await inferToolFromMessage(messageBody, session.currentTool, OPENAI_API_KEY);
+          const suggestedTool = await inferToolFromMessage(messageBody, session.currentTool);
           
           if (suggestedTool && suggestedTool !== session.currentTool) {
             // LLM suggests a different tool - ask for confirmation
