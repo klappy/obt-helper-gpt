@@ -567,7 +567,7 @@ onMount(() => {
 
 ### Issue 3.1.4: Update architecture docs with stubs
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `docs/ARCHITECTURE.md`
 - **Dependencies**: Issues 3.1.1-3.1.3 complete
 - **PRD Connection**: Documentation of multimodal/offline architecture
