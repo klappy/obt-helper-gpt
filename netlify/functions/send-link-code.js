@@ -25,14 +25,8 @@ export default async (req, context) => {
 
     const { phoneNumber, sessionId, toolId } = bodyData;
 
-    // Debug logging to see what we're actually receiving
-    console.log("Received phoneNumber:", JSON.stringify(phoneNumber));
-    console.log("phoneNumber type:", typeof phoneNumber);
-    console.log("phoneNumber length:", phoneNumber ? phoneNumber.length : "undefined");
-
     // Validate phone number format (basic validation)
     if (!phoneNumber || !phoneNumber.match(/^\+\d{10,15}$/)) {
-      console.log("Phone validation failed for:", phoneNumber);
       return new Response(
         JSON.stringify({
           error: "Invalid phone number format. Use +1234567890",

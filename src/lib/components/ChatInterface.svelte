@@ -103,19 +103,6 @@
 	// WhatsApp linking functions
 	async function sendLinkingCode() {
 		try {
-			// Very prominent debugging
-			alert(`Frontend Debug: phoneNumber = "${phoneNumber}" (type: ${typeof phoneNumber})`);
-			console.log('=== FRONTEND DEBUG START ===');
-			console.log('Frontend phoneNumber:', phoneNumber);
-			console.log('Frontend phoneNumber type:', typeof phoneNumber);
-			console.log('Frontend phoneNumber length:', phoneNumber ? phoneNumber.length : 'no length');
-			console.log('About to send:', { 
-				phoneNumber,
-				sessionId: currentSessionId,
-				toolId: tool.id
-			});
-			console.log('=== FRONTEND DEBUG END ===');
-			
 			linkingStatus = 'Sending code...';
 			const response = await fetch('/.netlify/functions/send-link-code', {
 				method: 'POST',
@@ -546,7 +533,6 @@
 							type="tel"
 							bind:value={phoneNumber}
 							on:input={(e) => {
-								alert(`Input changed: "${e.target.value}" -> phoneNumber var: "${phoneNumber}"`);
 								console.log('Phone input changed:', e.target.value);
 								console.log('phoneNumber variable:', phoneNumber);
 							}}
