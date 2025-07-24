@@ -471,7 +471,7 @@ onMount(() => {
 ---
 
 ### Issue 2.1.4: Update WhatsApp docs
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `docs/WHATSAPP_TOOL_SYNC_PLAN.md`, `docs/WHATSAPP_SYNC_SUMMARY.md`
 - **Dependencies**: Issues 2.1.1-2.1.3 complete
 - **PRD Connection**: Documentation of implemented features
@@ -599,7 +599,7 @@ Update both files with new sections:
 ---
 
 ### Issue 2.2.2: Add import JSON form with validation
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/routes/admin/tools/+page.svelte`
 - **Dependencies**: Issue 2.2.1 (export format)
 - **PRD Connection**: "Import between instances" from Tool Sharing
@@ -760,7 +760,7 @@ Update both files with new sections:
 ---
 
 ### Issue 2.2.3: Add one-click deploy docs/buttons
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `docs/DEPLOYMENT.md`
 - **Dependencies**: None
 - **PRD Connection**: "One-click buttons for Netlify/Cloudflare" from Deployment
@@ -868,7 +868,7 @@ netlify deploy --prod  # or your preferred deployment method
 ---
 
 ### Issue 2.2.4: Update README with forking guidance
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `README.md`
 - **Dependencies**: Issue 2.2.3 (deployment docs)
 - **PRD Connection**: "Forkable by default" from Tool Sharing
@@ -974,12 +974,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 ---
 
 ## Closing Criteria for Epic 2
-- [ ] All eight issues marked ☑ Closed
-- [ ] Version bumped to 3.1.0 after Step 2.1 completion
-- [ ] Version bumped to 3.2.0 after Step 2.2 completion
-- [ ] All features validated in production environment
-- [ ] WhatsApp intent switching works reliably
-- [ ] Session linking and mirroring functional
-- [ ] Tool export/import tested with real examples
+- [x] All eight issues marked ☑ Closed
+- [x] Version bumped to 3.1.0 after Step 2.1 completion  
+- [x] Version bumped to 3.2.0 after Step 2.2 completion
+- [x] All features validated in production environment
+- [x] WhatsApp intent switching works reliably
+- [x] Session linking and mirroring functional
+- [x] Tool export/import tested with real examples
 
 **Epic Success Definition**: Platform enables intelligent cross-platform AI interactions and community-driven tool sharing, positioning it as a forkable, self-hostable alternative to proprietary AI services.
