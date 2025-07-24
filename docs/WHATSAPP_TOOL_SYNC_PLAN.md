@@ -1,10 +1,24 @@
 # WhatsApp Tool Synchronization Testing & Fix Plan
 
-## Current Issues
+## ✅ Implemented Features (Phase 2.1)
 
-1. **Environment Detection Bug**: The `isLocalDevelopment()` function is hard-coded to return `false`
-2. **No Verification**: No way to verify tools are syncing between admin and WhatsApp
-3. **Missing Tests**: No integration tests for the save → WhatsApp flow
+### Intent-Based Tool Switching
+- **LLM Analysis**: Incoming WhatsApp messages analyzed for tool relevance using GPT-4o-mini
+- **User Confirmation**: Automatic tool switching requires user confirmation via YES/NO response
+- **Context Preservation**: Conversation context maintained across tool switches
+- **Fallback Behavior**: Continues with current tool if switching fails or user declines
+
+### Session Linking & Bidirectional Mirroring
+- **6-Digit Codes**: Secure verification codes generated and sent via WhatsApp
+- **10-Minute Expiry**: Time-limited codes for security (stored in Netlify Blobs)
+- **Web ↔ WhatsApp Sync**: Messages mirror bidirectionally between web chat and WhatsApp
+- **Visual Indicators**: Clear UI showing when sessions are linked and synced
+
+## Legacy Issues (Resolved)
+
+1. ~~**Environment Detection Bug**: The `isLocalDevelopment()` function is hard-coded to return `false`~~ ✅ Fixed
+2. ~~**No Verification**: No way to verify tools are syncing between admin and WhatsApp~~ ✅ Added session linking
+3. ~~**Missing Tests**: No integration tests for the save → WhatsApp flow~~ ✅ Added comprehensive testing
 
 ## Testing Checklist
 
@@ -15,18 +29,32 @@
 rm -rf .svelte-kit build .netlify
 netlify dev
 
-# 2. Create test scenario
+# 2. Basic Tool Sync Test (Legacy)
 # - Open admin panel (http://localhost:8888/admin)
 # - Edit "Creative Writing Assistant" system prompt
 # - Add unique identifier: "TEST_MARKER_12345"
 # - Save changes
 
-# 3. Test WhatsApp integration
-# Use curl to simulate WhatsApp webhook
+# 3. Test basic WhatsApp integration
 curl -X POST http://localhost:8888/.netlify/functions/whatsapp \
   -d "From=whatsapp:+1234567890&Body=Write me a story"
 
-# 4. Verify response contains updated prompt behavior
+# 4. Test Intent-Based Tool Switching
+curl -X POST http://localhost:8888/.netlify/functions/whatsapp \
+  -d "From=whatsapp:+1234567890&Body=Help me with math homework"
+# Expected: Tool switch suggestion and confirmation prompt
+
+# 5. Test Session Linking
+curl -X POST http://localhost:8888/.netlify/functions/send-link-code \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"+1234567890","sessionId":"test-session"}'
+# Expected: 6-digit code stored in Blobs
+
+# 6. Test Code Verification
+curl -X POST http://localhost:8888/.netlify/functions/verify-link-code \
+  -H "Content-Type: application/json" \
+  -d '{"code":"123456","sessionId":"test-session"}'
+# Expected: Session linked successfully
 ```
 
 ### Production Testing
