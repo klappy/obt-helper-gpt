@@ -43,6 +43,47 @@
 		
 		// Start polling for synced messages if session is linked
 		startSyncPolling();
+		
+		// Issue 3.1.2: Sync chat sessions with service worker for offline access
+		function saveChatSession() {
+			if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+				navigator.serviceWorker.controller.postMessage({
+					type: "SAVE_CHAT_SESSION",
+					payload: {
+						sessionId: currentSessionId,
+						messages: $messages,
+					},
+				});
+			}
+		}
+		
+		// Save on message changes
+		const unsubscribe = messages.subscribe(saveChatSession);
+		
+		// Check online status and show indicators
+		let isOnline = navigator.onLine;
+		
+		function updateOnlineStatus() {
+			isOnline = navigator.onLine;
+			if (isOnline) {
+				// Sync offline messages when back online
+				syncOfflineMessages();
+			}
+		}
+		
+		function syncOfflineMessages() {
+			// TODO: Implement sync logic when back online
+			console.log("🔄 Syncing offline messages...");
+		}
+		
+		window.addEventListener("online", updateOnlineStatus);
+		window.addEventListener("offline", updateOnlineStatus);
+		
+		return () => {
+			unsubscribe();
+			window.removeEventListener("online", updateOnlineStatus);
+			window.removeEventListener("offline", updateOnlineStatus);
+		};
 	});
 	
 	// Issue 2.1.3: Poll for messages synced from WhatsApp
