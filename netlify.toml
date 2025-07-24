@@ -9,18 +9,14 @@
 [functions]
   # Increase timeout for AI API calls
   timeout = 30
-  # Enable experimental features
-  experimental_functions_config = true
 
 # Redirect rules for SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  conditions = {Role = ["admin"]}
 
-# API redirects
+# API redirects  
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
