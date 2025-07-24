@@ -3,14 +3,18 @@ import { getStore } from "@netlify/blobs";
 
 // Initialize Twilio client with validation
 let client;
+let twilioInitError = null;
 try {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-    console.error('Missing Twilio credentials');
+    twilioInitError = 'Missing Twilio credentials (TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN)';
+    console.error(twilioInitError);
   } else {
     client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    console.log('Twilio client initialized successfully');
   }
 } catch (error) {
-  console.error('Failed to initialize Twilio client:', error);
+  twilioInitError = `Failed to initialize Twilio client: ${error.message}`;
+  console.error(twilioInitError);
 }
 
 // Storage for verification codes
@@ -60,7 +64,13 @@ export default async function handler(req, context) {
     // Check if Twilio client is available
     if (!client) {
       return new Response(JSON.stringify({ 
-        error: 'Twilio service unavailable. Please check configuration.' 
+        error: 'Twilio service unavailable',
+        details: twilioInitError || 'Twilio client not initialized',
+        envCheck: {
+          hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+          hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
+          hasTwilioPhone: !!process.env.TWILIO_PHONE_NUMBER
+        }
       }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
