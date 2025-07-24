@@ -2,30 +2,19 @@
   command = "npm run build"
   functions = "netlify/functions"
   publish = "build"
-  
+
 [build.environment]
   NODE_VERSION = "18"
 
 [functions]
-  # Increase timeout for AI API calls
   timeout = 30
 
-# Redirect rules for SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# API redirects  
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
-  status = 200
-
-# Environment variables template for one-click deploy
-[template.environment]
-  OPENAI_API_KEY = "Your OpenAI API key (sk-...)"
-  VITE_ADMIN_PASSWORD = "Secure password for admin access"
-  TWILIO_ACCOUNT_SID = "Twilio Account SID (optional, for WhatsApp)"
-  TWILIO_AUTH_TOKEN = "Twilio Auth Token (optional, for WhatsApp)"
-  TWILIO_WHATSAPP_NUMBER = "Twilio WhatsApp number like +15551234567 (optional)" 
+  status = 200 
