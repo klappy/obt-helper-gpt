@@ -26,7 +26,7 @@ function getStoreInstance() {
   });
 }
 
-export default async function handler(req, context) {
+export default async (req, context) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }

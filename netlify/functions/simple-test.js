@@ -1,4 +1,4 @@
-export default async function handler(req, context) {
+export default async (req, context) => {
   console.log('Simple test function starting');
   
   return new Response(JSON.stringify({
