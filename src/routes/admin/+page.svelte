@@ -15,6 +15,10 @@
 	let lastSaved = '';
 	let isResetting = false;
 	let isImporting = false;
+	
+	// Issue 2.2.2: Enhanced import with file upload and validation
+	let importPreview = null;
+	let importError = null;
 
 	// WhatsApp stats
 	let whatsappStats = {};
@@ -343,6 +347,63 @@
 		}
 	}
 
+	// Issue 2.2.2: Enhanced file upload handling
+	function handleFileSelect(event) {
+		const file = event.target.files[0];
+		if (!file) return;
+		
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			try {
+				const data = JSON.parse(e.target.result);
+				const validation = validateImportData(data);
+				
+				if (validation.valid) {
+					importPreview = data;
+					importError = null;
+					importData = e.target.result; // Set the text data for the existing function
+				} else {
+					importPreview = null;
+					importError = validation.error;
+					importData = '';
+				}
+			} catch (error) {
+				importPreview = null;
+				importError = 'Invalid JSON file';
+				importData = '';
+			}
+		};
+		reader.readAsText(file);
+	}
+	
+	// Issue 2.2.2: Import validation
+	function validateImportData(data) {
+		// Handle both single tool and multiple tools import
+		const toolsToValidate = Array.isArray(data) ? data : [data];
+		
+		for (const tool of toolsToValidate) {
+			const required = ['name', 'description', 'systemPrompt', 'model'];
+			const missing = required.filter(field => !tool[field]);
+			
+			if (missing.length > 0) {
+				return { valid: false, error: `Missing required fields: ${missing.join(', ')}` };
+			}
+			
+			if (tool.model && !['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'].includes(tool.model)) {
+				return { valid: false, error: `Unsupported model type: ${tool.model}` };
+			}
+		}
+		
+		return { valid: true };
+	}
+	
+	// Issue 2.2.2: Clear import data
+	function clearImportData() {
+		importData = '';
+		importPreview = null;
+		importError = null;
+	}
+
 	async function handleImport() {
 		if (importData.trim()) {
 			isImporting = true;
@@ -351,7 +412,7 @@
 			
 			if (success) {
 				showImportModal = false;
-				importData = '';
+				clearImportData();
 				tools = getAllTools();
 				updateLastSaved();
 				alert('Tools imported successfully!');
@@ -757,30 +818,90 @@
 	</div>
 {/if}
 
-<!-- Import Modal -->
+<!-- Issue 2.2.2: Enhanced Import Modal with File Upload -->
 {#if showImportModal}
 	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-		<div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-hidden">
-			<h3 class="text-lg font-semibold text-gray-900 mb-3">Import Configuration</h3>
-			<p class="text-gray-600 mb-4">
-				Paste your backup JSON data to restore tool configurations:
-			</p>
-			<textarea 
-				bind:value={importData}
-				placeholder="Paste your backup JSON here..."
-				disabled={isImporting}
-				class="w-full h-40 p-3 border border-gray-300 rounded-lg text-xs font-mono resize-none disabled:opacity-50"
-			></textarea>
+		<div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+			<h3 class="text-lg font-semibold text-gray-900 mb-3">Import Tool Configuration</h3>
+			
+			<!-- File Upload Section -->
+			<div class="mb-4">
+				<label class="block text-sm font-medium text-gray-700 mb-2">
+					Upload JSON File
+				</label>
+				<input 
+					type="file"
+					accept=".json"
+					on:change={handleFileSelect}
+					disabled={isImporting}
+					class="w-full p-2 border border-gray-300 rounded-lg disabled:opacity-50"
+				/>
+				<p class="text-xs text-gray-500 mt-1">
+					Select a tool JSON file exported from this or another OBT Helper instance
+				</p>
+			</div>
+			
+			<!-- Preview Section -->
+			{#if importPreview}
+				<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+					<h4 class="font-medium text-green-800 mb-2">Import Preview</h4>
+					{#if Array.isArray(importPreview)}
+						<p class="text-sm text-green-700">
+							<strong>Multiple Tools:</strong> {importPreview.length} tools found
+						</p>
+						<div class="mt-2 space-y-1">
+							{#each importPreview.slice(0, 3) as tool}
+								<p class="text-xs text-green-600">• {tool.name} ({tool.model})</p>
+							{/each}
+							{#if importPreview.length > 3}
+								<p class="text-xs text-green-600">... and {importPreview.length - 3} more</p>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-green-700">
+							<strong>Tool:</strong> {importPreview.name}
+						</p>
+						<p class="text-sm text-green-700">
+							<strong>Model:</strong> {importPreview.model}
+						</p>
+						<p class="text-sm text-green-700">
+							<strong>Description:</strong> {importPreview.description}
+						</p>
+					{/if}
+				</div>
+			{/if}
+			
+			<!-- Error Section -->
+			{#if importError}
+				<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+					<h4 class="font-medium text-red-800 mb-1">Validation Error</h4>
+					<p class="text-sm text-red-700">{importError}</p>
+				</div>
+			{/if}
+			
+			<!-- Manual JSON Input -->
+			<div class="mb-4">
+				<label class="block text-sm font-medium text-gray-700 mb-2">
+					Or Paste JSON Directly
+				</label>
+				<textarea 
+					bind:value={importData}
+					placeholder="Paste your backup JSON here..."
+					disabled={isImporting}
+					class="w-full h-32 p-3 border border-gray-300 rounded-lg text-xs font-mono resize-none disabled:opacity-50"
+				></textarea>
+			</div>
+			
 			<div class="flex space-x-3 mt-4">
 				<button 
 					on:click={handleImport}
 					class="btn-primary"
-					disabled={!importData.trim() || isImporting}
+					disabled={!importData.trim() || isImporting || importError}
 				>
 					{isImporting ? '📥 Importing...' : '📥 Import Tools'}
 				</button>
 				<button 
-					on:click={() => { showImportModal = false; importData = ''; }}
+					on:click={() => { showImportModal = false; clearImportData(); }}
 					disabled={isImporting}
 					class="btn-secondary disabled:opacity-50"
 				>
