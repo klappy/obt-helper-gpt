@@ -3,6 +3,9 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	
+	// Issue 1.2.2: Import Chart.js for visualizations
+	import Chart from 'chart.js/auto';
+	
 	let tools = getAllTools();
 	let showResetConfirm = false;
 	let showBackupModal = false;
@@ -17,9 +20,17 @@
 	let whatsappStats = {};
 	let whatsappLoading = true;
 
-	// Global AI usage stats
+	// Issue 1.2.2: Enhanced AI usage stats with Chart.js support
 	let aiUsageStats = {};
 	let aiUsageLoading = true;
+	
+	// Issue 1.2.2: Chart variables
+	let dailyCostChart = null;
+	let toolUsageChart = null;
+	let modelBreakdownChart = null;
+	let dailyCostCanvas;
+	let toolUsageCanvas; 
+	let modelBreakdownCanvas;
 	
 	// Demo enhancement flags
 	let showDetailedStats = false;
@@ -55,19 +66,240 @@
 		}
 	}
 
+	// Issue 1.2.2: Enhanced AI usage stats fetching with Chart.js integration
 	async function fetchAIUsageStats() {
 		try {
-			const response = await fetch('/.netlify/functions/ai-usage-stats?days=30');
+			const response = await fetch('/.netlify/functions/ai-usage-stats?days=7');
 			const data = await response.json();
 			
 			if (response.ok) {
 				aiUsageStats = data;
+				console.log('AI Usage Stats:', aiUsageStats);
+				
+				// Create charts after data is loaded
+				if (browser) {
+					setTimeout(() => createCharts(), 100);
+				}
 			}
 		} catch (err) {
 			console.error('Error fetching AI usage stats:', err);
 		} finally {
 			aiUsageLoading = false;
 		}
+	}
+
+	// Issue 1.2.2: Create Chart.js visualizations
+	function createCharts() {
+		try {
+			createDailyCostChart();
+			createToolUsageChart();
+			createModelBreakdownChart();
+		} catch (error) {
+			console.error('Error creating charts:', error);
+		}
+	}
+
+	// Issue 1.2.2: Daily cost trend chart
+	function createDailyCostChart() {
+		if (!dailyCostCanvas || !aiUsageStats.dailyBreakdown) return;
+		
+		// Destroy existing chart
+		if (dailyCostChart) {
+			dailyCostChart.destroy();
+		}
+		
+		const dailyData = aiUsageStats.dailyBreakdown || [];
+		const labels = dailyData.map(day => {
+			const date = new Date(day.date);
+			return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		});
+		const costs = dailyData.map(day => day.cost || 0);
+		
+		dailyCostChart = new Chart(dailyCostCanvas, {
+			type: 'line',
+			data: {
+				labels,
+				datasets: [{
+					label: 'Daily Cost ($)',
+					data: costs,
+					borderColor: 'rgb(75, 192, 192)',
+					backgroundColor: 'rgba(75, 192, 192, 0.1)',
+					tension: 0.3,
+					fill: true
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: 'AI Costs - Last 7 Days'
+					},
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: {
+							callback: value => '$' + value.toFixed(4)
+						}
+					}
+				}
+			}
+		});
+	}
+
+	// Issue 1.2.2: Tool usage breakdown chart
+	function createToolUsageChart() {
+		if (!toolUsageCanvas || !aiUsageStats.byTool) return;
+		
+		// Destroy existing chart
+		if (toolUsageChart) {
+			toolUsageChart.destroy();
+		}
+		
+		const toolData = Object.entries(aiUsageStats.byTool || {});
+		if (toolData.length === 0) return;
+		
+		const labels = toolData.map(([toolId]) => 
+			toolId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+		);
+		const costs = toolData.map(([, stats]) => stats.cost || 0);
+		const requests = toolData.map(([, stats]) => stats.requests || 0);
+		
+		toolUsageChart = new Chart(toolUsageCanvas, {
+			type: 'bar',
+			data: {
+				labels,
+				datasets: [{
+					label: 'Cost ($)',
+					data: costs,
+					backgroundColor: 'rgba(54, 162, 235, 0.6)',
+					borderColor: 'rgba(54, 162, 235, 1)',
+					borderWidth: 1,
+					yAxisID: 'y'
+				}, {
+					label: 'Requests',
+					data: requests,
+					backgroundColor: 'rgba(255, 99, 132, 0.6)',
+					borderColor: 'rgba(255, 99, 132, 1)',
+					borderWidth: 1,
+					type: 'line',
+					yAxisID: 'y1'
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: 'Usage by Tool'
+					}
+				},
+				scales: {
+					y: {
+						type: 'linear',
+						display: true,
+						position: 'left',
+						ticks: {
+							callback: value => '$' + value.toFixed(4)
+						}
+					},
+					y1: {
+						type: 'linear',
+						display: true,
+						position: 'right',
+						grid: {
+							drawOnChartArea: false,
+						},
+						ticks: {
+							callback: value => value + ' req'
+						}
+					}
+				}
+			}
+		});
+	}
+
+	// Issue 1.2.2: Model breakdown pie chart
+	function createModelBreakdownChart() {
+		if (!modelBreakdownCanvas || !aiUsageStats.byModel) return;
+		
+		// Destroy existing chart
+		if (modelBreakdownChart) {
+			modelBreakdownChart.destroy();
+		}
+		
+		const modelData = Object.entries(aiUsageStats.byModel || {});
+		if (modelData.length === 0) return;
+		
+		const labels = modelData.map(([model]) => model);
+		const costs = modelData.map(([, stats]) => stats.cost || 0);
+		const colors = [
+			'rgba(255, 99, 132, 0.8)',
+			'rgba(54, 162, 235, 0.8)',
+			'rgba(255, 205, 86, 0.8)',
+			'rgba(75, 192, 192, 0.8)',
+			'rgba(153, 102, 255, 0.8)'
+		];
+		
+		modelBreakdownChart = new Chart(modelBreakdownCanvas, {
+			type: 'doughnut',
+			data: {
+				labels,
+				datasets: [{
+					data: costs,
+					backgroundColor: colors,
+					borderColor: colors.map(color => color.replace('0.8', '1')),
+					borderWidth: 2
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: 'Cost by Model'
+					},
+					tooltip: {
+						callbacks: {
+							label: function(context) {
+								const label = context.label || '';
+								const value = context.parsed;
+								const total = context.dataset.data.reduce((a, b) => a + b, 0);
+								const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+								return `${label}: $${value.toFixed(4)} (${percentage}%)`;
+							}
+						}
+					}
+				}
+			}
+		});
+	}
+
+	// Issue 1.2.2: Helper functions for chart data processing
+	function getLast7Days() {
+		const days = [];
+		for (let i = 6; i >= 0; i--) {
+			const date = new Date();
+			date.setDate(date.getDate() - i);
+			days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+		}
+		return days;
+	}
+
+	function getTotalCost() {
+		return aiUsageStats.total?.cost || 0;
+	}
+
+	function getAvgCost() {
+		const total = aiUsageStats.total;
+		return total?.requests > 0 ? total.cost / total.requests : 0;
 	}
 
 	async function handleReset() {
@@ -151,7 +383,7 @@
 	</div>
 
 	<!-- Stats Cards -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
 		<div class="card">
 			<div class="flex items-center">
 				<div class="text-2xl mr-3">🤖</div>
@@ -199,21 +431,9 @@
 				<div class="text-2xl mr-3">💰</div>
 				<div>
 					<p class="text-2xl font-bold text-green-600">
-						{whatsappLoading ? '...' : ('$' + (whatsappStats.totalCost || 0).toFixed(2))}
+						{aiUsageLoading ? '...' : ('$' + getTotalCost().toFixed(4))}
 					</p>
-					<p class="text-sm text-gray-600">WhatsApp Costs</p>
-				</div>
-			</div>
-		</div>
-
-		<div class="card">
-			<div class="flex items-center">
-				<div class="text-2xl mr-3">🤖</div>
-				<div>
-					<p class="text-2xl font-bold text-indigo-600">
-						{aiUsageLoading ? '...' : ('$' + (aiUsageStats.totalCost || 0).toFixed(2))}
-					</p>
-					<p class="text-sm text-gray-600">Total AI Costs (30d)</p>
+					<p class="text-sm text-gray-600">Total Cost (7d)</p>
 				</div>
 			</div>
 		</div>
@@ -223,9 +443,105 @@
 				<div class="text-2xl mr-3">⚡</div>
 				<div>
 					<p class="text-2xl font-bold text-orange-600">
-						{aiUsageLoading ? '...' : (Math.round((aiUsageStats.totalTokens || 0) / 1000) + 'K')}
+						{aiUsageLoading ? '...' : ((aiUsageStats.total?.requests || 0) + ' req')}
 					</p>
-					<p class="text-sm text-gray-600">Total Tokens (30d)</p>
+					<p class="text-sm text-gray-600">Total Requests (7d)</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Issue 1.2.2: Chart.js Visualizations -->
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+		<!-- Daily Cost Chart -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border">
+			<div class="flex justify-between items-center mb-4">
+				<h3 class="text-lg font-semibold text-gray-900">Daily AI Costs</h3>
+				<div class="text-sm text-gray-500">
+					Avg: ${getAvgCost().toFixed(4)}/req
+				</div>
+			</div>
+			<div class="h-64">
+				<canvas bind:this={dailyCostCanvas}></canvas>
+			</div>
+		</div>
+		
+		<!-- Tool Usage Chart -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">Usage by Tool</h3>
+			<div class="h-64">
+				<canvas bind:this={toolUsageCanvas}></canvas>
+			</div>
+		</div>
+	</div>
+
+	<!-- Issue 1.2.2: Additional charts and usage summary -->
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<!-- Model Breakdown Chart -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">Cost by Model</h3>
+			<div class="h-64">
+				<canvas bind:this={modelBreakdownCanvas}></canvas>
+			</div>
+		</div>
+		
+		<!-- Usage Summary Stats -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">Usage Summary (7 days)</h3>
+			<div class="space-y-3">
+				<div class="flex justify-between">
+					<span class="text-gray-600">Total Conversations:</span>
+					<span class="font-medium">{aiUsageLoading ? '...' : (aiUsageStats.total?.requests || 0)}</span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Total Cost:</span>
+					<span class="font-medium text-green-600">${getTotalCost().toFixed(4)}</span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Avg Cost/Chat:</span>
+					<span class="font-medium">${getAvgCost().toFixed(4)}</span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Total Tokens:</span>
+					<span class="font-medium">{aiUsageLoading ? '...' : ((aiUsageStats.total?.tokens || 0).toLocaleString())}</span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Avg Tokens/Chat:</span>
+					<span class="font-medium">{aiUsageLoading ? '...' : (aiUsageStats.total?.avgTokensPerRequest || 0)}</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Cost Trends -->
+		<div class="bg-white p-6 rounded-lg shadow-sm border">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Insights</h3>
+			<div class="space-y-3">
+				{#if !aiUsageLoading && aiUsageStats.byTool}
+					{@const topTool = Object.entries(aiUsageStats.byTool).sort(([,a], [,b]) => b.cost - a.cost)[0]}
+					{#if topTool}
+						<div class="bg-blue-50 p-3 rounded-lg">
+							<p class="text-sm text-blue-800 font-medium">Most Expensive Tool</p>
+							<p class="text-lg text-blue-900">{topTool[0].replace(/-/g, ' ')}</p>
+							<p class="text-sm text-blue-700">${topTool[1].cost.toFixed(4)} total</p>
+						</div>
+					{/if}
+				{/if}
+				
+				{#if !aiUsageLoading && aiUsageStats.byModel}
+					{@const topModel = Object.entries(aiUsageStats.byModel).sort(([,a], [,b]) => b.requests - a.requests)[0]}
+					{#if topModel}
+						<div class="bg-green-50 p-3 rounded-lg">
+							<p class="text-sm text-green-800 font-medium">Most Used Model</p>
+							<p class="text-lg text-green-900">{topModel[0]}</p>
+							<p class="text-sm text-green-700">{topModel[1].requests} requests</p>
+						</div>
+					{/if}
+				{/if}
+				
+				<div class="bg-gray-50 p-3 rounded-lg">
+					<p class="text-sm text-gray-600 font-medium">Daily Average</p>
+					<p class="text-lg text-gray-900">${(getTotalCost() / 7).toFixed(4)}</p>
+					<p class="text-sm text-gray-600">per day</p>
 				</div>
 			</div>
 		</div>
@@ -242,11 +558,13 @@
 						<th class="text-left py-3 px-4 font-medium text-gray-700">Tool</th>
 						<th class="text-left py-3 px-4 font-medium text-gray-700">Model</th>
 						<th class="text-left py-3 px-4 font-medium text-gray-700">Status</th>
+						<th class="text-left py-3 px-4 font-medium text-gray-700">Usage (7d)</th>
 						<th class="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each tools as tool}
+						{@const toolStats = aiUsageStats.byTool?.[tool.id]}
 						<tr class="border-b border-gray-100 hover:bg-gray-50">
 							<td class="py-3 px-4">
 								<div class="flex items-center space-x-3">
@@ -268,6 +586,16 @@
 								}">
 									{tool.isActive ? 'Active' : 'Inactive'}
 								</span>
+							</td>
+							<td class="py-3 px-4">
+								{#if toolStats}
+									<div class="text-sm">
+										<div class="text-gray-900 font-medium">${toolStats.cost.toFixed(4)}</div>
+										<div class="text-gray-600">{toolStats.requests} requests</div>
+									</div>
+								{:else}
+									<span class="text-sm text-gray-400">No usage</span>
+								{/if}
 							</td>
 							<td class="py-3 px-4">
 								<a 
@@ -309,6 +637,13 @@
 					class="w-full text-left px-3 py-2 rounded-md hover:bg-red-50 hover:text-red-700 text-sm flex items-center text-red-600 disabled:opacity-50"
 				>
 					🔄 Reset All Tools
+				</button>
+				<button 
+					on:click={fetchAIUsageStats}
+					disabled={aiUsageLoading}
+					class="w-full text-left px-3 py-2 rounded-md hover:bg-blue-50 hover:text-blue-700 text-sm flex items-center text-blue-600 disabled:opacity-50"
+				>
+					📊 Refresh Analytics
 				</button>
 			</div>
 		</div>
@@ -352,51 +687,6 @@
 						<span>{whatsappLoading ? '...' : ('$' + (whatsappStats.totalCost || 0).toFixed(4))}</span>
 					</div>
 				</div>
-			</div>
-		</div>
-
-		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-			<h3 class="text-lg font-semibold text-gray-900 mb-3">AI Usage Overview (30 days)</h3>
-			
-			<div class="space-y-3">
-				<div class="space-y-2 bg-gray-50 rounded-lg p-3">
-					<div class="flex justify-between font-medium">
-						<span>Total Cost:</span>
-						<span class="text-green-600">{aiUsageLoading ? '...' : ('$' + (aiUsageStats.totalCost || 0).toFixed(4))}</span>
-					</div>
-					<div class="flex justify-between">
-						<span>Total Tokens:</span>
-						<span>{aiUsageLoading ? '...' : ((aiUsageStats.totalTokens || 0).toLocaleString())}</span>
-					</div>
-					<div class="flex justify-between">
-						<span>Total Requests:</span>
-						<span>{aiUsageLoading ? '...' : (aiUsageStats.recordCount || 0)}</span>
-					</div>
-				</div>
-
-				{#if !aiUsageLoading && aiUsageStats.sources}
-					<div class="space-y-2">
-						<h4 class="font-medium text-gray-700">By Source:</h4>
-						{#each Object.entries(aiUsageStats.sources) as [source, stats]}
-							<div class="flex justify-between text-sm bg-white rounded p-2 border">
-								<span class="capitalize">{source.replace('-', ' ')}:</span>
-								<span>${stats.cost.toFixed(4)} ({stats.count} calls)</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				{#if !aiUsageLoading && aiUsageStats.models}
-					<div class="space-y-2">
-						<h4 class="font-medium text-gray-700">By Model:</h4>
-						{#each Object.entries(aiUsageStats.models) as [model, stats]}
-							<div class="flex justify-between text-sm bg-white rounded p-2 border">
-								<span>{model}:</span>
-								<span>${stats.cost.toFixed(4)} ({stats.count} calls)</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
 			</div>
 		</div>
 	</div>
