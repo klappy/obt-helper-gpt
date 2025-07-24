@@ -9,8 +9,6 @@
 	let currentMessage = '';
 	let isLoading = false;
 	let chatContainer;
-	let streamingMessage = '';
-	let isStreaming = false;
 	let voiceControls;
 
 	// Voice settings
@@ -180,8 +178,6 @@
 		const messageToSend = currentMessage;
 		currentMessage = '';
 		isLoading = true;
-		isStreaming = true;
-		streamingMessage = '';
 
 		// Scroll to bottom
 		setTimeout(() => {
@@ -194,38 +190,22 @@
 			// Send to OpenAI API
 			const response = await sendChatMessage(messages, tool, apiKey);
 			
-			// Create a placeholder message for streaming
-			const aiMessageId = Date.now() + 1;
+			// Parse the response (non-streaming)
+			const data = await response.json();
+			const aiContent = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+			
+			// Add AI response message
 			const aiMessage = {
-				id: aiMessageId,
-				content: '',
+				id: Date.now() + 1,
+				content: aiContent,
 				role: 'assistant',
 				timestamp: new Date()
 			};
 			messages = [...messages, aiMessage];
 
-			// Stream the response
-			for await (const chunk of parseStreamingResponse(response)) {
-				streamingMessage += chunk;
-				
-				// Update the last message with streaming content
-				messages = messages.map(msg => 
-					msg.id === aiMessageId 
-						? { ...msg, content: streamingMessage }
-						: msg
-				);
-
-				// Scroll to bottom
-				setTimeout(() => {
-					if (chatContainer) {
-						chatContainer.scrollTop = chatContainer.scrollHeight;
-					}
-				}, 10);
-			}
-
 			// Auto-speak the response if enabled
-			if (autoSpeak && voiceControls && streamingMessage) {
-				voiceControls.speak(streamingMessage);
+			if (autoSpeak && voiceControls && aiContent) {
+				voiceControls.speak(aiContent);
 			}
 
 		} catch (error) {
@@ -241,8 +221,6 @@
 			messages = [...messages, errorMessage];
 		} finally {
 			isLoading = false;
-			isStreaming = false;
-			streamingMessage = '';
 		}
 	}
 
@@ -404,7 +382,7 @@
 			</div>
 		{/each}
 
-		{#if isLoading && !isStreaming}
+		{#if isLoading}
 			<div class="flex justify-start">
 				<div class="bg-white text-gray-900 shadow-sm border rounded-lg px-4 py-2">
 					<div class="flex space-x-1">
@@ -473,7 +451,7 @@
 		</div>
 		<div class="mt-2 flex items-center justify-between text-xs text-gray-500">
 			<span>Press Enter to send, Shift+Enter for new line</span>
-			<span>Model: {tool.model} {isStreaming ? '(streaming...)' : ''}</span>
+			<span>Model: {tool.model}</span>
 		</div>
 	</div>
 </div>
