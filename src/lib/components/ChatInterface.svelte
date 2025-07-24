@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { sendChatMessage, parseStreamingResponse } from '$lib/utils/openai.js';
+	import { handleRecallQuery, formatRecallResponse, isRecalling } from '$lib/stores/chat.js';
 	import VoiceControls from './VoiceControls.svelte';
 	export let tool;
 
@@ -39,6 +40,41 @@
 		
 		if (!apiKey) {
 			alert('Please set your OpenAI API key in the environment variables or enter it below.');
+			return;
+		}
+
+		// Issue 1.1.3: Check for recall query before sending to OpenAI
+		const recallResult = await handleRecallQuery(currentMessage);
+		if (recallResult) {
+			// Add user message
+			const userMessage = {
+				id: Date.now(),
+				content: currentMessage,
+				role: 'user',
+				timestamp: new Date()
+			};
+			messages = [...messages, userMessage];
+			
+			// Add recall response
+			const recallResponse = formatRecallResponse(recallResult.summaries, recallResult.error);
+			const assistantMessage = {
+				id: Date.now() + 1,
+				content: recallResponse,
+				role: 'assistant',
+				timestamp: new Date(),
+				isRecall: true
+			};
+			messages = [...messages, assistantMessage];
+			
+			currentMessage = '';
+			
+			// Scroll to bottom
+			setTimeout(() => {
+				if (chatContainer) {
+					chatContainer.scrollTop = chatContainer.scrollHeight;
+				}
+			}, 100);
+			
 			return;
 		}
 
@@ -235,11 +271,19 @@
 				<div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {
 					message.role === 'user' 
 						? 'bg-primary-500 text-white' 
-						: 'bg-white text-gray-900 shadow-sm border'
+						: message.isRecall 
+							? 'bg-blue-50 text-blue-900 border border-blue-200'
+							: 'bg-white text-gray-900 shadow-sm border'
 				}">
+					{#if message.isRecall}
+						<div class="flex items-center mb-2">
+							<span class="text-xs">🔍</span>
+							<span class="text-xs font-medium ml-1">Conversation Recall</span>
+						</div>
+					{/if}
 					<p class="text-sm whitespace-pre-wrap">{message.content}</p>
 					<div class="flex items-center justify-between mt-1">
-						<p class="text-xs {message.role === 'user' ? 'text-primary-100' : 'text-gray-500'}">
+						<p class="text-xs {message.role === 'user' ? 'text-primary-100' : message.isRecall ? 'text-blue-600' : 'text-gray-500'}">
 							{message.timestamp.toLocaleTimeString()}
 						</p>
 						{#if message.role === 'assistant' && message.content && voiceEnabled}
@@ -267,6 +311,21 @@
 				</div>
 			</div>
 		{/if}
+
+		{#if $isRecalling}
+			<div class="flex justify-start">
+				<div class="bg-blue-50 text-blue-900 border border-blue-200 rounded-lg px-4 py-2">
+					<div class="flex items-center space-x-2">
+						<div class="flex space-x-1">
+							<div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+							<div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+							<div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+						</div>
+						<span class="text-sm">🔍 Searching conversation history...</span>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Input Area -->
@@ -277,16 +336,21 @@
 			</div>
 		{/if}
 		
+		<!-- Issue 1.1.3: Hint about recall functionality -->
+		<div class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+			💡 <strong>Tip:</strong> Try saying "recall last chat" or "remember our previous conversation" to see past discussions!
+		</div>
+		
 		<div class="flex space-x-3">
 			<div class="flex-1">
 				<div class="relative">
 					<textarea
 						bind:value={currentMessage}
 						on:keydown={handleKeydown}
-						placeholder={voiceEnabled ? "Type your message or click the microphone to speak..." : "Type your message here..."}
+						placeholder={voiceEnabled ? "Type your message or click the microphone to speak... Try 'recall last chat' to see previous conversations!" : "Type your message here... Try 'recall last chat' to see previous conversations!"}
 						class="w-full resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent {interimTranscript ? 'border-blue-300 bg-blue-50' : ''}"
 						rows="2"
-						disabled={isLoading}
+						disabled={isLoading || $isRecalling}
 					></textarea>
 					{#if interimTranscript}
 						<div class="absolute inset-x-0 bottom-0 bg-blue-100 border-t border-blue-200 px-3 py-1 text-sm text-blue-700 italic rounded-b-lg">
@@ -297,10 +361,10 @@
 			</div>
 			<button
 				on:click={sendMessage}
-				disabled={!currentMessage.trim() || isLoading || !apiKey}
+				disabled={!currentMessage.trim() || isLoading || !apiKey || $isRecalling}
 				class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
 			>
-				{isLoading ? 'Sending...' : 'Send'}
+				{isLoading ? 'Sending...' : $isRecalling ? 'Recalling...' : 'Send'}
 			</button>
 		</div>
 		<div class="mt-2 flex items-center justify-between text-xs text-gray-500">
