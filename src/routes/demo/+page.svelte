@@ -4,12 +4,11 @@
 	let messages = [];
 	let input = '';
 	let loading = false;
-	let phoneNumber = '+1234567890'; // Simulated phone number for demo
+	let phoneNumber = ''; // User's actual phone number for demo
 	let chatContainer;
 	
 	// WhatsApp linking state
 	let showLinkingForm = false;
-	let linkingPhoneNumber = '';
 	let verificationCode = '';
 	let linkingStep = 'phone'; // 'phone', 'code', 'linked'
 	let linkingStatus = '';
@@ -20,6 +19,18 @@
 	// Simulate sending a message to the WhatsApp endpoint
 	async function sendMessage() {
 		if (!input.trim() || loading) return;
+		
+		// Require phone number before sending
+		if (!phoneNumber.trim()) {
+			messages = [...messages, {
+				id: Date.now(),
+				text: "⚠️ Please enter your WhatsApp number above to use the demo.",
+				sender: 'system',
+				timestamp: new Date()
+			}];
+			scrollToBottom();
+			return;
+		}
 		
 		const userMessage = input.trim();
 		input = '';
@@ -242,7 +253,7 @@ I'm your intelligent AI assistant! I can help you with:
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ 
-					phoneNumber: linkingPhoneNumber,
+					phoneNumber: phoneNumber, // Use the phone number from the main input
 					sessionId: currentSessionId,
 					toolId: 'general-assistant'
 				})
@@ -274,7 +285,7 @@ I'm your intelligent AI assistant! I can help you with:
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ 
-					phoneNumber: linkingPhoneNumber,
+					phoneNumber: phoneNumber, // Use the phone number from the main input
 					code: verificationCode,
 					sessionId: currentSessionId
 				})
@@ -302,7 +313,6 @@ I'm your intelligent AI assistant! I can help you with:
 				startSyncPolling();
 				
 				// Reset form
-				linkingPhoneNumber = '';
 				verificationCode = '';
 				setTimeout(() => {
 					linkingStatus = '';
@@ -319,7 +329,6 @@ I'm your intelligent AI assistant! I can help you with:
 	function resetLinkingForm() {
 		showLinkingForm = false;
 		linkingStep = 'phone';
-		linkingPhoneNumber = '';
 		verificationCode = '';
 		linkingStatus = '';
 	}
@@ -372,7 +381,7 @@ I'm your intelligent AI assistant! I can help you with:
 		// Add welcome message
 		messages = [{
 			id: 0,
-			text: "🤖 Welcome to the OBT Helper GPT Demo!\n\nThis chat simulates WhatsApp by calling the same backend endpoint. Try typing 'help' to see available tools!\n\n📱 Click 'Link WhatsApp' to test bidirectional syncing!",
+			text: "🤖 Welcome to the OBT Helper GPT Demo!\n\n1️⃣ Enter your WhatsApp number above\n2️⃣ Chat and test all the AI tools\n3️⃣ Optionally click 'Link & Sync' for real bidirectional WhatsApp syncing\n\nTry typing 'help' to see available tools!",
 			sender: 'system',
 			timestamp: new Date()
 		}];
@@ -399,23 +408,66 @@ I'm your intelligent AI assistant! I can help you with:
 				<div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
 					<span class="text-white font-bold text-lg">🤖</span>
 				</div>
-				<div>
+				<div class="flex-1">
 					<h1 class="font-semibold text-gray-900">OBT Helper GPT</h1>
 					<p class="text-sm text-gray-500">WhatsApp Demo Chat</p>
 				</div>
-				<div class="ml-auto flex items-center space-x-2">
-					<button 
-						on:click={() => showLinkingForm = true}
-						class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
-						title="Link with your real WhatsApp"
-					>
-						📱 {linkedWhatsAppSession ? 'WhatsApp Linked' : 'Link WhatsApp'}
-					</button>
+				<div class="flex items-center space-x-2">
 					<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
 						Demo Mode
 					</span>
 				</div>
 			</div>
+			
+			<!-- Phone Number Input -->
+			<div class="mt-3 flex items-center space-x-2">
+				<div class="flex-1">
+					<input 
+						type="tel"
+						bind:value={phoneNumber}
+						placeholder="Enter your WhatsApp number (+1234567890)"
+						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+					/>
+				</div>
+				<button 
+					on:click={() => showLinkingForm = true}
+					disabled={!phoneNumber.trim()}
+					class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+					title="Link for bidirectional syncing"
+				>
+					🔗 {linkedWhatsAppSession ? 'Linked' : 'Link & Sync'}
+				</button>
+			</div>
+			
+			{#if phoneNumber && !linkedWhatsAppSession}
+				<p class="text-xs text-gray-500 mt-1">
+					Demo will simulate WhatsApp messages to <strong>{phoneNumber}</strong>. Click "Link & Sync" to enable real bidirectional syncing.
+				</p>
+			{/if}
+			
+			{#if linkedWhatsAppSession}
+				<div class="mt-1 flex items-center space-x-2">
+					<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+						🔗 Synced with {phoneNumber}
+					</span>
+					<button 
+						on:click={() => {
+							linkedWhatsAppSession = null;
+							// Add disconnect message
+							messages = [...messages, {
+								id: Date.now(),
+								text: "🔗 WhatsApp sync disconnected. Demo will continue in simulation mode.",
+								sender: 'system',
+								timestamp: new Date()
+							}];
+							scrollToBottom();
+						}}
+						class="text-xs text-red-600 hover:text-red-800"
+					>
+						Disconnect
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Chat Messages -->
@@ -509,11 +561,13 @@ I'm your intelligent AI assistant! I can help you with:
 			<h3 class="font-medium text-blue-900 mb-2">🎯 Demo Information</h3>
 			<div class="text-sm text-blue-700 space-y-1">
 				<p><strong>Endpoint:</strong> <code>/.netlify/functions/whatsapp</code></p>
-				<p><strong>Simulated Phone:</strong> <code>{phoneNumber}</code></p>
+				{#if phoneNumber}
+					<p><strong>Your Phone:</strong> <code>{phoneNumber}</code></p>
+				{/if}
 				<p><strong>Method:</strong> Same as real WhatsApp integration</p>
 				<p><strong>Features:</strong> All 10 AI tools, conversation memory, tool switching, bidirectional WhatsApp linking</p>
 				{#if linkedWhatsAppSession}
-					<p><strong>Status:</strong> 🔗 Linked to {linkedWhatsAppSession} - Messages sync both ways!</p>
+					<p><strong>Status:</strong> 🔗 Linked to {phoneNumber} - Messages sync both ways!</p>
 				{/if}
 			</div>
 		</div>
@@ -536,29 +590,20 @@ I'm your intelligent AI assistant! I can help you with:
 				{#if linkingStep === 'phone'}
 					<div class="space-y-4">
 						<p class="text-sm text-gray-600">
-							Enter your WhatsApp number to sync this demo with your real WhatsApp. You'll receive a verification code.
+							Ready to link <strong>{phoneNumber}</strong> for bidirectional syncing? You'll receive a verification code via WhatsApp.
 						</p>
-						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								WhatsApp Phone Number
-							</label>
-							<input 
-								type="tel"
-								bind:value={linkingPhoneNumber}
-								placeholder="+1234567890"
-								class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							/>
-							<p class="text-xs text-gray-500 mt-1">
-								Include country code (e.g., +1 for US, +44 for UK)
+						<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+							<p class="text-sm text-blue-700">
+								<strong>📱 {phoneNumber}</strong> will receive a 6-digit code to verify the connection.
 							</p>
 						</div>
 						<div class="flex gap-3">
 							<button 
 								on:click={sendLinkingCode}
-								disabled={!linkingPhoneNumber.trim() || linkingStatus.includes('Sending')}
+								disabled={linkingStatus.includes('Sending')}
 								class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{linkingStatus.includes('Sending') ? 'Sending...' : 'Send Code'}
+								{linkingStatus.includes('Sending') ? 'Sending...' : 'Send Verification Code'}
 							</button>
 							<button 
 								on:click={resetLinkingForm}
