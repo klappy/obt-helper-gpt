@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import AdminPage from './+page.svelte';
+import AdminPage from '../../routes/admin/+page.svelte';
 
 // Mock Chart.js
 const mockChart = {

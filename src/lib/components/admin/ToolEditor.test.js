@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import ToolEditorPage from './+page.svelte';
+import ToolEditorPage from '../../routes/admin/tools/[id]/+page.svelte';
 
 // Mock stores and navigation
 vi.mock('$app/stores', () => ({
