@@ -365,7 +365,7 @@ onMount(() => {
 
 ### Issue 3.1.3: Stub audio handlers in VoiceControls
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/components/VoiceControls.svelte`
 - **Dependencies**: Issue 3.1.1 (media upload infrastructure)
 - **PRD Connection**: "Web Audio API placeholders" from Multimodal stubs
