@@ -6,6 +6,62 @@
 
 ## Critical Issues
 
+### Netlify Functions Body Parsing ⚠️ **CRITICAL PATTERN**
+
+**Problem:** Netlify Functions receive empty `req.body` objects (`{}`) instead of the actual JSON payload, causing "Missing required fields" and similar errors.
+
+**Root Cause:** In Netlify Functions, `req.body` is often an empty object when the request contains JSON. The actual body content must be retrieved using `await req.text()`.
+
+**❌ WRONG PATTERN (causes empty body):**
+
+```javascript
+// This gives empty object {} even with valid JSON payload
+let bodyData;
+if (typeof req.body === "string") {
+  bodyData = JSON.parse(req.body);
+} else {
+  bodyData = req.body; // ❌ Empty object!
+}
+```
+
+**✅ CORRECT PATTERN (works reliably):**
+
+```javascript
+// This correctly retrieves the actual body content
+let bodyData;
+const bodyText = typeof req.body === "string" ? req.body : await req.text();
+bodyData = JSON.parse(bodyText);
+```
+
+**When this happens:**
+
+- Frontend sends valid JSON with proper `Content-Type: application/json`
+- Netlify receives the request (Content-Length shows payload size)
+- But `req.body` is an empty object `{}`
+- Destructuring gives `undefined` values
+- Functions return "Missing required fields" or similar errors
+
+**Files that use this pattern:**
+
+- ✅ `send-link-code.js` - FIXED
+- ✅ `verify-link-code.js` - FIXED
+- ✅ `log-action.js` - FIXED
+- ✅ `chat.js` - Already correct (reference implementation)
+
+**🚨 MANDATORY: When creating new Netlify Functions that accept POST requests, always use the CORRECT PATTERN above!**
+
+**How to verify the fix:**
+
+1. Check function logs for `req.body raw: {}`
+2. If empty, apply the correct pattern above
+3. Deploy and test - should receive proper data
+
+**Reference implementation:** See `netlify/functions/chat.js` line 69 for the working pattern.
+
+---
+
+## Other Common Issues
+
 ### Netlify Dev Not Working ("Function not found")
 
 **Symptoms**:
@@ -36,8 +92,6 @@ When these get corrupted (during adapter upgrades, manual file changes, etc.), `
 - Package updates (especially SvelteKit or adapter changes)
 - Manual changes to function files
 - Switching git branches with build changes
-
-## Common Issues
 
 ### Development Environment
 

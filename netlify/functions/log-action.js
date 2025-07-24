@@ -15,13 +15,10 @@ export default async (req, context) => {
   }
 
   try {
-    // Handle both string and already-parsed body
+    // Handle both string and already-parsed body - FIXED VERSION
     let bodyData;
-    if (typeof req.body === "string") {
-      bodyData = JSON.parse(req.body);
-    } else {
-      bodyData = req.body;
-    }
+    const bodyText = typeof req.body === "string" ? req.body : await req.text();
+    bodyData = JSON.parse(bodyText);
 
     const { action, toolId, toolName, ...metadata } = bodyData;
 
