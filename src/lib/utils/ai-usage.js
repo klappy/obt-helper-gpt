@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
-import { browser } from '$app/environment';
+// Server-side safe browser detection
+const browser = typeof window !== 'undefined';
 
 // Issue 1.2.1: Import tiktoken for accurate token counting (server-side only)
 let tiktoken;
