@@ -238,25 +238,39 @@ I'm your intelligent AI assistant! I can help you with:
 		}, 100);
 	}
 	
-	function handleKeyPress(event) {
+	function handleKeyDown(event) {
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
 			sendMessage();
 		}
+		// Shift+Enter will naturally create a new line in textarea
 	}
 	
 	// WhatsApp linking functions
 	async function sendLinkingCode() {
 		try {
+			// Debug logging
+			console.log('=== DEMO SEND LINKING CODE ===');
+			console.log('phoneNumber:', phoneNumber);
+			console.log('phoneNumber type:', typeof phoneNumber);
+			console.log('phoneNumber length:', phoneNumber ? phoneNumber.length : 'no length');
+			
+			// Debug the request payload
+			const requestPayload = { 
+				phoneNumber: phoneNumber, // Use the phone number from the main input
+				sessionId: currentSessionId,
+				toolId: 'general-assistant'
+			};
+			console.log('=== REQUEST PAYLOAD ===');
+			console.log('Full payload object:', requestPayload);
+			console.log('Payload phoneNumber:', requestPayload.phoneNumber);
+			console.log('JSON stringified:', JSON.stringify(requestPayload));
+			
 			linkingStatus = 'Sending code...';
 			const response = await fetch('/.netlify/functions/send-link-code', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ 
-					phoneNumber: phoneNumber, // Use the phone number from the main input
-					sessionId: currentSessionId,
-					toolId: 'general-assistant'
-				})
+				body: JSON.stringify(requestPayload)
 			});
 			
 			const data = await response.json();
@@ -298,6 +312,16 @@ I'm your intelligent AI assistant! I can help you with:
 				linkingStatus = '🎉 Sessions linked! Messages will sync with WhatsApp.';
 				linkedWhatsAppSession = data.linkedSessionId;
 				showLinkingForm = false;
+				
+				// Save link state to localStorage for persistence
+				const linkState = {
+					linkedSessionId: data.linkedSessionId,
+					phoneNumber: data.phoneNumber,
+					webSessionId: currentSessionId,
+					timestamp: Date.now()
+				};
+				localStorage.setItem('whatsapp-link-state', JSON.stringify(linkState));
+				console.log('Saved WhatsApp link state:', linkState);
 				
 				// Add system message to demo chat
 				const linkMessage = {
@@ -377,8 +401,55 @@ I'm your intelligent AI assistant! I can help you with:
 		}, 5000); // Poll every 5 seconds
 	}
 	
-	onMount(() => {
-		// Add welcome message
+	onMount(async () => {
+		currentSessionId = `demo_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+		console.log('Demo session ID:', currentSessionId);
+		
+		// Load tools
+		await tools.loadTools();
+		
+		// Restore WhatsApp link state from localStorage
+		try {
+			const savedLinkState = localStorage.getItem('whatsapp-link-state');
+			if (savedLinkState) {
+				const linkData = JSON.parse(savedLinkState);
+				
+				// Verify the link is still valid (optional)
+				const verifyResponse = await fetch('/.netlify/functions/verify-sync?sessionId=' + linkData.webSessionId);
+				if (verifyResponse.ok) {
+					const verifyData = await verifyResponse.json();
+					if (verifyData.isLinked) {
+						// Restore the linked state
+						linkedWhatsAppSession = linkData.linkedSessionId;
+						linkingStep = 'linked';
+						phoneNumber = linkData.phoneNumber;
+						
+						console.log('Restored WhatsApp link:', linkData);
+						
+						// Start polling for synced messages
+						startSyncPolling();
+						
+						// Add restoration message
+						messages = [{
+							id: Date.now(),
+							text: `🔗 **WhatsApp Link Restored!** Still synced with ${linkData.phoneNumber}`,
+							sender: 'system',
+							timestamp: new Date()
+						}];
+						scrollToBottom();
+						return; // Skip adding the welcome message
+					}
+				}
+				
+				// Link is no longer valid, clear storage
+				localStorage.removeItem('whatsapp-link-state');
+			}
+		} catch (error) {
+			console.error('Error restoring WhatsApp link:', error);
+			localStorage.removeItem('whatsapp-link-state');
+		}
+		
+		// Add welcome message (only if not linked)
 		messages = [{
 			id: 0,
 			text: "🤖 Welcome to the OBT Helper GPT Demo!\n\n1️⃣ Enter your WhatsApp number above\n2️⃣ Chat and test all the AI tools\n3️⃣ Optionally click 'Link & Sync' for real bidirectional WhatsApp syncing\n\nTry typing 'help' to see available tools!",
@@ -453,10 +524,22 @@ I'm your intelligent AI assistant! I can help you with:
 					<button 
 						on:click={() => {
 							linkedWhatsAppSession = null;
+							linkingStep = 'phone';
+							
+							// Clear localStorage
+							localStorage.removeItem('whatsapp-link-state');
+							console.log('Cleared WhatsApp link state');
+							
+							// Stop polling
+							if (syncInterval) {
+								clearInterval(syncInterval);
+								syncInterval = null;
+							}
+							
 							// Add disconnect message
 							messages = [...messages, {
 								id: Date.now(),
-								text: "🔗 WhatsApp sync disconnected. Demo will continue in simulation mode.",
+								text: "🔌 **WhatsApp Disconnected** - Link removed. You can re-link anytime!",
 								sender: 'system',
 								timestamp: new Date()
 							}];
@@ -506,18 +589,22 @@ I'm your intelligent AI assistant! I can help you with:
 
 		<!-- Input Area -->
 		<div class="bg-white rounded-b-lg shadow-sm border-t p-4">
-			<div class="flex space-x-2">
-				<input
-					bind:value={input}
-					on:keypress={handleKeyPress}
-					placeholder="Type your message..."
-					disabled={loading}
-					class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-				/>
+			<div class="flex space-x-2 items-end">
+				<div class="flex-1 relative">
+					<textarea
+						bind:value={input}
+						on:keydown={handleKeyDown}
+						placeholder="Type your message... (Shift+Enter for new line)"
+						disabled={loading}
+						rows="1"
+						class="w-full border border-gray-300 rounded-2xl px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-h-[2.5rem] max-h-32 overflow-y-auto"
+						style="field-sizing: content;"
+					></textarea>
+				</div>
 				<button
 					on:click={sendMessage}
 					disabled={!input.trim() || loading}
-					class="bg-blue-500 text-white rounded-full px-6 py-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+					class="bg-blue-500 text-white rounded-full px-6 py-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
 				>
 					Send
 				</button>
@@ -592,15 +679,23 @@ I'm your intelligent AI assistant! I can help you with:
 						<p class="text-sm text-gray-600">
 							Ready to link <strong>{phoneNumber}</strong> for bidirectional syncing? You'll receive a verification code via WhatsApp.
 						</p>
+						<!-- DEBUG: Show current variable state -->
+						<div class="text-xs text-red-600 mb-2">
+							DEBUG: phoneNumber = "{phoneNumber}" (type: {typeof phoneNumber}) (length: {phoneNumber ? phoneNumber.length : 'undefined'})
+						</div>
 						<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
 							<p class="text-sm text-blue-700">
 								<strong>📱 {phoneNumber}</strong> will receive a 6-digit code to verify the connection.
 							</p>
 						</div>
 						<div class="flex gap-3">
+							<!-- DEBUG: Show button state -->
+							<div class="text-xs text-red-600 mb-2">
+								DEBUG: Button disabled = {!phoneNumber?.trim() || linkingStatus.includes('Sending')} (phoneNumber.trim() = "{phoneNumber?.trim()}")
+							</div>
 							<button 
 								on:click={sendLinkingCode}
-								disabled={linkingStatus.includes('Sending')}
+								disabled={!phoneNumber?.trim() || linkingStatus.includes('Sending')}
 								class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{linkingStatus.includes('Sending') ? 'Sending...' : 'Send Verification Code'}
