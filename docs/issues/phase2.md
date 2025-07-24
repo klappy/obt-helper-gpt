@@ -143,7 +143,7 @@ for (const test of testCases) {
 ---
 
 ### Issue 2.1.2: Implement phone/code linking form
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/routes/chat/[toolId]/+page.svelte`, `netlify/functions/verify-sync.js`
 - **Dependencies**: `npm install twilio` for SMS sending
 - **PRD Connection**: "Web form for phone entry; send one-time code via WhatsApp" from Linking Design

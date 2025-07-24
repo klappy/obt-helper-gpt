@@ -39,6 +39,69 @@
 			role: 'assistant',
 			timestamp: new Date()
 		}];
+		
+		// Start polling for synced messages if session is linked
+		startSyncPolling();
+	});
+	
+	// Issue 2.1.3: Poll for messages synced from WhatsApp
+	let syncInterval;
+	
+	function startSyncPolling() {
+		// Poll every 5 seconds for synced messages
+		syncInterval = setInterval(async () => {
+			if (linkedWhatsAppSession) {
+				try {
+					const response = await fetch(`/.netlify/functions/get-synced-messages?sessionId=${currentSessionId}`);
+					if (response.ok) {
+						const syncData = await response.json();
+						if (syncData.messages.length > 0) {
+							console.log(`Received ${syncData.messages.length} synced messages from WhatsApp`);
+							
+							// Add synced messages to chat
+							syncData.messages.forEach(msg => {
+								// Add user message from WhatsApp
+								const userMessage = {
+									id: Date.now() + Math.random(),
+									content: `📱 ${msg.userMessage}`,
+									role: 'user',
+									timestamp: new Date(msg.timestamp),
+									source: 'whatsapp'
+								};
+								
+								// Add AI response
+								const aiMessage = {
+									id: Date.now() + Math.random() + 1,
+									content: msg.aiResponse,
+									role: 'assistant',
+									timestamp: new Date(msg.timestamp + 1000),
+									source: 'whatsapp'
+								};
+								
+								messages = [...messages, userMessage, aiMessage];
+							});
+							
+							// Scroll to bottom
+							setTimeout(() => {
+								if (chatContainer) {
+									chatContainer.scrollTop = chatContainer.scrollHeight;
+								}
+							}, 100);
+						}
+					}
+				} catch (error) {
+					console.error('Error polling for synced messages:', error);
+				}
+			}
+		}, 5000); // Poll every 5 seconds
+	}
+	
+	// Stop polling when component is destroyed
+	import { onDestroy } from 'svelte';
+	onDestroy(() => {
+		if (syncInterval) {
+			clearInterval(syncInterval);
+		}
 	});
 
 	// WhatsApp linking functions
@@ -187,8 +250,17 @@
 		}, 100);
 
 		try {
-			// Send to OpenAI API
-			const response = await sendChatMessage(messages, tool, apiKey);
+			// Use chat function for bidirectional mirroring
+			const response = await fetch('/.netlify/functions/chat', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					messages,
+					tool,
+					sessionId: currentSessionId,
+					apiKey
+				})
+			});
 			
 			// Parse the response (non-streaming)
 			const data = await response.json();

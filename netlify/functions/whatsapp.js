@@ -4,8 +4,65 @@ import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 import { sendChatMessage } from "../../src/lib/utils/openai.js";
 import { getAllTools } from "./tools.js";
+import { getStore } from "@netlify/blobs";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Storage instances for mirroring
+function getSessionStore() {
+  return getStore({
+    name: "obt-helper-sessions", 
+    consistency: "strong",
+    siteID: process.env.NETLIFY_SITE_ID || 'local'
+  });
+}
+
+function getSyncStore() {
+  return getStore({
+    name: "obt-helper-sync", 
+    consistency: "strong",
+    siteID: process.env.NETLIFY_SITE_ID || 'local'
+  });
+}
+
+// Check if WhatsApp session is linked to web
+async function getLinkedWebSession(whatsappSessionId) {
+  try {
+    const sessionStore = getSessionStore();
+    const linkDataStr = await sessionStore.get(`whatsapp-to-web-${whatsappSessionId}`);
+    return linkDataStr ? JSON.parse(linkDataStr) : null;
+  } catch (error) {
+    console.error('Error getting linked web session:', error);
+    return null;
+  }
+}
+
+// Mirror message to web session
+async function mirrorToWeb(linkedSession, userMessage, aiResponse) {
+  try {
+    const syncStore = getSyncStore();
+    const syncData = {
+      direction: 'whatsapp-to-web',
+      webSessionId: linkedSession.webSessionId,
+      userMessage,
+      aiResponse,
+      tool: linkedSession.toolId,
+      timestamp: Date.now(),
+      phoneNumber: linkedSession.phoneNumber
+    };
+    
+    console.log(`Would mirror to Web ${linkedSession.webSessionId}:`, {
+      user: userMessage.substring(0, 50) + '...',
+      ai: aiResponse.substring(0, 50) + '...'
+    });
+    
+    // Store for web client to poll
+    await syncStore.set(`whatsapp-mirror-${Date.now()}`, JSON.stringify(syncData));
+    
+  } catch (error) {
+    console.error('Error mirroring to web:', error);
+  }
+}
 
 // Issue 2.1.1: Intelligent tool inference using LLM (server-side function)
 async function inferToolFromMessage(message, currentTool) {
@@ -254,6 +311,14 @@ export default async (req, context) => {
       if (aiData.choices && aiData.choices[0]) {
         responseText = aiData.choices[0].message.content;
         console.log("AI response length:", responseText.length);
+        
+        // Issue 2.1.3: Mirror to linked web session if exists
+        const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, '')}`;
+        const linkedSession = await getLinkedWebSession(whatsappSessionId);
+        if (linkedSession) {
+          console.log(`Mirroring WhatsApp message to web session ${linkedSession.webSessionId}`);
+          await mirrorToWeb(linkedSession, messageBody, responseText);
+        }
       } else {
         throw new Error("Invalid AI response");
       }
@@ -290,7 +355,16 @@ export default async (req, context) => {
         try {
           const aiResponse = await sendChatMessage(messages, toolInfo, OPENAI_API_KEY);
           const aiData = await aiResponse.json();
-          responseText = `✅ *Switched to ${toolInfo.name}*\n\n${aiData.choices[0].message.content}`;
+          const aiContent = aiData.choices[0].message.content;
+          responseText = `✅ *Switched to ${toolInfo.name}*\n\n${aiContent}`;
+          
+          // Issue 2.1.3: Mirror tool switch to linked web session
+          const whatsappSessionId = `whatsapp_${from.replace(/[^\d]/g, '')}`;
+          const linkedSession = await getLinkedWebSession(whatsappSessionId);
+          if (linkedSession) {
+            console.log(`Mirroring tool switch to web session ${linkedSession.webSessionId}`);
+            await mirrorToWeb(linkedSession, originalMessage, responseText);
+          }
         } catch (error) {
           console.error("AI generation after switch failed:", error);
           responseText = `✅ *Switched to ${toolInfo.name}*\n\nHow can I help you?`;
