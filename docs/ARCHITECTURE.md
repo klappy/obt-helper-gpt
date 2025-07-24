@@ -70,6 +70,74 @@
 7. Changes reflect immediately for users
 ```
 
+## Memory Architecture
+
+### Session Lifecycle
+1. **Session Creation**: New session starts on first user message
+2. **Activity Tracking**: All interactions (messages, tool changes, saves) reset 30-minute timeout
+3. **Automatic Timeout**: After 30 minutes of inactivity, session triggers summary generation
+4. **Summary Storage**: LLM-generated summary stored in edge KV storage with session metadata
+5. **Session Cleanup**: Active session data cleared, only persistent summary remains
+
+### Timeout Implementation
+```javascript
+// Session timeout tracking in whatsapp-session.js
+let sessionTimeouts = new Map();
+
+function startSessionTimeout(sessionId, callback) {
+  clearTimeout(sessionTimeouts.get(sessionId));
+  const timeoutId = setTimeout(() => {
+    callback(sessionId);  // Triggers summary generation
+    sessionTimeouts.delete(sessionId);
+  }, 30 * 60 * 1000); // 30 minutes
+  sessionTimeouts.set(sessionId, timeoutId);
+}
+```
+
+### Summary Generation
+- **Model**: Uses `gpt-4o-mini` for cost efficiency
+- **Format**: 2-3 sentence summaries focusing on key topics and outcomes
+- **Trigger**: Automatic via session timeout or manual admin action
+- **Storage**: Dedicated Blobs store (`obt-helper-summaries`) with metadata
+
+```javascript
+// Summary storage format
+{
+  "sessionId": "whatsapp_1234567890",
+  "summary": "User discussed recipe modifications and cooking techniques for pasta dishes.",
+  "messageCount": 15,
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+### Natural Language Recall
+- **Keywords**: Simple detection for `recall`, `remember`, `last chat`, `previous`, `earlier`, `before`, `history`
+- **Query Processing**: Intercepts user messages before OpenAI API calls
+- **Response Format**: Chronological list of past conversation summaries with dates and message counts
+- **Limitation**: Returns last 3 conversations for relevance and performance
+
+```javascript
+// Recall query example
+User: "recall our last chat"
+Assistant: "Here's what we discussed in our previous conversations:
+
+1. 1/14/2025: User discussed recipe modifications and cooking techniques for pasta dishes. (15 messages)
+2. 1/12/2025: User asked about meal planning and grocery shopping tips. (8 messages)"
+```
+
+### Memory Storage Strategy
+- **Active Sessions**: In-memory with timeout tracking
+- **Conversation History**: Temporary (cleared on timeout)
+- **Summaries**: Persistent in edge storage
+- **Retrieval**: Fast KV lookups by session prefix
+- **Cleanup**: Automatic removal of old summaries (30+ days)
+
+### Error Handling
+- **Summary Generation Failures**: Graceful degradation, session still cleaned up
+- **Storage Errors**: Logged but non-blocking to chat functionality
+- **Recall Failures**: User-friendly error messages, system continues normally
+- **Timeout Issues**: Fallback cleanup mechanisms prevent memory leaks
+
 ## Security Architecture
 
 ### API Keys
