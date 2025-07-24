@@ -1,22 +1,19 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
-	import { sendChatMessage, parseStreamingResponse } from '$lib/utils/openai.js';
-	import { handleRecallQuery, formatRecallResponse, isRecalling } from '$lib/stores/chat.js';
+	import { page } from '$app/stores';
+	import { messages, isRecalling } from '$lib/stores/chat.js';
 	import VoiceControls from './VoiceControls.svelte';
+
 	export let tool;
 
-	let messages = [];
 	let currentMessage = '';
 	let isLoading = false;
-	let chatContainer;
-	let voiceControls;
-
-	// Voice settings
+	let messagesContainer: HTMLElement;
+	let apiKey = '';
 	let voiceEnabled = false;
-	let autoSpeak = false;
 	let interimTranscript = '';
 
-	// WhatsApp linking state
+	// WhatsApp linking variables
 	let showLinkingForm = false;
 	let phoneNumber = '';
 	let verificationCode = '';
@@ -25,16 +22,24 @@
 	let currentSessionId = `web_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	let linkedWhatsAppSession = null;
 
+	// Voice controls
+	let voiceControls;
+	let autoSpeak = false;
+
+	// Issue 3.1.1: Media upload variables
+	let showMediaUpload = false;
+	let uploadedFiles: Array<{id: number, name: string, type: string, size: number, data: string, placeholder: boolean}> = [];
+
 	onMount(() => {
 		// No need for client-side API key - using serverless functions
 		
 		// Add welcome message
-		messages = [{
+		messages.update(msgs => [...msgs, {
 			id: 0,
 			content: `Hello! I'm your ${tool.name}. ${tool.description} How can I help you today?`,
 			role: 'assistant',
 			timestamp: new Date()
-		}];
+		}]);
 		
 		// Start polling for synced messages if session is linked
 		startSyncPolling();
@@ -74,13 +79,13 @@
 									source: 'whatsapp'
 								};
 								
-								messages = [...messages, userMessage, aiMessage];
+								messages.update(msgs => [...msgs, userMessage, aiMessage]);
 							});
 							
 							// Scroll to bottom
 							setTimeout(() => {
-								if (chatContainer) {
-									chatContainer.scrollTop = chatContainer.scrollHeight;
+								if (messagesContainer) {
+									messagesContainer.scrollTop = messagesContainer.scrollHeight;
 								}
 							}, 100);
 						}
@@ -156,7 +161,7 @@
 					role: 'system',
 					timestamp: new Date()
 				};
-				messages = [...messages, linkMessage];
+				messages.update(msgs => [...msgs, linkMessage]);
 				
 				// Reset form
 				phoneNumber = '';
@@ -195,7 +200,7 @@
 				role: 'user',
 				timestamp: new Date()
 			};
-			messages = [...messages, userMessage];
+			messages.update(msgs => [...msgs, userMessage]);
 			
 			// Add recall response
 			const recallResponse = formatRecallResponse(recallResult.summaries, recallResult.error);
@@ -206,14 +211,14 @@
 				timestamp: new Date(),
 				isRecall: true
 			};
-			messages = [...messages, assistantMessage];
+			messages.update(msgs => [...msgs, assistantMessage]);
 			
 			currentMessage = '';
 			
 			// Scroll to bottom
 			setTimeout(() => {
-				if (chatContainer) {
-					chatContainer.scrollTop = chatContainer.scrollHeight;
+				if (messagesContainer) {
+					messagesContainer.scrollTop = messagesContainer.scrollHeight;
 				}
 			}, 100);
 			
@@ -227,7 +232,7 @@
 			role: 'user',
 			timestamp: new Date()
 		};
-		messages = [...messages, userMessage];
+		messages.update(msgs => [...msgs, userMessage]);
 		
 		const messageToSend = currentMessage;
 		currentMessage = '';
@@ -235,8 +240,8 @@
 
 		// Scroll to bottom
 		setTimeout(() => {
-			if (chatContainer) {
-				chatContainer.scrollTop = chatContainer.scrollHeight;
+			if (messagesContainer) {
+				messagesContainer.scrollTop = messagesContainer.scrollHeight;
 			}
 		}, 100);
 
@@ -264,7 +269,7 @@
 				role: 'assistant',
 				timestamp: new Date()
 			};
-			messages = [...messages, aiMessage];
+			messages.update(msgs => [...msgs, aiMessage]);
 
 			// Auto-speak the response if enabled
 			if (autoSpeak && voiceControls && aiContent) {
@@ -281,7 +286,7 @@
 				role: 'assistant',
 				timestamp: new Date()
 			};
-			messages = [...messages, errorMessage];
+			messages.update(msgs => [...msgs, errorMessage]);
 		} finally {
 			isLoading = false;
 		}
@@ -328,6 +333,74 @@
 
 	function toggleAutoSpeak() {
 		autoSpeak = !autoSpeak;
+	}
+
+	// Issue 3.1.1: Handle file upload for multimodal stubs
+	function handleFileUpload(event) {
+		const files = Array.from(event.target.files);
+		
+		files.forEach(file => {
+			if (file.type.startsWith('image/') || file.type.startsWith('audio/')) {
+				const reader = new FileReader();
+				reader.onload = (e) => {
+					uploadedFiles = [...uploadedFiles, {
+						id: Date.now() + Math.random(),
+						name: file.name,
+						type: file.type,
+						size: file.size,
+						data: e.target.result,
+						placeholder: true // Mark as stub
+					}];
+				};
+				reader.readAsDataURL(file);
+			}
+		});
+		
+		// Clear the input for future uploads
+		event.target.value = '';
+	}
+
+	// Issue 3.1.1: Remove uploaded file
+	function removeUploadedFile(fileId) {
+		uploadedFiles = uploadedFiles.filter(file => file.id !== fileId);
+	}
+
+	// Issue 3.1.1: Send message with media (stub implementation)
+	async function sendMessageWithMedia() {
+		if (uploadedFiles.length > 0) {
+			// Add user message showing uploaded files
+			const fileList = uploadedFiles.map(f => `• ${f.name} (${f.type})`).join('\n');
+			const userMessage = {
+				role: 'user',
+				content: currentMessage.trim() || '[Media files attached]',
+				files: uploadedFiles,
+				timestamp: new Date()
+			};
+			
+			messages.update(msgs => [...msgs, userMessage]);
+			
+			// Stub: Show placeholder response for multimodal
+			const stubResponse = {
+				role: 'assistant',
+				content: `🚧 **Multimodal feature coming soon!**\n\nI can see you uploaded:\n${fileList}\n\nThis will work with future vision/audio models like:\n• **GPT-4 Vision** for image analysis\n• **Whisper** for audio transcription\n• **DALL-E** for image generation\n\nFor now, please describe what you'd like me to help you with regarding these files!`,
+				isStub: true,
+				timestamp: new Date()
+			};
+			
+			// Add response after a brief delay
+			setTimeout(() => {
+				messages.update(msgs => [...msgs, stubResponse]);
+			}, 500);
+			
+			// Clear input and files
+			currentMessage = '';
+			uploadedFiles = [];
+			showMediaUpload = false;
+			return;
+		}
+		
+		// Continue with normal text flow
+		await sendMessage();
 	}
 </script>
 
@@ -397,7 +470,7 @@
 
 	<!-- Messages Container -->
 	<div 
-		bind:this={chatContainer}
+		bind:this={messagesContainer}
 		class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
 	>
 		{#each messages as message}
@@ -473,7 +546,65 @@
 			💡 <strong>Tip:</strong> Try saying "recall last chat" or "remember our previous conversation" to see past discussions!
 		</div>
 		
+		<!-- Issue 3.1.1: Media upload panel -->
+		{#if showMediaUpload}
+			<div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+				<div class="flex items-center justify-between mb-3">
+					<h4 class="font-medium text-yellow-800">📎 Upload Media (Preview)</h4>
+					<button 
+						on:click={() => showMediaUpload = false}
+						class="text-yellow-600 hover:text-yellow-800"
+					>
+						✕
+					</button>
+				</div>
+				<p class="text-sm text-yellow-700 mb-3">
+					Upload images or audio files. This is a preview - full multimodal support coming in future releases.
+				</p>
+				
+				<input 
+					type="file"
+					accept="image/*,audio/*"
+					multiple
+					on:change={handleFileUpload}
+					class="mb-3 text-sm"
+				/>
+				
+				{#if uploadedFiles.length > 0}
+					<div class="space-y-2">
+						<h5 class="text-sm font-medium text-yellow-800">Ready to send:</h5>
+						{#each uploadedFiles as file}
+							<div class="flex items-center justify-between p-2 bg-white rounded border border-yellow-200">
+								<span class="text-sm flex items-center gap-2">
+									<span class="text-lg">
+										{file.type.startsWith('image/') ? '🖼️' : '🎵'}
+									</span>
+									<span>{file.name}</span>
+									<span class="text-xs text-gray-500">({(file.size / 1024).toFixed(1)}KB)</span>
+								</span>
+								<button 
+									on:click={() => removeUploadedFile(file.id)}
+									class="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded"
+								>
+									Remove
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+		
 		<div class="flex space-x-3">
+			<!-- Issue 3.1.1: Media upload button -->
+			<button 
+				on:click={() => showMediaUpload = !showMediaUpload}
+				class="btn-secondary text-sm whitespace-nowrap"
+				title="Upload image or audio (coming soon)"
+			>
+				📎 Media
+			</button>
+			
 			<div class="flex-1">
 				<div class="relative">
 					<textarea
@@ -492,15 +623,15 @@
 				</div>
 			</div>
 			<button
-				on:click={sendMessage}
-				disabled={!currentMessage.trim() || isLoading || $isRecalling}
+				on:click={sendMessageWithMedia}
+				disabled={(!currentMessage.trim() && uploadedFiles.length === 0) || isLoading || $isRecalling}
 				class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{isLoading ? 'Sending...' : $isRecalling ? 'Recalling...' : 'Send'}
 			</button>
 		</div>
 		<div class="mt-2 flex items-center justify-between text-xs text-gray-500">
-			<span>Press Enter to send, Shift+Enter for new line</span>
+			<span>Press Enter to send, Shift+Enter for new line{uploadedFiles.length > 0 ? ` • ${uploadedFiles.length} file(s) ready` : ''}</span>
 			<span>Model: {tool.model}</span>
 		</div>
 	</div>
@@ -529,6 +660,10 @@
 						<label class="block text-sm font-medium text-gray-700 mb-2">
 							WhatsApp Phone Number
 						</label>
+						<!-- DEBUG: Show current variable state -->
+						<div class="text-xs text-red-600 mb-2">
+							DEBUG: phoneNumber = "{phoneNumber}" (type: {typeof phoneNumber}) (length: {phoneNumber ? phoneNumber.length : 'undefined'})
+						</div>
 						<input 
 							type="tel"
 							bind:value={phoneNumber}
@@ -544,9 +679,22 @@
 						</p>
 					</div>
 					<div class="flex gap-3">
+						<!-- DEBUG: Show button state -->
+						<div class="text-xs text-red-600 mb-2">
+							DEBUG: Button disabled = {!phoneNumber?.trim() || linkingStatus.includes('Sending')} (phoneNumber.trim() = "{phoneNumber?.trim()}")
+						</div>
 						<button 
-							on:click={sendLinkingCode}
-							disabled={!phoneNumber.trim() || linkingStatus.includes('Sending')}
+							on:click={(e) => {
+								console.log('=== MODAL BUTTON CLICKED ===');
+								console.log('Event:', e);
+								console.log('phoneNumber at button click:', phoneNumber);
+								console.log('phoneNumber type:', typeof phoneNumber);
+								console.log('phoneNumber length:', phoneNumber ? phoneNumber.length : 'no length');
+								e.preventDefault();
+								e.stopPropagation();
+								sendLinkingCode();
+							}}
+							disabled={!phoneNumber?.trim() || linkingStatus.includes('Sending')}
 							class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{linkingStatus.includes('Sending') ? 'Sending...' : 'Send Code'}

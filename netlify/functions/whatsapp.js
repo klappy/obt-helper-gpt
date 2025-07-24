@@ -36,27 +36,46 @@ async function getLinkedWebSession(whatsappSessionId) {
   }
 }
 
-// Mirror message to web session
+// Mirror message to web session - ENHANCED WITH 2-MESSAGE PATTERN
 async function mirrorToWeb(linkedSession, userMessage, aiResponse) {
   try {
     const syncStore = getSyncStore();
-    const syncData = {
-      direction: "whatsapp-to-web",
-      webSessionId: linkedSession.webSessionId,
-      userMessage,
-      aiResponse,
-      tool: linkedSession.toolId,
-      timestamp: Date.now(),
-      phoneNumber: linkedSession.phoneNumber,
-    };
 
-    console.log(`Would mirror to Web ${linkedSession.webSessionId}:`, {
+    console.log(`Mirroring to Web ${linkedSession.webSessionId}:`, {
       user: userMessage.substring(0, 50) + "...",
       ai: aiResponse.substring(0, 50) + "...",
     });
 
-    // Store for web client to poll
-    await syncStore.set(`whatsapp-mirror-${Date.now()}`, JSON.stringify(syncData));
+    // Store 2 separate messages: user echo + AI response
+    const timestamp = Date.now();
+
+    // 1. User message echo
+    const userSyncData = {
+      direction: "whatsapp-to-web",
+      webSessionId: linkedSession.webSessionId,
+      userMessage,
+      aiResponse: null, // Mark as user message only
+      tool: linkedSession.toolId,
+      timestamp: timestamp,
+      phoneNumber: linkedSession.phoneNumber,
+      messageType: "user",
+    };
+
+    // 2. AI response
+    const aiSyncData = {
+      direction: "whatsapp-to-web",
+      webSessionId: linkedSession.webSessionId,
+      userMessage: null, // Mark as AI response only
+      aiResponse,
+      tool: linkedSession.toolId,
+      timestamp: timestamp + 1, // Slightly later timestamp
+      phoneNumber: linkedSession.phoneNumber,
+      messageType: "ai",
+    };
+
+    // Store both for web client to poll
+    await syncStore.set(`whatsapp-mirror-user-${timestamp}`, JSON.stringify(userSyncData));
+    await syncStore.set(`whatsapp-mirror-ai-${timestamp}`, JSON.stringify(aiSyncData));
   } catch (error) {
     console.error("Error mirroring to web:", error);
   }

@@ -54,9 +54,26 @@ export default async (req, context) => {
 
     // Get stored code data using cleaned phone number
     const codeStore = getCodeStore();
-    const storedDataStr = await codeStore.get(`link-code-${cleanPhoneNumber}`);
+    const lookupKey = `link-code-${cleanPhoneNumber}`;
+    const storedDataStr = await codeStore.get(lookupKey);
 
-    if (!storedDataStr) {
+    console.log("=== STORAGE LOOKUP DEBUG ===");
+    console.log("Lookup key used:", lookupKey);
+    console.log("Found stored data:", storedDataStr ? "YES" : "NO");
+
+    // If not found with cleaned number, try original number for backward compatibility
+    let fallbackDataStr = null;
+    if (!storedDataStr && phoneNumber !== cleanPhoneNumber) {
+      const fallbackKey = `link-code-${phoneNumber}`;
+      fallbackDataStr = await codeStore.get(fallbackKey);
+      console.log("Tried fallback key:", fallbackKey);
+      console.log("Found with fallback:", fallbackDataStr ? "YES" : "NO");
+    }
+
+    const finalDataStr = storedDataStr || fallbackDataStr;
+
+    if (!finalDataStr) {
+      console.log("ERROR: No verification code found with either key format");
       return new Response(
         JSON.stringify({
           error: "No verification code found. Please request a new code.",
@@ -68,7 +85,18 @@ export default async (req, context) => {
       );
     }
 
-    const storedData = JSON.parse(storedDataStr);
+    console.log("=== STORED DATA DEBUG ===");
+    console.log("Raw stored data string:", finalDataStr);
+    console.log("Type of finalDataStr:", typeof finalDataStr);
+    console.log("Length of finalDataStr:", finalDataStr ? finalDataStr.length : "null");
+
+    const storedData = JSON.parse(finalDataStr);
+
+    console.log("Parsed stored data:", storedData);
+    console.log("Stored code:", storedData.code);
+    console.log("Provided code:", code);
+    console.log("Codes match:", storedData.code === code);
+    console.log("Code expired?", Date.now() > storedData.expires);
 
     // Check if code expired
     if (Date.now() > storedData.expires) {

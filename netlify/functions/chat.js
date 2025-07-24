@@ -5,17 +5,17 @@ import { getAllTools } from "./tools.js";
 // Storage instances
 function getSessionStore() {
   return getStore({
-    name: "obt-helper-sessions", 
+    name: "obt-helper-sessions",
     consistency: "strong",
-    siteID: process.env.NETLIFY_SITE_ID || 'local'
+    siteID: process.env.NETLIFY_SITE_ID || "local",
   });
 }
 
 function getSyncStore() {
   return getStore({
-    name: "obt-helper-sync", 
+    name: "obt-helper-sync",
     consistency: "strong",
-    siteID: process.env.NETLIFY_SITE_ID || 'local'
+    siteID: process.env.NETLIFY_SITE_ID || "local",
   });
 }
 
@@ -26,92 +26,110 @@ async function getLinkedSession(webSessionId) {
     const linkDataStr = await sessionStore.get(`web-to-whatsapp-${webSessionId}`);
     return linkDataStr ? JSON.parse(linkDataStr) : null;
   } catch (error) {
-    console.error('Error getting linked session:', error);
+    console.error("Error getting linked session:", error);
     return null;
   }
 }
 
-// Mirror message to WhatsApp
+// Mirror message to WhatsApp - FIXED TO ACTUALLY SEND
 async function mirrorToWhatsApp(linkedSession, userMessage, aiResponse) {
   try {
-    // For now, store in sync queue instead of sending SMS directly
-    // TODO: Implement actual Twilio SMS when environment is configured
+    const twilioClient = (await import("../../src/lib/utils/twilio.js")).default;
+
+    console.log(`Mirroring to WhatsApp ${linkedSession.phoneNumber}:`, {
+      user: userMessage.substring(0, 50) + "...",
+      ai: aiResponse.substring(0, 50) + "...",
+    });
+
+    // Send 2 messages: user echo + AI response
+    const userEcho = `[From Web] ${userMessage}`;
+    await twilioClient.sendMessage(linkedSession.phoneNumber, userEcho);
+
+    // Small delay between messages
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await twilioClient.sendMessage(linkedSession.phoneNumber, aiResponse);
+
+    // Also store in sync queue for backup/logging
     const syncStore = getSyncStore();
     const syncData = {
-      direction: 'web-to-whatsapp',
+      direction: "web-to-whatsapp",
       phoneNumber: linkedSession.phoneNumber,
       userMessage,
       aiResponse,
       tool: linkedSession.toolId,
       timestamp: Date.now(),
-      webSessionId: linkedSession.webSessionId
+      webSessionId: linkedSession.webSessionId,
     };
-    
-    console.log(`Would mirror to WhatsApp ${linkedSession.phoneNumber}:`, {
-      user: userMessage.substring(0, 50) + '...',
-      ai: aiResponse.substring(0, 50) + '...'
-    });
-    
-    // Store for potential future processing
+
     await syncStore.set(`web-mirror-${Date.now()}`, JSON.stringify(syncData));
-    
   } catch (error) {
-    console.error('Error mirroring to WhatsApp:', error);
+    console.error("Error mirroring to WhatsApp:", error);
+    // Continue execution even if WhatsApp sending fails
   }
 }
 
 export default async (req, context) => {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
   }
 
   try {
     // Handle both string and stream body
-    const bodyText = typeof req.body === 'string' ? req.body : await req.text();
+    const bodyText = typeof req.body === "string" ? req.body : await req.text();
     const { messages, tool, sessionId } = JSON.parse(bodyText);
-    
+
     // Validate required fields
     if (!messages || !tool) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required fields (messages, tool)' 
-      }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Missing required fields (messages, tool)",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Use server-side API key
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return new Response(JSON.stringify({ 
-        error: 'OpenAI API key not configured on server' 
-      }), { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return new Response(
+        JSON.stringify({
+          error: "OpenAI API key not configured on server",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Get the tool configuration
     const tools = await getAllTools();
-    const toolConfig = tools.find(t => t.id === tool.id);
-    
+    const toolConfig = tools.find((t) => t.id === tool.id);
+
     if (!toolConfig) {
-      return new Response(JSON.stringify({ 
-        error: 'Tool not found' 
-      }), { 
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Tool not found",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Send to OpenAI
     const response = await sendChatMessage(messages, toolConfig, apiKey);
     const aiData = await response.json();
-    
+
     if (!response.ok) {
-      return new Response(JSON.stringify(aiData), { 
+      return new Response(JSON.stringify(aiData), {
         status: response.status,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -128,19 +146,21 @@ export default async (req, context) => {
     }
 
     // Return the AI response
-    return new Response(JSON.stringify(aiData), { 
+    return new Response(JSON.stringify(aiData), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     });
-    
   } catch (error) {
-    console.error('Chat function error:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error.message
-    }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error("Chat function error:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        details: error.message,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
-}
+};

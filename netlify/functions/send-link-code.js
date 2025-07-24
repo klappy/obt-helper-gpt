@@ -125,9 +125,15 @@ export default async (req, context) => {
         }
       );
     } catch (twilioError) {
-      console.error("Failed to send WhatsApp message:", twilioError);
+      console.error(`❌ WHATSAPP SENDING FAILED:`, twilioError);
+      console.error(`Twilio error details:`, {
+        code: twilioError.code,
+        message: twilioError.message,
+        status: twilioError.status,
+      });
 
       // Fallback: return test code if WhatsApp sending fails
+      console.log(`🧪 FALLBACK: Returning test code ${code} to user`);
       return new Response(
         JSON.stringify({
           success: true,
