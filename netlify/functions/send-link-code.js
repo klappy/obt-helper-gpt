@@ -1,5 +1,10 @@
 import { getStore } from "@netlify/blobs";
 import twilioClient from "../../src/lib/utils/twilio.js";
+import {
+  linkingLimiter,
+  withRateLimit,
+  getClientIdentifier,
+} from "../../src/lib/utils/rate-limiter.js";
 
 // Storage for verification codes
 function getStoreInstance() {
@@ -13,6 +18,25 @@ function getStoreInstance() {
 export default async (req, context) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
+  }
+
+  // Apply rate limiting for linking attempts
+  const clientId = getClientIdentifier(req, null);
+  const rateCheck = withRateLimit(linkingLimiter, clientId);
+  if (!rateCheck.allowed) {
+    console.log(`Rate limit exceeded for linking attempt from ${clientId}`);
+    return new Response(
+      JSON.stringify({
+        error: "Too many linking attempts. Please wait before trying again.",
+      }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          ...rateCheck.headers,
+        },
+      }
+    );
   }
 
   try {

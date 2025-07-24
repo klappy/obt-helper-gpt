@@ -4,6 +4,11 @@ import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
 import { sendChatMessage } from "../../src/lib/utils/llm-client.js";
 import { getAllTools } from "./tools.js";
+import {
+  whatsappLimiter,
+  withRateLimit,
+  getClientIdentifier,
+} from "../../src/lib/utils/rate-limiter.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -181,6 +186,14 @@ export default async (req, context) => {
       headers: { "Content-Type": "text/plain" },
     });
   };
+
+  // Apply rate limiting for WhatsApp webhooks
+  const clientId = getClientIdentifier(req, null);
+  const rateCheck = withRateLimit(whatsappLimiter, clientId);
+  if (!rateCheck.allowed) {
+    console.log(`Rate limit exceeded for WhatsApp webhook from ${clientId}`);
+    return respondToTwilio(429, "Rate limit exceeded");
+  }
 
   // Declare variables in outer scope for error handler access
   let from = null;

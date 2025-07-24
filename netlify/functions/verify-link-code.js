@@ -1,4 +1,9 @@
 import { getStore } from "@netlify/blobs";
+import {
+  linkingLimiter,
+  withRateLimit,
+  getClientIdentifier,
+} from "../../src/lib/utils/rate-limiter.js";
 
 // Storage for verification codes
 function getCodeStore() {
@@ -21,6 +26,25 @@ function getSessionStore() {
 export default async (req, context) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
+  }
+
+  // Apply rate limiting for verification attempts
+  const clientId = getClientIdentifier(req, null);
+  const rateCheck = withRateLimit(linkingLimiter, clientId);
+  if (!rateCheck.allowed) {
+    console.log(`Rate limit exceeded for verification attempt from ${clientId}`);
+    return new Response(
+      JSON.stringify({
+        error: "Too many verification attempts. Please wait before trying again.",
+      }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          ...rateCheck.headers,
+        },
+      }
+    );
   }
 
   try {

@@ -1,6 +1,11 @@
 import { sendChatMessage } from "../../src/lib/utils/llm-client.js";
 import { getStore } from "@netlify/blobs";
 import { getAllTools } from "./tools.js";
+import {
+  chatLimiter,
+  withRateLimit,
+  getClientIdentifier,
+} from "../../src/lib/utils/rate-limiter.js";
 
 // Storage instances
 function getSessionStore() {
@@ -79,6 +84,13 @@ export default async (req, context) => {
     const bodyText = typeof req.body === "string" ? req.body : await req.text();
     const { messages, tool, sessionId } = JSON.parse(bodyText);
 
+    // Apply rate limiting
+    const clientId = getClientIdentifier(req, sessionId);
+    const rateCheck = withRateLimit(chatLimiter, clientId);
+    if (!rateCheck.allowed) {
+      return rateCheck; // Returns 429 response
+    }
+
     // Validate required fields
     if (!messages || !tool) {
       return new Response(
@@ -145,10 +157,13 @@ export default async (req, context) => {
       }
     }
 
-    // Return the AI response
+    // Return the AI response with rate limit headers
     return new Response(JSON.stringify(aiData), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...rateCheck.headers,
+      },
     });
   } catch (error) {
     console.error("Chat function error:", error);

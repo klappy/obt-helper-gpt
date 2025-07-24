@@ -873,7 +873,7 @@ export default async function handler(req, context) {
 
 ### Issue 3.2.2: Add rate-limiting middleware
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `netlify.toml`, `src/lib/utils/rate-limiter.js`
 - **Dependencies**: None
 - **PRD Connection**: "Cap at 100 concurrent via functions" from Scaling Guidelines
