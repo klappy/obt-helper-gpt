@@ -1,6 +1,7 @@
 // @ts-check
 import { writable } from "svelte/store";
-import { browser } from "$app/environment";
+// Server-side safe browser detection
+const browser = typeof window !== 'undefined';
 
 // Simple admin authentication with email whitelist
 export const isAdmin = writable(false);

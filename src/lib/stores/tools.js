@@ -1,6 +1,7 @@
 // @ts-check
 import { writable } from "svelte/store";
-import { browser } from "$app/environment";
+// Server-side safe browser detection
+const browser = typeof window !== 'undefined';
 
 /**
  * @typedef {Object} Tool

@@ -66,7 +66,9 @@ export default async (req, context) => {
   }
 
   try {
-    const { messages, tool, sessionId } = JSON.parse(req.body);
+    // Handle both string and stream body
+    const bodyText = typeof req.body === 'string' ? req.body : await req.text();
+    const { messages, tool, sessionId } = JSON.parse(bodyText);
     
     // Validate required fields
     if (!messages || !tool) {
