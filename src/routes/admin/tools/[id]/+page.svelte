@@ -27,9 +27,22 @@
 	// Issue 2.2.1: Tool export/import functionality
 	let showImportModal = false;
 
+	// Issue 3.2.4: A/B testing variables
+	let abTestingEnabled = false;
+	let abTestPrompt = '';
+	let abTestSplit = '50-50';
+	let abTestDuration = '1-week';
+
 	// Initialize edited tool when tool loads (only once)
 	$: if (tool && !isInitialized) {
 		editedTool = { ...tool };
+		
+		// Issue 3.2.4: Initialize A/B testing fields
+		abTestingEnabled = tool.abTestingEnabled || false;
+		abTestPrompt = tool.abTestPrompt || '';
+		abTestSplit = tool.abTestSplit || '50-50';
+		abTestDuration = tool.abTestDuration || '1-week';
+		
 		isInitialized = true;
 		isDirty = false;
 	}
@@ -45,7 +58,18 @@
 		if (!tool || !isDirty) return;
 		
 		isSaving = true;
-		const success = await updateTool(tool.id, editedTool);
+		
+		// Issue 3.2.4: Include A/B testing data in save
+		const saveData = {
+			...editedTool,
+			abTestingEnabled,
+			abTestPrompt,
+			abTestSplit,
+			abTestDuration,
+			abTestPreview: true // Flag for future implementation
+		};
+		
+		const success = await updateTool(tool.id, saveData);
 		isSaving = false;
 		
 		if (success) {
@@ -477,6 +501,117 @@
 					
 					<div class="mt-2 text-xs text-gray-500">
 						Character count: {editedTool.systemPrompt?.length || 0}
+					</div>
+				</div>
+
+				<!-- Issue 3.2.4: A/B Testing Configuration -->
+				<div class="card">
+					<h2 class="text-xl font-semibold text-gray-900 mb-4">A/B Testing (Preview)</h2>
+					<p class="text-sm text-gray-600 mb-4">
+						Test different prompts and configurations to optimize performance.
+					</p>
+
+					<div class="space-y-4">
+						<!-- A/B Testing Toggle -->
+						<div>
+							<label class="flex items-center space-x-3">
+								<input
+									type="checkbox"
+									bind:checked={abTestingEnabled}
+									on:change={markDirty}
+									class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+								/>
+								<div>
+									<span class="text-sm font-medium text-gray-900">Enable A/B Testing</span>
+									<p class="text-xs text-gray-500">Split traffic between original and variant prompts</p>
+								</div>
+							</label>
+						</div>
+
+						{#if abTestingEnabled}
+							<!-- Variant Configuration -->
+							<div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+								<h4 class="font-medium text-gray-900 mb-3">Variant Configuration</h4>
+								
+								<div class="space-y-4">
+									<!-- Variant B Prompt -->
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-2">
+											Variant B System Prompt
+										</label>
+										<textarea
+											bind:value={abTestPrompt}
+											on:input={markDirty}
+											rows="8"
+											class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+											placeholder="Enter alternative system prompt to test against the original..."
+										></textarea>
+										<div class="mt-1 text-xs text-gray-500">
+											Character count: {abTestPrompt?.length || 0}
+										</div>
+									</div>
+
+									<!-- Traffic Split & Duration -->
+									<div class="grid grid-cols-2 gap-4">
+										<div>
+											<label class="block text-sm font-medium text-gray-700 mb-1">Traffic Split:</label>
+											<select bind:value={abTestSplit} on:change={markDirty} class="w-full p-2 border border-gray-300 rounded-md">
+												<option value="50-50">50% / 50%</option>
+												<option value="70-30">70% / 30%</option>
+												<option value="80-20">80% / 20%</option>
+												<option value="90-10">90% / 10%</option>
+											</select>
+										</div>
+
+										<div>
+											<label class="block text-sm font-medium text-gray-700 mb-1">Duration:</label>
+											<select bind:value={abTestDuration} on:change={markDirty} class="w-full p-2 border border-gray-300 rounded-md">
+												<option value="1-week">1 Week</option>
+												<option value="2-weeks">2 Weeks</option>
+												<option value="1-month">1 Month</option>
+											</select>
+										</div>
+									</div>
+
+									<!-- Metrics Preview -->
+									<div class="bg-white border border-gray-200 rounded-lg p-4">
+										<h5 class="font-medium text-gray-900 mb-3">Tracking Metrics (Simulated Preview)</h5>
+										<div class="grid grid-cols-3 gap-4 text-center">
+											<div>
+												<div class="text-lg font-bold text-blue-600">127</div>
+												<div class="text-xs text-gray-600">Variant A Sessions</div>
+											</div>
+											<div>
+												<div class="text-lg font-bold text-green-600">133</div>
+												<div class="text-xs text-gray-600">Variant B Sessions</div>
+											</div>
+											<div>
+												<div class="text-lg font-bold text-purple-600">+12%</div>
+												<div class="text-xs text-gray-600">B Engagement (Simulated)</div>
+											</div>
+										</div>
+
+										<div class="mt-3 text-center">
+											<button class="px-3 py-1 bg-gray-100 text-gray-500 rounded text-sm cursor-not-allowed" disabled>
+												📊 View Detailed Results (Coming Soon)
+											</button>
+										</div>
+									</div>
+
+									<!-- Preview Warning -->
+									<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+										<div class="flex items-start gap-2">
+											<span class="text-yellow-600">⚠️</span>
+											<div class="text-sm text-yellow-800">
+												<strong>Preview Feature:</strong> A/B testing is in development.
+												Current implementation saves variant configurations but does not split traffic.
+												Full statistical testing capabilities coming in future release.
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						{/if}
 					</div>
 				</div>
 			</div>

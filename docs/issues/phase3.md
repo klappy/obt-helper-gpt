@@ -1230,7 +1230,7 @@ export default async function handler(req, context) {
 
 ### Issue 3.2.4: Stub A/B testing toggle in admin
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/routes/admin/tools/[id]/+page.svelte`
 - **Dependencies**: None (stub only)
 - **PRD Connection**: "A/B testing stubs" from Future Enhancements
