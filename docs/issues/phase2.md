@@ -13,7 +13,7 @@
 **Why This Matters**: PRD requires seamless tool switching and web<->WhatsApp session continuity for unified user experience across platforms.
 
 ### Issue 2.1.1: Add intent inference LLM call in `whatsapp.js`
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `netlify/functions/whatsapp.js`
 - **Dependencies**: Existing OpenAI integration
 - **PRD Connection**: "Intelligently infers appropriate assistant based on user intent" from WhatsApp Integration
