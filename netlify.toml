@@ -1,3 +1,4 @@
+# Fresh deployment attempt
 [build]
   command = "npm run build"
   functions = "netlify/functions"
