@@ -621,10 +621,11 @@ I'm your intelligent AI assistant! I can help you with:
 							Enter the 6-digit verification code sent to your WhatsApp.
 						</p>
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">
+							<label for="verification-code" class="block text-sm font-medium text-gray-700 mb-2">
 								Verification Code
 							</label>
 							<input 
+								id="verification-code"
 								type="text"
 								bind:value={verificationCode}
 								placeholder="123456"
