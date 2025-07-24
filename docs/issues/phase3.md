@@ -154,7 +154,7 @@
 
 ### Issue 3.1.2: Register service worker with Workbox
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/app.html`, `static/sw.js`
 - **Dependencies**: `npm install workbox-window workbox-webpack-plugin`
 - **PRD Connection**: "Service workers for on-device sessions" from Future Enhancements
