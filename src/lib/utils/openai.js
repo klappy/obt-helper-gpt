@@ -73,7 +73,11 @@ export async function selectModelForTool(toolId, originalModel) {
     return originalModel;
   } catch (error) {
     console.error(`Error selecting model for tool ${toolId}:`, error);
-    // Fail gracefully - return original model
+    // Only fail gracefully for API errors, not cost ceiling violations
+    if (error.message.includes('exceeded its daily cost limit')) {
+      throw error; // Re-throw cost ceiling errors
+    }
+    // Fail gracefully for other errors - return original model
     return originalModel;
   }
 }
