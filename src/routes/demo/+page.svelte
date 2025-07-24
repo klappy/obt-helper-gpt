@@ -7,6 +7,16 @@
 	let phoneNumber = '+1234567890'; // Simulated phone number for demo
 	let chatContainer;
 	
+	// WhatsApp linking state
+	let showLinkingForm = false;
+	let linkingPhoneNumber = '';
+	let verificationCode = '';
+	let linkingStep = 'phone'; // 'phone', 'code', 'linked'
+	let linkingStatus = '';
+	let currentSessionId = `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	let linkedWhatsAppSession = null;
+	let syncInterval;
+	
 	// Simulate sending a message to the WhatsApp endpoint
 	async function sendMessage() {
 		if (!input.trim() || loading) return;
@@ -16,12 +26,20 @@
 		loading = true;
 		
 		// Add user message to chat
-		messages = [...messages, {
+		const userMsg = {
 			id: Date.now(),
 			text: userMessage,
 			sender: 'user',
 			timestamp: new Date()
-		}];
+		};
+		
+		// Add sync indicator if linked
+		if (linkedWhatsAppSession) {
+			userMsg.text += ' 🔄';
+			userMsg.syncIndicator = true;
+		}
+		
+		messages = [...messages, userMsg];
 		
 		try {
 			// Call the same endpoint that WhatsApp uses
@@ -168,12 +186,20 @@ I'm your intelligent AI assistant! I can help you with:
 						return null;
 					}
 					
-					messages = [...messages, {
+					const botMsg = {
 						id: Date.now() + 2,
 						text: aiResponse,
 						sender: 'bot',
 						timestamp: new Date()
-					}];
+					};
+					
+					// Add sync indicator if linked
+					if (linkedWhatsAppSession) {
+						botMsg.text += ' 🔄';
+						botMsg.syncIndicator = true;
+					}
+					
+					messages = [...messages, botMsg];
 					scrollToBottom();
 				}, 2000);
 			} else {
@@ -208,15 +234,156 @@ I'm your intelligent AI assistant! I can help you with:
 		}
 	}
 	
+	// WhatsApp linking functions
+	async function sendLinkingCode() {
+		try {
+			linkingStatus = 'Sending code...';
+			const response = await fetch('/.netlify/functions/send-link-code', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ 
+					phoneNumber: linkingPhoneNumber,
+					sessionId: currentSessionId,
+					toolId: 'general-assistant'
+				})
+			});
+			
+			const data = await response.json();
+			
+			if (response.ok && data.success) {
+				linkingStep = 'code';
+				linkingStatus = '✅ Code sent! Check your WhatsApp.';
+				
+				// If there's a test code, show it in demo mode
+				if (data.testCode) {
+					linkingStatus += ` Demo code: ${data.testCode}`;
+				}
+			} else {
+				linkingStatus = `❌ ${data.error || 'Failed to send code. Try again.'}`;
+			}
+		} catch (error) {
+			console.error('Send code error:', error);
+			linkingStatus = '❌ Error sending code. Please try again.';
+		}
+	}
+	
+	async function verifyLinkingCode() {
+		try {
+			linkingStatus = 'Verifying code...';
+			const response = await fetch('/.netlify/functions/verify-link-code', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ 
+					phoneNumber: linkingPhoneNumber,
+					code: verificationCode,
+					sessionId: currentSessionId
+				})
+			});
+			
+			const data = await response.json();
+			
+			if (response.ok && data.success) {
+				linkingStep = 'linked';
+				linkingStatus = '🎉 Sessions linked! Messages will sync with WhatsApp.';
+				linkedWhatsAppSession = data.linkedSessionId;
+				showLinkingForm = false;
+				
+				// Add system message to demo chat
+				const linkMessage = {
+					id: Date.now(),
+					text: `🔗 **Demo Linked!** Your demo chat is now synced with ${data.phoneNumber}. Messages sent here will appear in WhatsApp and vice versa.`,
+					sender: 'system',
+					timestamp: new Date()
+				};
+				messages = [...messages, linkMessage];
+				scrollToBottom();
+				
+				// Start polling for synced messages
+				startSyncPolling();
+				
+				// Reset form
+				linkingPhoneNumber = '';
+				verificationCode = '';
+				setTimeout(() => {
+					linkingStatus = '';
+				}, 3000);
+			} else {
+				linkingStatus = `❌ ${data.error || 'Invalid code. Try again.'}`;
+			}
+		} catch (error) {
+			console.error('Verify code error:', error);
+			linkingStatus = '❌ Verification failed. Please try again.';
+		}
+	}
+
+	function resetLinkingForm() {
+		showLinkingForm = false;
+		linkingStep = 'phone';
+		linkingPhoneNumber = '';
+		verificationCode = '';
+		linkingStatus = '';
+	}
+	
+	// Poll for messages synced from WhatsApp
+	function startSyncPolling() {
+		syncInterval = setInterval(async () => {
+			if (linkedWhatsAppSession) {
+				try {
+					const response = await fetch(`/.netlify/functions/get-synced-messages?sessionId=${currentSessionId}`);
+					if (response.ok) {
+						const syncData = await response.json();
+						if (syncData.messages.length > 0) {
+							console.log(`Received ${syncData.messages.length} synced messages from WhatsApp`);
+							
+							// Add synced messages to demo chat
+							syncData.messages.forEach(msg => {
+								// Add user message from WhatsApp
+								const userMessage = {
+									id: Date.now() + Math.random(),
+									text: `📱 [From WhatsApp] ${msg.userMessage}`,
+									sender: 'user',
+									timestamp: new Date(msg.timestamp),
+									source: 'whatsapp'
+								};
+								
+								// Add AI response
+								const aiMessage = {
+									id: Date.now() + Math.random() + 1,
+									text: `[From WhatsApp] ${msg.aiResponse}`,
+									sender: 'bot',
+									timestamp: new Date(msg.timestamp + 1000),
+									source: 'whatsapp'
+								};
+								
+								messages = [...messages, userMessage, aiMessage];
+							});
+							
+							scrollToBottom();
+						}
+					}
+				} catch (error) {
+					console.error('Error polling for synced messages:', error);
+				}
+			}
+		}, 5000); // Poll every 5 seconds
+	}
+	
 	onMount(() => {
 		// Add welcome message
 		messages = [{
 			id: 0,
-			text: "🤖 Welcome to the OBT Helper GPT Demo!\n\nThis chat simulates WhatsApp by calling the same backend endpoint. Try typing 'help' to see available tools!",
+			text: "🤖 Welcome to the OBT Helper GPT Demo!\n\nThis chat simulates WhatsApp by calling the same backend endpoint. Try typing 'help' to see available tools!\n\n📱 Click 'Link WhatsApp' to test bidirectional syncing!",
 			sender: 'system',
 			timestamp: new Date()
 		}];
 		scrollToBottom();
+	});
+	
+	import { onDestroy } from 'svelte';
+	onDestroy(() => {
+		if (syncInterval) {
+			clearInterval(syncInterval);
+		}
 	});
 </script>
 
@@ -236,7 +403,14 @@ I'm your intelligent AI assistant! I can help you with:
 					<h1 class="font-semibold text-gray-900">OBT Helper GPT</h1>
 					<p class="text-sm text-gray-500">WhatsApp Demo Chat</p>
 				</div>
-				<div class="ml-auto">
+				<div class="ml-auto flex items-center space-x-2">
+					<button 
+						on:click={() => showLinkingForm = true}
+						class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+						title="Link with your real WhatsApp"
+					>
+						📱 {linkedWhatsAppSession ? 'WhatsApp Linked' : 'Link WhatsApp'}
+					</button>
 					<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
 						Demo Mode
 					</span>
@@ -337,10 +511,114 @@ I'm your intelligent AI assistant! I can help you with:
 				<p><strong>Endpoint:</strong> <code>/.netlify/functions/whatsapp</code></p>
 				<p><strong>Simulated Phone:</strong> <code>{phoneNumber}</code></p>
 				<p><strong>Method:</strong> Same as real WhatsApp integration</p>
-				<p><strong>Features:</strong> All 10 AI tools, conversation memory, tool switching</p>
+				<p><strong>Features:</strong> All 10 AI tools, conversation memory, tool switching, bidirectional WhatsApp linking</p>
+				{#if linkedWhatsAppSession}
+					<p><strong>Status:</strong> 🔗 Linked to {linkedWhatsAppSession} - Messages sync both ways!</p>
+				{/if}
 			</div>
 		</div>
 	</div>
+	
+	<!-- WhatsApp Linking Modal -->
+	{#if showLinkingForm}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+			<div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+				<div class="flex items-center justify-between mb-4">
+					<h3 class="text-lg font-semibold text-gray-900">Link Real WhatsApp</h3>
+					<button 
+						on:click={resetLinkingForm}
+						class="text-gray-400 hover:text-gray-600 text-xl"
+					>
+						×
+					</button>
+				</div>
+				
+				{#if linkingStep === 'phone'}
+					<div class="space-y-4">
+						<p class="text-sm text-gray-600">
+							Enter your WhatsApp number to sync this demo with your real WhatsApp. You'll receive a verification code.
+						</p>
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">
+								WhatsApp Phone Number
+							</label>
+							<input 
+								type="tel"
+								bind:value={linkingPhoneNumber}
+								placeholder="+1234567890"
+								class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							/>
+							<p class="text-xs text-gray-500 mt-1">
+								Include country code (e.g., +1 for US, +44 for UK)
+							</p>
+						</div>
+						<div class="flex gap-3">
+							<button 
+								on:click={sendLinkingCode}
+								disabled={!linkingPhoneNumber.trim() || linkingStatus.includes('Sending')}
+								class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{linkingStatus.includes('Sending') ? 'Sending...' : 'Send Code'}
+							</button>
+							<button 
+								on:click={resetLinkingForm}
+								class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				{/if}
+				
+				{#if linkingStep === 'code'}
+					<div class="space-y-4">
+						<p class="text-sm text-gray-600">
+							Enter the 6-digit verification code sent to your WhatsApp.
+						</p>
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">
+								Verification Code
+							</label>
+							<input 
+								type="text"
+								bind:value={verificationCode}
+								placeholder="123456"
+								maxlength="6"
+								class="w-full p-3 border border-gray-300 rounded-lg text-center text-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							/>
+						</div>
+						<div class="flex gap-3">
+							<button 
+								on:click={verifyLinkingCode}
+								disabled={verificationCode.length !== 6 || linkingStatus.includes('Verifying')}
+								class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{linkingStatus.includes('Verifying') ? 'Verifying...' : 'Verify Code'}
+							</button>
+							<button 
+								on:click={() => linkingStep = 'phone'}
+								class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+							>
+								Back
+							</button>
+						</div>
+					</div>
+				{/if}
+				
+				{#if linkingStatus}
+					<div class="mt-4 p-3 rounded-lg {
+						linkingStatus.includes('❌') || linkingStatus.includes('Failed') || linkingStatus.includes('Error') 
+							? 'bg-red-50 text-red-700 border border-red-200' 
+							: linkingStatus.includes('✅') || linkingStatus.includes('🎉')
+								? 'bg-green-50 text-green-700 border border-green-200'
+								: 'bg-blue-50 text-blue-700 border border-blue-200'
+					}">
+						<p class="text-sm">{linkingStatus}</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
