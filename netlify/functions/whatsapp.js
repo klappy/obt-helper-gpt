@@ -2,7 +2,7 @@ import twilioClient from "../../src/lib/utils/twilio.js";
 // Using direct Netlify Blobs storage instead of utility
 import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
-import { sendChatMessage } from "../../src/lib/utils/openai.js";
+import { sendChatMessage, inferToolFromMessage } from "../../src/lib/utils/openai.js";
 import { getAllTools } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -204,248 +204,115 @@ export default async (req, context) => {
       responseText = "I'm having trouble thinking right now. Could you try again?";
     }
 
-    // Intelligent tool detection based on user intent
+    // Issue 2.1.1: Intelligent tool switching with LLM inference and user confirmation
     const lowerMessage = messageBody.toLowerCase();
 
-    // Check for help requests and capability questions
-    if (
-      lowerMessage === "help" ||
-      lowerMessage === "menu" ||
-      lowerMessage === "tools" ||
-      lowerMessage.includes("what can you do") ||
-      lowerMessage.includes("what do you do") ||
-      lowerMessage.includes("capabilities") ||
-      lowerMessage.includes("features") ||
-      lowerMessage.includes("options") ||
-      lowerMessage === "hello" ||
-      lowerMessage === "hi"
-    ) {
-      const tools = await getAllTools();
-      responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
-      responseText += "I'm your intelligent AI assistant! I can help you with:\n\n";
+    // Handle pending tool switch confirmations first
+    if (session.pendingSwitch) {
+      if (lowerMessage.includes('yes') || lowerMessage.includes('y')) {
+        // User confirmed switch
+        const tools = await getAllTools();
+        const toolInfo = tools.find(t => t.id === session.pendingSwitch.to);
+        session.currentTool = session.pendingSwitch.to;
+        
+        // Process original message with new tool
+        const originalMessage = session.pendingSwitch.originalMessage;
+        session.pendingSwitch = null;
+        
+        // Regenerate AI response with new tool
+        const messages = [
+          { role: "system", content: toolInfo.systemPrompt },
+          ...session.conversationHistory.slice(-10).map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          { role: "user", content: originalMessage },
+        ];
 
-      // Add emojis for each tool
-      const toolEmojis = ["✍️", "📱", "📧", "📊", "🧮", "🍳", "💻", "🌍", "🏢", "✈️"];
-      tools.forEach((tool, index) => {
-        const emoji = toolEmojis[index] || "🔧";
-        responseText += `${emoji} *${index + 1}. ${tool.name}*\n   ${tool.description}\n\n`;
-      });
-      responseText +=
-        "💬 *Just start chatting!* I'll automatically switch to the right tool based on what you need.\n\n";
-      responseText += "🔢 Or reply with a number (1-10) to manually select a tool.";
-    } else if (/^[1-9]$/.test(lowerMessage.trim())) {
-      // User sent a single digit
-      const tools = await getAllTools();
-      const toolIndex = parseInt(lowerMessage.trim()) - 1;
-      if (toolIndex >= 0 && toolIndex < tools.length) {
-        session.currentTool = tools[toolIndex].id;
-        responseText = `Switched to *${tools[toolIndex].name}*! ${tools[toolIndex].description}\n\nHow can I help you?`;
+        try {
+          const aiResponse = await sendChatMessage(messages, toolInfo, OPENAI_API_KEY);
+          const aiData = await aiResponse.json();
+          responseText = `✅ *Switched to ${toolInfo.name}*\n\n${aiData.choices[0].message.content}`;
+        } catch (error) {
+          console.error("AI generation after switch failed:", error);
+          responseText = `✅ *Switched to ${toolInfo.name}*\n\nHow can I help you?`;
+        }
+      } else if (lowerMessage.includes('no') || lowerMessage.includes('n')) {
+        // User declined switch
+        const currentToolName = session.currentTool;
+        session.pendingSwitch = null;
+        responseText = `👍 Staying with ${currentToolName}. How can I help?`;
+      } else {
+        // Unclear response, ask again
+        responseText = "Please reply *YES* to switch tools or *NO* to continue with the current tool.";
       }
     } else {
-      // Auto-detect best tool based on user intent
-      const detectedTool = detectBestTool(messageBody);
-
-      if (detectedTool === "show-menu") {
-        // Show the full capabilities menu for greetings/unclear messages
+      // Check for help requests and capability questions
+      if (
+        lowerMessage === "help" ||
+        lowerMessage === "menu" ||
+        lowerMessage === "tools" ||
+        lowerMessage.includes("what can you do") ||
+        lowerMessage.includes("what do you do") ||
+        lowerMessage.includes("capabilities") ||
+        lowerMessage.includes("features") ||
+        lowerMessage.includes("options") ||
+        lowerMessage === "hello" ||
+        lowerMessage === "hi"
+      ) {
         const tools = await getAllTools();
         responseText = "🤖 *OBT Helper GPT* 🤖\n\n";
         responseText += "I'm your intelligent AI assistant! I can help you with:\n\n";
 
+        // Add emojis for each tool
         const toolEmojis = ["✍️", "📱", "📧", "📊", "🧮", "🍳", "💻", "🌍", "🏢", "✈️"];
         tools.forEach((tool, index) => {
           const emoji = toolEmojis[index] || "🔧";
           responseText += `${emoji} *${index + 1}. ${tool.name}*\n   ${tool.description}\n\n`;
         });
         responseText +=
-          "💬 *Just start chatting!* I'll automatically switch to the right tool based on what you need.\n\n";
+          "💬 *Just start chatting!* I'll automatically suggest the best tool for your needs.\n\n";
         responseText += "🔢 Or reply with a number (1-10) to manually select a tool.";
-      } else if (detectedTool && detectedTool !== session.currentTool) {
-        console.log(
-          `Auto-switching from ${session.currentTool} to ${detectedTool} based on user intent`
-        );
-        session.currentTool = detectedTool;
-
-        // Find tool name for user feedback
+      } else if (/^[1-9]$/.test(lowerMessage.trim())) {
+        // User sent a single digit for manual tool selection
         const tools = await getAllTools();
-        const toolInfo = tools.find((t) => t.id === detectedTool);
-        const toolName = toolInfo ? toolInfo.name : detectedTool;
-
-        // Add a subtle notification about the switch
-        responseText = `*[Switched to ${toolName}]*\n\n`;
+        const toolIndex = parseInt(lowerMessage.trim()) - 1;
+        if (toolIndex >= 0 && toolIndex < tools.length) {
+          session.currentTool = tools[toolIndex].id;
+          responseText = `✅ *Switched to ${tools[toolIndex].name}*! ${tools[toolIndex].description}\n\nHow can I help you?`;
+        }
+      } else {
+        // Issue 2.1.1: Use LLM to intelligently infer best tool for message
+        try {
+          const suggestedTool = await inferToolFromMessage(messageBody, session.currentTool, OPENAI_API_KEY);
+          
+          if (suggestedTool && suggestedTool !== session.currentTool) {
+            // LLM suggests a different tool - ask for confirmation
+            const tools = await getAllTools();
+            const toolInfo = tools.find(t => t.id === suggestedTool);
+            
+            if (toolInfo) {
+              console.log(`LLM suggests switching from ${session.currentTool} to ${suggestedTool}`);
+              
+              // Store pending switch with original message
+              session.pendingSwitch = {
+                to: suggestedTool,
+                originalMessage: messageBody,
+                timestamp: Date.now()
+              };
+              
+              responseText = `🤔 I think *${toolInfo.name}* would be better for this request.\n\n*Switch tools?*\n\n✅ Reply *YES* to switch\n❌ Reply *NO* to continue with ${session.currentTool}`;
+            }
+          }
+          // If no tool switch suggested, responseText will be the normal AI response from earlier
+        } catch (error) {
+          console.error("Intent inference error:", error);
+          // Continue with normal processing if inference fails
+        }
       }
     }
 
-    // Function to detect the best tool based on user message
-    function detectBestTool(message) {
-      const msg = message.toLowerCase();
 
-      // Recipe/Food keywords
-      if (
-        msg.includes("hungry") ||
-        msg.includes("recipe") ||
-        msg.includes("cook") ||
-        msg.includes("food") ||
-        msg.includes("eat") ||
-        msg.includes("meal") ||
-        msg.includes("dinner") ||
-        msg.includes("lunch") ||
-        msg.includes("breakfast") ||
-        msg.includes("ingredient") ||
-        msg.includes("bake") ||
-        msg.includes("kitchen")
-      ) {
-        return "recipe-helper";
-      }
-
-      // Math keywords
-      if (
-        msg.includes("calculate") ||
-        msg.includes("math") ||
-        msg.includes("solve") ||
-        msg.includes("equation") ||
-        msg.includes("algebra") ||
-        msg.includes("geometry") ||
-        /\d+\s*[\+\-\*\/]\s*\d+/.test(msg) ||
-        msg.includes("percent") ||
-        msg.includes("formula") ||
-        msg.includes("statistics")
-      ) {
-        return "math-tutor";
-      }
-
-      // Code keywords
-      if (
-        msg.includes("code") ||
-        msg.includes("program") ||
-        msg.includes("debug") ||
-        msg.includes("javascript") ||
-        msg.includes("python") ||
-        msg.includes("html") ||
-        msg.includes("css") ||
-        msg.includes("function") ||
-        msg.includes("variable") ||
-        msg.includes("api") ||
-        msg.includes("database") ||
-        msg.includes("git")
-      ) {
-        return "code-helper";
-      }
-
-      // Writing keywords
-      if (
-        msg.includes("story") ||
-        msg.includes("write") ||
-        msg.includes("essay") ||
-        msg.includes("poem") ||
-        msg.includes("script") ||
-        msg.includes("novel") ||
-        msg.includes("character") ||
-        msg.includes("plot") ||
-        msg.includes("creative")
-      ) {
-        return "creative-writing";
-      }
-
-      // Business keywords
-      if (
-        msg.includes("business") ||
-        msg.includes("strategy") ||
-        msg.includes("marketing") ||
-        msg.includes("startup") ||
-        msg.includes("revenue") ||
-        msg.includes("profit") ||
-        msg.includes("investment") ||
-        msg.includes("competitor") ||
-        msg.includes("plan")
-      ) {
-        return "business-strategy";
-      }
-
-      // Travel keywords
-      if (
-        msg.includes("travel") ||
-        msg.includes("trip") ||
-        msg.includes("vacation") ||
-        msg.includes("visit") ||
-        msg.includes("flight") ||
-        msg.includes("hotel") ||
-        msg.includes("destination") ||
-        msg.includes("itinerary") ||
-        msg.includes("country")
-      ) {
-        return "travel-planner";
-      }
-
-      // Email keywords
-      if (
-        msg.includes("email") ||
-        msg.includes("letter") ||
-        msg.includes("formal") ||
-        msg.includes("professional") ||
-        msg.includes("communication") ||
-        msg.includes("reply")
-      ) {
-        return "email-assistant";
-      }
-
-      // Social media keywords
-      if (
-        msg.includes("social") ||
-        msg.includes("post") ||
-        msg.includes("instagram") ||
-        msg.includes("twitter") ||
-        msg.includes("linkedin") ||
-        msg.includes("caption") ||
-        msg.includes("hashtag") ||
-        msg.includes("viral")
-      ) {
-        return "social-media";
-      }
-
-      // Language learning keywords
-      if (
-        msg.includes("translate") ||
-        msg.includes("language") ||
-        msg.includes("spanish") ||
-        msg.includes("french") ||
-        msg.includes("german") ||
-        msg.includes("practice") ||
-        msg.includes("pronunciation") ||
-        msg.includes("grammar")
-      ) {
-        return "language-buddy";
-      }
-
-      // Data analysis keywords
-      if (
-        msg.includes("data") ||
-        msg.includes("analyze") ||
-        msg.includes("chart") ||
-        msg.includes("graph") ||
-        msg.includes("excel") ||
-        msg.includes("spreadsheet") ||
-        msg.includes("report") ||
-        msg.includes("insights") ||
-        msg.includes("trends")
-      ) {
-        return "data-analyst";
-      }
-
-      // Check for greetings or unclear messages
-      if (
-        msg.includes("hello") ||
-        msg.includes("hi") ||
-        msg.includes("hey") ||
-        msg.includes("what") ||
-        msg.includes("how") ||
-        msg.length < 10
-      ) {
-        return "show-menu"; // Special flag to show capabilities
-      }
-
-      // Default: keep current tool
-      return null;
-    }
 
     // Add assistant response to conversation history
     session.conversationHistory.push({
