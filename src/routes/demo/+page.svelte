@@ -233,6 +233,14 @@ I'm your intelligent AI assistant! I can help you with:
 		}
 		
 		loading = false;
+		
+		// Re-focus the chat input after sending
+		setTimeout(() => {
+			if (chatInputElement) {
+				chatInputElement.focus();
+			}
+		}, 100);
+		
 		scrollToBottom();
 	}
 	
@@ -501,6 +509,7 @@ I'm your intelligent AI assistant! I can help you with:
 				<div class="flex-1">
 					<input 
 						type="tel"
+						bind:this={phoneInputElement}
 						bind:value={phoneNumber}
 						placeholder="Enter your WhatsApp number (+1234567890)"
 						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -730,9 +739,11 @@ I'm your intelligent AI assistant! I can help you with:
 							<input 
 								id="verification-code"
 								type="text"
+								bind:this={verificationInputElement}
 								bind:value={verificationCode}
 								placeholder="123456"
 								maxlength="6"
+								autofocus
 								class="w-full p-3 border border-gray-300 rounded-lg text-center text-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							/>
 						</div>
