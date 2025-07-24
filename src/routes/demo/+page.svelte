@@ -1,11 +1,17 @@
 <script>
 	import { onMount } from 'svelte';
+	import { getActiveTools } from '$lib/stores/tools.js';
 	
 	let messages = [];
 	let input = '';
 	let loading = false;
 	let phoneNumber = ''; // User's actual phone number for demo
 	let chatContainer;
+	
+	// Element bindings for auto-focus
+	let chatInputElement;
+	let phoneInputElement;
+	let verificationInputElement;
 	
 	// WhatsApp linking state
 	let showLinkingForm = false;
@@ -406,7 +412,7 @@ I'm your intelligent AI assistant! I can help you with:
 		console.log('Demo session ID:', currentSessionId);
 		
 		// Load tools
-		await tools.loadTools();
+		const availableTools = await getActiveTools();
 		
 		// Restore WhatsApp link state from localStorage
 		try {
@@ -592,11 +598,13 @@ I'm your intelligent AI assistant! I can help you with:
 			<div class="flex space-x-2 items-end">
 				<div class="flex-1 relative">
 					<textarea
+						bind:this={chatInputElement}
 						bind:value={input}
 						on:keydown={handleKeyDown}
 						placeholder="Type your message... (Shift+Enter for new line)"
 						disabled={loading}
 						rows="1"
+						autofocus
 						class="w-full border border-gray-300 rounded-2xl px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-h-[2.5rem] max-h-32 overflow-y-auto"
 						style="field-sizing: content;"
 					></textarea>
