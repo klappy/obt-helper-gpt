@@ -28,6 +28,16 @@
 
 	// Issue 3.1.1: Media upload variables
 	let showMediaUpload = false;
+
+	// Issue 3.2.3: Real-time cost tracking variables
+	let sessionCost = 0;
+	let totalCost = 0;
+	let costVisible = true;
+	let costBreakdown = {
+		messages: 0,
+		tokens: 0,
+		avgCostPerMessage: 0
+	};
 	let uploadedFiles: Array<{id: number, name: string, type: string, size: number, data: string, placeholder: boolean}> = [];
 
 	onMount(() => {
@@ -303,6 +313,11 @@
 			const data = await response.json();
 			const aiContent = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 			
+			// Issue 3.2.3: Update cost tracking with usage data
+			if (data.usage) {
+				await updateCostDisplay(data.usage);
+			}
+			
 			// Add AI response message
 			const aiMessage = {
 				id: Date.now() + 1,
@@ -443,6 +458,50 @@
 		// Continue with normal text flow
 		await sendMessage();
 	}
+
+	// Issue 3.2.3: Cost tracking functions
+	async function updateCostDisplay(usage: any) {
+		if (usage && usage.cost) {
+			sessionCost += usage.cost;
+			costBreakdown.messages += 1;
+			costBreakdown.tokens += (usage.promptTokens || 0) + (usage.responseTokens || 0);
+			costBreakdown.avgCostPerMessage = sessionCost / costBreakdown.messages;
+
+			// Fetch total cost for this tool today
+			try {
+				const response = await fetch(`/.netlify/functions/cost-summary?toolId=${tool.id}`);
+				const data = await response.json();
+				totalCost = data.todayCost || 0;
+			} catch (error) {
+				console.log('Could not fetch total cost');
+			}
+		}
+	}
+
+	// Format cost for display
+	function formatCost(cost: number) {
+		if (cost < 0.01) {
+			return `$${(cost * 1000).toFixed(2)}m`; // Show in millicents
+		}
+		return `$${cost.toFixed(4)}`;
+	}
+
+	function getCostColor(cost: number) {
+		if (cost < 0.01) return 'text-green-600';
+		if (cost < 0.05) return 'text-yellow-600';
+		return 'text-red-600';
+	}
+
+	// Load initial cost data on mount
+	onMount(async () => {
+		try {
+			const response = await fetch(`/.netlify/functions/cost-summary?toolId=${tool.id}`);
+			const data = await response.json();
+			totalCost = data.todayCost || 0;
+		} catch (error) {
+			console.log('Could not load initial cost data');
+		}
+	});
 </script>
 
 <div class="flex flex-col h-full">
@@ -796,6 +855,68 @@
 					<p class="text-sm">{linkingStatus}</p>
 				</div>
 			{/if}
+		</div>
+	</div>
+{/if}
+
+<!-- Issue 3.2.3: Real-time cost display widget -->
+{#if costVisible}
+	<div class="fixed top-4 right-4 bg-white shadow-lg rounded-lg p-3 border text-xs z-10">
+		<div class="flex items-center justify-between mb-2">
+			<span class="font-medium">💰 Session Cost</span>
+			<button
+				on:click={() => costVisible = false}
+				class="text-gray-400 hover:text-gray-600"
+			>
+				✕
+			</button>
+		</div>
+
+		<div class="space-y-1">
+			<div class="flex justify-between">
+				<span>This chat:</span>
+				<span class={getCostColor(sessionCost)}>
+					{formatCost(sessionCost)}
+				</span>
+			</div>
+
+			<div class="flex justify-between">
+				<span>Today total:</span>
+				<span class={getCostColor(totalCost)}>
+					{formatCost(totalCost)}
+				</span>
+			</div>
+
+			<div class="border-t pt-1 text-gray-500">
+				<div>{costBreakdown.messages} msgs • {costBreakdown.tokens} tokens</div>
+				<div>Avg: {formatCost(costBreakdown.avgCostPerMessage)}/msg</div>
+			</div>
+		</div>
+	</div>
+{:else}
+	<!-- Minimized cost indicator -->
+	<button
+		on:click={() => costVisible = true}
+		class="fixed top-4 right-4 bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center border z-10"
+		title="Show cost breakdown"
+	>
+		<span class="text-xs {getCostColor(sessionCost)}">
+			💰
+		</span>
+	</button>
+{/if}
+
+<!-- High usage alert -->
+{#if sessionCost > 0.10}
+	<div class="fixed bottom-20 right-4 bg-orange-100 border border-orange-300 rounded-lg p-3 text-sm z-10">
+		<div class="flex items-center gap-2">
+			<span>⚠️</span>
+			<div>
+				<div class="font-medium">High usage alert</div>
+				<div class="text-orange-700">
+					Session cost: {formatCost(sessionCost)}
+				</div>
+			</div>
 		</div>
 	</div>
 {/if} 

@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 // Server-side safe browser detection
-const browser = typeof window !== 'undefined';
+const browser = typeof window !== "undefined";
 
 // Issue 1.2.1: Import tiktoken for accurate token counting (server-side only)
 let tiktoken;
@@ -8,13 +8,13 @@ let tiktoken;
 // Only import tiktoken on server-side
 async function initializeTiktoken() {
   if (browser || tiktoken) return tiktoken;
-  
+
   try {
     // Dynamic import for tiktoken to handle potential import issues
-    tiktoken = await import('tiktoken');
+    tiktoken = await import("tiktoken");
     return tiktoken;
   } catch (error) {
-    console.warn('tiktoken not available, falling back to estimation:', error.message);
+    console.warn("tiktoken not available, falling back to estimation:", error.message);
     return null;
   }
 }
@@ -22,7 +22,7 @@ async function initializeTiktoken() {
 // Local file storage path helper (server-side only)
 function getLocalStoragePath() {
   if (browser) return null;
-  const { join } = require('path');
+  const { join } = require("path");
   return join(process.cwd(), ".netlify", "blobs-local", "ai-usage.json");
 }
 
@@ -47,22 +47,22 @@ function isLocalDevelopment() {
 
 // Issue 1.2.1: OpenAI pricing as of 2025 (per 1K tokens)
 const MODEL_PRICING = {
-  'gpt-4o': { 
-    prompt: 0.03, 
-    response: 0.06 
+  "gpt-4o": {
+    prompt: 0.03,
+    response: 0.06,
   },
-  'gpt-4o-mini': { 
-    prompt: 0.00015, 
-    response: 0.0006 
+  "gpt-4o-mini": {
+    prompt: 0.00015,
+    response: 0.0006,
   },
-  'gpt-3.5-turbo': { 
-    prompt: 0.001, 
-    response: 0.002 
-  }
+  "gpt-3.5-turbo": {
+    prompt: 0.001,
+    response: 0.002,
+  },
 };
 
 // Issue 1.2.1: Accurate token counting with tiktoken
-async function countTokens(text, model = 'gpt-4o-mini') {
+async function countTokens(text, model = "gpt-4o-mini") {
   if (browser || !text) {
     // Always use fallback in browser
     return Math.ceil(text.length * 0.25);
@@ -86,30 +86,37 @@ async function countTokens(text, model = 'gpt-4o-mini') {
 }
 
 // Issue 1.2.1: Calculate precise costs based on token counts and model pricing
-function calculateCost(promptTokens, responseTokens, model = 'gpt-4o-mini') {
-  const pricing = MODEL_PRICING[model] || MODEL_PRICING['gpt-4o-mini'];
-  
+function calculateCost(promptTokens, responseTokens, model = "gpt-4o-mini") {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING["gpt-4o-mini"];
+
   const promptCost = (promptTokens * pricing.prompt) / 1000;
   const responseCost = (responseTokens * pricing.response) / 1000;
   const totalCost = promptCost + responseCost;
-  
+
   return {
     promptCost: Math.round(promptCost * 10000) / 10000, // 4 decimal places
     responseCost: Math.round(responseCost * 10000) / 10000,
-    totalCost: Math.round(totalCost * 10000) / 10000
+    totalCost: Math.round(totalCost * 10000) / 10000,
   };
 }
 
 // Issue 1.2.1: Enhanced logging with accurate token counting and cost calculation
-export async function logAIUsage(toolId, model, prompt, response, userId = 'anonymous', source = 'web') {
+export async function logAIUsage(
+  toolId,
+  model,
+  prompt,
+  response,
+  userId = "anonymous",
+  source = "web"
+) {
   try {
     // Count tokens accurately
     const promptTokens = await countTokens(prompt, model);
     const responseTokens = await countTokens(response, model);
-    
+
     // Calculate precise costs
     const costs = calculateCost(promptTokens, responseTokens, model);
-    
+
     const record = {
       id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -125,13 +132,15 @@ export async function logAIUsage(toolId, model, prompt, response, userId = 'anon
       totalCost: costs.totalCost,
       // Keep legacy fields for backward compatibility
       tokens: promptTokens + responseTokens,
-      estimatedCost: costs.totalCost
+      estimatedCost: costs.totalCost,
     };
 
     await saveUsageRecord(record);
-    
-    console.log(`AI Usage logged: ${toolId} (${model}) - ${record.totalTokens} tokens, $${record.totalCost}`);
-    
+
+    console.log(
+      `AI Usage logged: ${toolId} (${model}) - ${record.totalTokens} tokens, $${record.totalCost}`
+    );
+
     return record;
   } catch (error) {
     console.error("AI usage logging failed (non-critical):", error.message);
@@ -141,13 +150,13 @@ export async function logAIUsage(toolId, model, prompt, response, userId = 'anon
 
 async function ensureLocalFile() {
   if (browser) return;
-  
+
   const LOCAL_STORAGE_PATH = getLocalStoragePath();
   if (!LOCAL_STORAGE_PATH) return;
-  
-  const { promises: fs } = require('fs');
-  const { join } = require('path');
-  
+
+  const { promises: fs } = require("fs");
+  const { join } = require("path");
+
   try {
     await fs.access(LOCAL_STORAGE_PATH);
   } catch {
@@ -160,12 +169,12 @@ async function ensureLocalFile() {
 
 async function loadFromLocalFile() {
   if (browser) return [];
-  
+
   const LOCAL_STORAGE_PATH = getLocalStoragePath();
   if (!LOCAL_STORAGE_PATH) return [];
-  
-  const { promises: fs } = require('fs');
-  
+
+  const { promises: fs } = require("fs");
+
   await ensureLocalFile();
   const data = await fs.readFile(LOCAL_STORAGE_PATH, "utf-8");
   return JSON.parse(data);
@@ -173,17 +182,17 @@ async function loadFromLocalFile() {
 
 async function saveToLocalFile(record) {
   if (browser) return;
-  
+
   const LOCAL_STORAGE_PATH = getLocalStoragePath();
   if (!LOCAL_STORAGE_PATH) return;
-  
-  const { promises: fs } = require('fs');
-  const { join } = require('path');
-  
+
+  const { promises: fs } = require("fs");
+  const { join } = require("path");
+
   try {
     const existing = await loadFromLocalFile();
     existing.push(record);
-    
+
     const dir = join(process.cwd(), ".netlify", "blobs-local");
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(LOCAL_STORAGE_PATH, JSON.stringify(existing, null, 2));
@@ -204,7 +213,7 @@ async function saveUsageRecord(record) {
           metadata: {
             toolId: record.toolId,
             timestamp: record.timestamp,
-            cost: record.totalCost
+            cost: record.totalCost,
           },
         });
       } catch (error) {
@@ -224,12 +233,12 @@ export async function getUsageStats(toolId = null, days = 7) {
       data = await loadFromLocalFile();
     } else {
       const store = getStoreInstance();
-      const { blobs } = await store.list({ prefix: 'usage_' });
-      
+      const { blobs } = await store.list({ prefix: "usage_" });
+
       data = [];
       for (const blob of blobs) {
         try {
-          const record = await store.get(blob.key, { type: 'json' });
+          const record = await store.get(blob.key, { type: "json" });
           if (record) data.push(record);
         } catch (error) {
           console.log(`Could not load usage record ${blob.key}:`, error.message);
@@ -253,7 +262,7 @@ export async function getUsageStats(toolId = null, days = 7) {
 
     // Calculate enhanced statistics
     const stats = calculateEnhancedStats(toolFilteredData, days);
-    
+
     return stats;
   } catch (error) {
     console.error("Failed to get usage stats:", error.message);
@@ -265,7 +274,7 @@ export async function getUsageStats(toolId = null, days = 7) {
       byModel: {},
       bySource: {},
       dailyBreakdown: [],
-      recentActivity: []
+      recentActivity: [],
     };
   }
 }
@@ -273,8 +282,14 @@ export async function getUsageStats(toolId = null, days = 7) {
 // Issue 1.2.1: Calculate comprehensive statistics
 function calculateEnhancedStats(data, days) {
   const totalRequests = data.length;
-  const totalTokens = data.reduce((sum, record) => sum + (record.totalTokens || record.tokens || 0), 0);
-  const totalCost = data.reduce((sum, record) => sum + (record.totalCost || record.estimatedCost || 0), 0);
+  const totalTokens = data.reduce(
+    (sum, record) => sum + (record.totalTokens || record.tokens || 0),
+    0
+  );
+  const totalCost = data.reduce(
+    (sum, record) => sum + (record.totalCost || record.estimatedCost || 0),
+    0
+  );
 
   // Group by tool
   const toolStats = {};
@@ -289,7 +304,7 @@ function calculateEnhancedStats(data, days) {
   });
 
   // Calculate averages for tools
-  Object.keys(toolStats).forEach(toolId => {
+  Object.keys(toolStats).forEach((toolId) => {
     const tool = toolStats[toolId];
     tool.avgCostPerRequest = tool.requests > 0 ? tool.cost / tool.requests : 0;
     tool.avgTokensPerRequest = tool.requests > 0 ? tool.tokens / tool.requests : 0;
@@ -328,8 +343,9 @@ function calculateEnhancedStats(data, days) {
       requests: totalRequests,
       tokens: totalTokens,
       cost: Math.round(totalCost * 10000) / 10000, // 4 decimal places
-      avgCostPerRequest: totalRequests > 0 ? Math.round((totalCost / totalRequests) * 10000) / 10000 : 0,
-      avgTokensPerRequest: totalRequests > 0 ? Math.round(totalTokens / totalRequests) : 0
+      avgCostPerRequest:
+        totalRequests > 0 ? Math.round((totalCost / totalRequests) * 10000) / 10000 : 0,
+      avgTokensPerRequest: totalRequests > 0 ? Math.round(totalTokens / totalRequests) : 0,
     },
     byTool: toolStats,
     byModel: modelStats,
@@ -343,29 +359,35 @@ function calculateEnhancedStats(data, days) {
 function createDailyBreakdown(data, days) {
   const breakdown = [];
   const today = new Date();
-  
+
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-    
-    const dayData = data.filter(record => {
-      const recordDate = new Date(record.timestamp).toISOString().split('T')[0];
+    const dateStr = date.toISOString().split("T")[0];
+
+    const dayData = data.filter((record) => {
+      const recordDate = new Date(record.timestamp).toISOString().split("T")[0];
       return recordDate === dateStr;
     });
-    
+
     const requests = dayData.length;
-    const tokens = dayData.reduce((sum, record) => sum + (record.totalTokens || record.tokens || 0), 0);
-    const cost = dayData.reduce((sum, record) => sum + (record.totalCost || record.estimatedCost || 0), 0);
-    
+    const tokens = dayData.reduce(
+      (sum, record) => sum + (record.totalTokens || record.tokens || 0),
+      0
+    );
+    const cost = dayData.reduce(
+      (sum, record) => sum + (record.totalCost || record.estimatedCost || 0),
+      0
+    );
+
     breakdown.push({
       date: dateStr,
       requests,
       tokens,
-      cost: Math.round(cost * 10000) / 10000
+      cost: Math.round(cost * 10000) / 10000,
     });
   }
-  
+
   return breakdown;
 }
 
@@ -377,6 +399,50 @@ export async function getTodayCostForTool(toolId) {
   } catch (error) {
     console.error(`Failed to get today's cost for tool ${toolId}:`, error.message);
     return 0;
+  }
+}
+
+// Issue 3.2.3: Get usage data for specific date range
+export async function getUsageForDateRange(toolId, startDate, endDate) {
+  try {
+    let data;
+
+    if (isLocalDevelopment()) {
+      console.log("Development mode: reading from local file");
+      data = await loadFromLocalFile();
+    } else {
+      const store = getStoreInstance();
+      const { blobs } = await store.list({ prefix: "usage_" });
+
+      data = [];
+      for (const blob of blobs) {
+        try {
+          const record = await store.get(blob.key, { type: "json" });
+          if (record) data.push(record);
+        } catch (error) {
+          console.log(`Could not load usage record ${blob.key}:`, error.message);
+        }
+      }
+    }
+
+    // Filter by date range
+    const start = new Date(startDate + "T00:00:00.000Z");
+    const end = new Date(endDate + "T23:59:59.999Z");
+
+    const filteredData = data.filter((record) => {
+      const recordDate = new Date(record.timestamp);
+      return recordDate >= start && recordDate <= end;
+    });
+
+    // Filter by tool if specified
+    const toolFilteredData = toolId
+      ? filteredData.filter((record) => record.toolId === toolId)
+      : filteredData;
+
+    return toolFilteredData;
+  } catch (error) {
+    console.error("Failed to get usage for date range:", error.message);
+    return [];
   }
 }
 

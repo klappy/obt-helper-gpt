@@ -1043,7 +1043,7 @@ export default async function handler(req, context) {
 
 ### Issue 3.2.3: Add real-time cost UI in chat
 
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/components/ChatInterface.svelte`
 - **Dependencies**: Enhanced ai-usage.js from Phase 1
 - **PRD Connection**: "Real-time cost UI for users" from Future Enhancements
