@@ -1,4 +1,4 @@
-import { sendChatMessage } from "../../src/lib/utils/openai.js";
+import { sendChatMessage } from "../../src/lib/utils/llm-client.js";
 import { getStore } from "@netlify/blobs";
 import { getAllTools } from "./tools.js";
 

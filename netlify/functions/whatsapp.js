@@ -2,7 +2,7 @@ import twilioClient from "../../src/lib/utils/twilio.js";
 // Using direct Netlify Blobs storage instead of utility
 import { getStore } from "@netlify/blobs";
 import { logAIUsage } from "../../src/lib/utils/ai-usage.js";
-import { sendChatMessage } from "../../src/lib/utils/openai.js";
+import { sendChatMessage } from "../../src/lib/utils/llm-client.js";
 import { getAllTools } from "./tools.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;

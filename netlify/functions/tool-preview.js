@@ -1,4 +1,4 @@
-import { sendChatMessage } from "../../src/lib/utils/openai.js";
+import { sendChatMessage } from "../../src/lib/utils/llm-client.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 

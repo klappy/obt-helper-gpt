@@ -651,7 +651,7 @@ Supported providers (planned):
 **Why This Matters**: PRD requires modularity to prevent vendor lock-in and ensure sustainable scaling within cost constraints.
 
 ### Issue 3.2.1: Refactor openai.js to adapter pattern
-- **Status**: ☐ Open
+- **Status**: ☑ Closed
 - **Files**: `src/lib/utils/openai.js`
 - **Dependencies**: None
 - **PRD Connection**: "Modular for swaps" from LLM Layer requirements
