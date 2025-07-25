@@ -1,0 +1,337 @@
+/* Design Tokens - Apple 2025 Design Language */
+/* OBT Helper GPT - Version 5.0.0 */
+
+/* =================================================================
+   COLOR SYSTEM - Dynamic and Adaptive
+   ================================================================= */
+
+:root {
+  /* Primary Colors */
+  --primary: #007aff; /* Adaptive blue - Light mode */
+  --primary-hover: #0051d5;
+  --primary-active: #0045b8;
+  
+  /* Surface Hierarchy */
+  --surface-1: #ffffff; /* Base surface */
+  --surface-2: #f2f2f7; /* Raised surface */
+  --surface-3: #e5e5ea; /* Floating surface */
+  --surface-4: #d1d1d6; /* Overlay surface */
+  
+  /* Text Colors */
+  --text-primary: #000000; /* High contrast */
+  --text-secondary: #3c3c43; /* Subtle text */
+  --text-tertiary: #8e8e93; /* Muted text */
+  --text-inverse: #ffffff;
+  
+  /* Semantic Colors */
+  --success: #34c759;
+  --warning: #ff9500;
+  --error: #ff3b30;
+  --info: #5856d6;
+  
+  /* Accent Gradient */
+  --accent-gradient: linear-gradient(135deg, #5e5ce6, #bf5af2, #ff375f);
+  
+  /* Borders */
+  --border-color: rgba(60, 60, 67, 0.12);
+  --border-focus: var(--primary);
+  
+  /* Backgrounds */
+  --background-primary: #ffffff;
+  --background-secondary: #f2f2f7;
+  --background-overlay: rgba(0, 0, 0, 0.4);
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Primary Colors */
+    --primary: #0a84ff;
+    --primary-hover: #4da0ff;
+    --primary-active: #70b3ff;
+    
+    /* Surface Hierarchy */
+    --surface-1: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --surface-3: #3a3a3c;
+    --surface-4: #48484a;
+    
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #ebebf5;
+    --text-tertiary: #c7c7cc;
+    
+    /* Borders */
+    --border-color: rgba(235, 235, 245, 0.12);
+    
+    /* Backgrounds */
+    --background-primary: #000000;
+    --background-secondary: #1c1c1e;
+  }
+}
+
+/* =================================================================
+   SPATIAL LAYERS - Z-Index System
+   ================================================================= */
+
+:root {
+  --z-base: 0;         /* Page content */
+  --z-raised: 10;      /* Cards, buttons */
+  --z-float: 20;       /* Dropdowns, tooltips */
+  --z-modal: 30;       /* Modals, sheets */
+  --z-notification: 40; /* Toasts, alerts */
+  --z-spotlight: 50;   /* Feature highlights */
+}
+
+/* =================================================================
+   SHADOWS - 5-Level System
+   ================================================================= */
+
+:root {
+  /* Shadow System */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.06),
+              0 1px 2px rgba(0, 0, 0, 0.08);
+  
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.08),
+              0 4px 12px rgba(0, 0, 0, 0.06);
+  
+  --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.08),
+              0 8px 24px rgba(0, 0, 0, 0.06);
+  
+  --shadow-4: 0 8px 32px rgba(0, 0, 0, 0.10),
+              0 16px 48px rgba(0, 0, 0, 0.08);
+  
+  --shadow-5: 0 16px 64px rgba(0, 0, 0, 0.12),
+              0 32px 96px rgba(0, 0, 0, 0.10);
+  
+  /* Colored Shadows */
+  --shadow-primary: 0 4px 16px rgba(0, 122, 255, 0.2);
+  --shadow-success: 0 4px 16px rgba(52, 199, 89, 0.2);
+  --shadow-error: 0 4px 16px rgba(255, 59, 48, 0.2);
+}
+
+/* Dark Mode Shadows */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.3),
+                0 1px 2px rgba(0, 0, 0, 0.4);
+    
+    --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4),
+                0 4px 12px rgba(0, 0, 0, 0.3);
+    
+    --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.4),
+                0 8px 24px rgba(0, 0, 0, 0.3);
+    
+    --shadow-4: 0 8px 32px rgba(0, 0, 0, 0.5),
+                0 16px 48px rgba(0, 0, 0, 0.4);
+    
+    --shadow-5: 0 16px 64px rgba(0, 0, 0, 0.6),
+                0 32px 96px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* =================================================================
+   ANIMATION CURVES - Spring-based
+   ================================================================= */
+
+:root {
+  /* Spring Animations */
+  --spring-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --spring-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --spring-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  
+  /* Timing */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 800ms;
+  
+  /* Standard Transitions */
+  --transition-default: all var(--duration-normal) var(--spring-smooth);
+  --transition-fast: all var(--duration-fast) var(--spring-smooth);
+  --transition-bounce: all var(--duration-normal) var(--spring-bounce);
+}
+
+/* =================================================================
+   SPACING SYSTEM - Consistent Scale
+   ================================================================= */
+
+:root {
+  /* Base unit: 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;  /* Standard spacing */
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  
+  /* Component Spacing */
+  --padding-xs: var(--space-2);
+  --padding-sm: var(--space-3);
+  --padding-md: var(--space-4);
+  --padding-lg: var(--space-6);
+  --padding-xl: var(--space-8);
+  
+  /* Layout Spacing */
+  --gap-xs: var(--space-2);
+  --gap-sm: var(--space-3);
+  --gap-md: var(--space-4);
+  --gap-lg: var(--space-6);
+  --gap-xl: var(--space-8);
+}
+
+/* =================================================================
+   TYPOGRAPHY - System Fonts
+   ================================================================= */
+
+:root {
+  /* Font Families */
+  --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                 "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, 
+               "Courier New", monospace;
+  
+  /* Font Sizes */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+  --text-5xl: 48px;
+  --text-6xl: 60px;
+  
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Letter Spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+}
+
+/* =================================================================
+   BORDERS & RADII
+   ================================================================= */
+
+:root {
+  /* Border Widths */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 4px;
+  
+  /* Border Radii */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Component Radii */
+  --radius-button: var(--radius-lg);
+  --radius-card: var(--radius-xl);
+  --radius-modal: var(--radius-2xl);
+  --radius-input: var(--radius-md);
+}
+
+/* =================================================================
+   BREAKPOINTS - Responsive Design
+   ================================================================= */
+
+:root {
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* =================================================================
+   MISC TOKENS
+   ================================================================= */
+
+:root {
+  /* Blur Values */
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+  
+  /* Opacity Values */
+  --opacity-0: 0;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-30: 0.3;
+  --opacity-50: 0.5;
+  --opacity-70: 0.7;
+  --opacity-90: 0.9;
+  --opacity-100: 1;
+  
+  /* Content Widths */
+  --content-xs: 480px;
+  --content-sm: 640px;
+  --content-md: 768px;
+  --content-lg: 1024px;
+  --content-xl: 1280px;
+  --content-full: 100%;
+}
+
+/* =================================================================
+   UTILITY CLASSES - For Quick Application
+   ================================================================= */
+
+/* Depth Classes */
+.depth-1 { box-shadow: var(--shadow-1); }
+.depth-2 { box-shadow: var(--shadow-2); }
+.depth-3 { box-shadow: var(--shadow-3); }
+.depth-4 { box-shadow: var(--shadow-4); }
+.depth-5 { box-shadow: var(--shadow-5); }
+
+/* Surface Classes */
+.surface-1 { background-color: var(--surface-1); }
+.surface-2 { background-color: var(--surface-2); }
+.surface-3 { background-color: var(--surface-3); }
+.surface-4 { background-color: var(--surface-4); }
+
+/* Animation Classes */
+.transition-default { transition: var(--transition-default); }
+.transition-fast { transition: var(--transition-fast); }
+.transition-bounce { transition: var(--transition-bounce); }
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

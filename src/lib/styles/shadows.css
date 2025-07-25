@@ -1,0 +1,270 @@
+/* Spatial Shadow System - Apple 2025 Design */
+/* OBT Helper GPT - Version 5.0.0 */
+
+/* =================================================================
+   Shadow System Overview
+   ================================================================= */
+
+/* 
+ * This file implements a 5-level shadow system that creates
+ * spatial hierarchy and depth in the interface.
+ * 
+ * Levels:
+ * 1. Subtle - for slight elevation (cards at rest)
+ * 2. Standard - for interactive elements
+ * 3. Elevated - for hovered states  
+ * 4. Floating - for modals and dropdowns
+ * 5. Spotlight - for highest priority elements
+ */
+
+/* =================================================================
+   Base Shadow Classes
+   ================================================================= */
+
+/* Level 1: Subtle elevation */
+.shadow-1,
+.shadow-subtle {
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+/* Level 2: Standard elevation */
+.shadow-2,
+.shadow-standard {
+  box-shadow: var(--shadow-2);
+  transition: box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+/* Level 3: Elevated state */
+.shadow-3,
+.shadow-elevated {
+  box-shadow: var(--shadow-3);
+  transition: box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+/* Level 4: Floating elements */
+.shadow-4,
+.shadow-floating {
+  box-shadow: var(--shadow-4);
+  transition: box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+/* Level 5: Spotlight/Hero elements */
+.shadow-5,
+.shadow-spotlight {
+  box-shadow: var(--shadow-5);
+  transition: box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+/* =================================================================
+   Interactive Shadow States
+   ================================================================= */
+
+/* Hover elevation increase */
+.shadow-hover-1:hover { box-shadow: var(--shadow-2); }
+.shadow-hover-2:hover { box-shadow: var(--shadow-3); }
+.shadow-hover-3:hover { box-shadow: var(--shadow-4); }
+.shadow-hover-4:hover { box-shadow: var(--shadow-5); }
+
+/* Active/pressed state (reduced shadow) */
+.shadow-active:active {
+  box-shadow: var(--shadow-1);
+  transform: translateY(1px);
+}
+
+/* Focus state with colored shadow */
+.shadow-focus:focus {
+  box-shadow: var(--shadow-primary);
+  outline: none;
+}
+
+.shadow-focus-success:focus {
+  box-shadow: var(--shadow-success);
+  outline: none;
+}
+
+.shadow-focus-error:focus {
+  box-shadow: var(--shadow-error);
+  outline: none;
+}
+
+/* =================================================================
+   Component-Specific Shadows
+   ================================================================= */
+
+/* Card shadows */
+.card-shadow {
+  box-shadow: var(--shadow-2);
+}
+
+.card-shadow:hover {
+  box-shadow: var(--shadow-3);
+  transform: translateY(-2px);
+}
+
+/* Button shadows */
+.button-shadow {
+  box-shadow: var(--shadow-1);
+}
+
+.button-shadow:hover {
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+.button-shadow:active {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+/* Modal/Dialog shadows */
+.modal-shadow {
+  box-shadow: var(--shadow-5);
+}
+
+/* Dropdown shadows */
+.dropdown-shadow {
+  box-shadow: var(--shadow-4);
+}
+
+/* Tooltip shadows */
+.tooltip-shadow {
+  box-shadow: var(--shadow-3);
+}
+
+/* =================================================================
+   Directional Shadows
+   ================================================================= */
+
+/* Top shadow (for bottom-fixed elements) */
+.shadow-top {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Left shadow (for right-fixed elements) */
+.shadow-left {
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Right shadow (for left-fixed elements) */
+.shadow-right {
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08);
+}
+
+/* =================================================================
+   Inset Shadows
+   ================================================================= */
+
+/* Subtle inset for inputs and wells */
+.shadow-inset-1 {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-inset-2 {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* =================================================================
+   Colored Shadows
+   ================================================================= */
+
+/* Primary color shadow */
+.shadow-primary {
+  box-shadow: var(--shadow-primary);
+}
+
+/* Success color shadow */
+.shadow-success {
+  box-shadow: var(--shadow-success);
+}
+
+/* Error color shadow */
+.shadow-error {
+  box-shadow: var(--shadow-error);
+}
+
+/* =================================================================
+   Shadow Utilities
+   ================================================================= */
+
+/* Remove shadow */
+.shadow-none {
+  box-shadow: none !important;
+}
+
+/* Smooth shadow transition */
+.shadow-transition {
+  transition: box-shadow var(--duration-normal) var(--spring-smooth),
+              transform var(--duration-normal) var(--spring-smooth);
+}
+
+/* =================================================================
+   Responsive Shadows
+   ================================================================= */
+
+/* Reduce shadows on small screens for performance */
+@media (max-width: 640px) {
+  .shadow-1,
+  .shadow-2,
+  .shadow-3,
+  .shadow-4,
+  .shadow-5 {
+    box-shadow: var(--shadow-1);
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .shadow-hover-1:hover,
+    .shadow-hover-2:hover,
+    .shadow-hover-3:hover,
+    .shadow-hover-4:hover {
+      box-shadow: inherit;
+    }
+  }
+}
+
+/* =================================================================
+   Dark Mode Adjustments
+   ================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  /* Shadows are already adjusted in tokens.css */
+  /* This is just a placeholder for any additional dark mode shadow needs */
+}
+
+/* =================================================================
+   Performance Optimizations
+   ================================================================= */
+
+/* Use transform3d for GPU acceleration on elevated elements */
+.shadow-elevated,
+.shadow-floating,
+.shadow-spotlight {
+  transform: translate3d(0, 0, 0);
+  will-change: transform, box-shadow;
+}
+
+/* Remove will-change after animation */
+.shadow-elevated:not(:hover),
+.shadow-floating:not(:hover),
+.shadow-spotlight:not(:hover) {
+  will-change: auto;
+}
+
+/* =================================================================
+   Usage Examples
+   ================================================================= */
+
+/*
+ * Basic card with hover elevation:
+ * <div class="card shadow-2 shadow-hover-3">Content</div>
+ * 
+ * Button with press effect:
+ * <button class="button-shadow shadow-active">Click me</button>
+ * 
+ * Modal with maximum elevation:
+ * <div class="modal shadow-5">Modal content</div>
+ * 
+ * Input with inset shadow:
+ * <input class="shadow-inset-1" />
+ */

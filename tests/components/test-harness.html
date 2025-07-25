@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBT Helper GPT - Component Test Harness</title>
+  
+  <!-- Import all CSS files -->
+  <link rel="stylesheet" href="../../src/lib/styles/reset.css">
+  <link rel="stylesheet" href="../../src/lib/styles/tokens.css">
+  <link rel="stylesheet" href="../../src/lib/styles/shadows.css">
+  <link rel="stylesheet" href="../../src/lib/styles/animations.css">
+  <link rel="stylesheet" href="../../src/lib/styles/theme.css">
+  <link rel="stylesheet" href="../../src/app.css">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    /* Test harness specific styles */
+    .test-section {
+      padding: 2rem;
+      margin: 2rem auto;
+      max-width: 1200px;
+      border-bottom: 1px solid var(--surface-3);
+    }
+    
+    .test-header {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    
+    .test-description {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    
+    .component-grid {
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    /* Apply component styles from actual components */
+    .floating-card {
+      background: var(--surface-1);
+      border-radius: var(--radius-xl);
+      transition: all var(--spring-smooth);
+    }
+    
+    .neu-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      border-radius: var(--radius-xl);
+      transition: all var(--spring-bounce);
+      cursor: pointer;
+      user-select: none;
+      text-decoration: none;
+      border: none;
+      outline: none;
+    }
+    
+    /* Import component styles (simplified versions) */
+    @import url('../../src/lib/components/ui/FloatingCard.svelte');
+    @import url('../../src/lib/components/ui/AdaptiveButton.svelte');
+    @import url('../../src/lib/components/ui/LiveMetric.svelte');
+    @import url('../../src/lib/components/ui/ConversationBubble.svelte');
+  </style>
+</head>
+<body>
+  <header class="test-section">
+    <h1 class="text-4xl font-bold mb-4">OBT Helper GPT Component Test Harness</h1>
+    <p class="text-lg text-secondary">Version 5.0.0 - Apple 2025 Design System</p>
+  </header>
+
+  <!-- Design Tokens Section -->
+  <section class="test-section">
+    <h2 class="test-header">Design Tokens</h2>
+    <p class="test-description">Core design tokens that power the entire system</p>
+    
+    <div class="space-y-6">
+      <!-- Colors -->
+      <div>
+        <h3 class="font-semibold mb-3">Color Palette</h3>
+        <div class="flex flex-wrap gap-4">
+          <div class="text-center">
+            <div class="w-24 h-24 rounded-lg" style="background: var(--primary)"></div>
+            <span class="text-sm mt-1">Primary</span>
+          </div>
+          <div class="text-center">
+            <div class="w-24 h-24 rounded-lg" style="background: var(--surface-1)"></div>
+            <span class="text-sm mt-1">Surface 1</span>
+          </div>
+          <div class="text-center">
+            <div class="w-24 h-24 rounded-lg" style="background: var(--surface-2)"></div>
+            <span class="text-sm mt-1">Surface 2</span>
+          </div>
+          <div class="text-center">
+            <div class="w-24 h-24 rounded-lg" style="background: var(--surface-3)"></div>
+            <span class="text-sm mt-1">Surface 3</span>
+          </div>
+          <div class="text-center">
+            <div class="w-24 h-24 rounded-lg" style="background: var(--surface-4)"></div>
+            <span class="text-sm mt-1">Surface 4</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Shadows -->
+      <div>
+        <h3 class="font-semibold mb-3">Shadow System</h3>
+        <div class="flex flex-wrap gap-4">
+          <div class="w-32 h-32 bg-white rounded-lg depth-1 flex items-center justify-center">Depth 1</div>
+          <div class="w-32 h-32 bg-white rounded-lg depth-2 flex items-center justify-center">Depth 2</div>
+          <div class="w-32 h-32 bg-white rounded-lg depth-3 flex items-center justify-center">Depth 3</div>
+          <div class="w-32 h-32 bg-white rounded-lg depth-4 flex items-center justify-center">Depth 4</div>
+          <div class="w-32 h-32 bg-white rounded-lg depth-5 flex items-center justify-center">Depth 5</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FloatingCard Component -->
+  <section class="test-section">
+    <h2 class="test-header">FloatingCard Component</h2>
+    <p class="test-description">Cards with spatial depth and hover effects</p>
+    
+    <div class="component-grid">
+      <div class="floating-card depth-1 p-6">
+        <h3 class="text-lg font-semibold mb-2">Depth Level 1</h3>
+        <p>Subtle elevation for inline content</p>
+      </div>
+      
+      <div class="floating-card depth-2 p-6">
+        <h3 class="text-lg font-semibold mb-2">Depth Level 2</h3>
+        <p>Standard card elevation</p>
+      </div>
+      
+      <div class="floating-card depth-3 p-6">
+        <h3 class="text-lg font-semibold mb-2">Depth Level 3</h3>
+        <p>Elevated for hover states</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AdaptiveButton Component -->
+  <section class="test-section">
+    <h2 class="test-header">AdaptiveButton Component</h2>
+    <p class="test-description">Buttons with multiple variants and sizes</p>
+    
+    <div class="space-y-4">
+      <!-- Primary Buttons -->
+      <div>
+        <h3 class="font-semibold mb-3">Primary Variant</h3>
+        <div class="flex flex-wrap gap-3 items-center">
+          <button class="neu-button neu-button-primary px-3 py-1.5 text-sm">Small</button>
+          <button class="neu-button neu-button-primary px-4 py-2 text-base">Medium</button>
+          <button class="neu-button neu-button-primary px-6 py-3 text-lg">Large</button>
+          <button class="neu-button neu-button-primary px-8 py-4 text-xl">Extra Large</button>
+          <button class="neu-button neu-button-primary neu-button-disabled px-4 py-2" disabled>Disabled</button>
+        </div>
+      </div>
+      
+      <!-- Secondary Buttons -->
+      <div>
+        <h3 class="font-semibold mb-3">Secondary Variant</h3>
+        <div class="flex flex-wrap gap-3 items-center">
+          <button class="neu-button neu-button-secondary px-3 py-1.5 text-sm">Small</button>
+          <button class="neu-button neu-button-secondary px-4 py-2 text-base">Medium</button>
+          <button class="neu-button neu-button-secondary px-6 py-3 text-lg">Large</button>
+          <button class="neu-button neu-button-secondary px-8 py-4 text-xl">Extra Large</button>
+        </div>
+      </div>
+      
+      <!-- Tertiary Buttons -->
+      <div>
+        <h3 class="font-semibold mb-3">Tertiary Variant</h3>
+        <div class="flex flex-wrap gap-3 items-center">
+          <button class="neu-button neu-button-tertiary px-3 py-1.5 text-sm">Small</button>
+          <button class="neu-button neu-button-tertiary px-4 py-2 text-base">Medium</button>
+          <button class="neu-button neu-button-tertiary px-6 py-3 text-lg">Large</button>
+          <button class="neu-button neu-button-tertiary px-8 py-4 text-xl">Extra Large</button>
+        </div>
+      </div>
+      
+      <!-- Ghost Buttons -->
+      <div>
+        <h3 class="font-semibold mb-3">Ghost Variant</h3>
+        <div class="flex flex-wrap gap-3 items-center">
+          <button class="neu-button neu-button-ghost px-3 py-1.5 text-sm">Small</button>
+          <button class="neu-button neu-button-ghost px-4 py-2 text-base">Medium</button>
+          <button class="neu-button neu-button-ghost px-6 py-3 text-lg">Large</button>
+          <button class="neu-button neu-button-ghost px-8 py-4 text-xl">Extra Large</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SpatialGrid Component -->
+  <section class="test-section">
+    <h2 class="test-header">SpatialGrid Component</h2>
+    <p class="test-description">Responsive grid layout with spatial properties</p>
+    
+    <div class="spatial-grid grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 1</h3>
+        <p class="text-sm text-secondary mt-2">Responsive grid item</p>
+      </div>
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 2</h3>
+        <p class="text-sm text-secondary mt-2">Adapts to viewport</p>
+      </div>
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 3</h3>
+        <p class="text-sm text-secondary mt-2">Maintains spacing</p>
+      </div>
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 4</h3>
+        <p class="text-sm text-secondary mt-2">Smooth animations</p>
+      </div>
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 5</h3>
+        <p class="text-sm text-secondary mt-2">Depth hierarchy</p>
+      </div>
+      <div class="floating-card depth-2 p-6">
+        <h3 class="font-semibold">Grid Item 6</h3>
+        <p class="text-sm text-secondary mt-2">Clean design</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LiveMetric Component -->
+  <section class="test-section">
+    <h2 class="test-header">LiveMetric Component</h2>
+    <p class="test-description">Animated metrics with trends</p>
+    
+    <div class="component-grid">
+      <div class="live-metric p-4 depth-2 rounded-xl">
+        <div class="metric-label text-base">Total Users</div>
+        <div class="metric-value text-3xl text-primary">1,234</div>
+        <div class="metric-trend text-sm trend-up">
+          <span class="trend-icon">↑</span>
+          <span class="trend-value">+12%</span>
+        </div>
+      </div>
+      
+      <div class="live-metric p-4 depth-2 rounded-xl">
+        <div class="metric-label text-base">Revenue</div>
+        <div class="metric-value text-3xl text-success">
+          <span class="metric-prefix">$</span>
+          <span class="metric-number">45,678</span>
+        </div>
+        <div class="metric-trend text-sm trend-up">
+          <span class="trend-icon">↑</span>
+          <span class="trend-value">+8%</span>
+        </div>
+      </div>
+      
+      <div class="live-metric p-4 depth-2 rounded-xl">
+        <div class="metric-label text-base">Error Rate</div>
+        <div class="metric-value text-3xl text-error">
+          <span class="metric-number">2.3</span>
+          <span class="metric-suffix">%</span>
+        </div>
+        <div class="metric-trend text-sm trend-down">
+          <span class="trend-icon">↓</span>
+          <span class="trend-value">-15%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ConversationBubble Component -->
+  <section class="test-section">
+    <h2 class="test-header">ConversationBubble Component</h2>
+    <p class="test-description">Chat interface with message bubbles</p>
+    
+    <div class="max-w-2xl mx-auto space-y-4">
+      <!-- System Message -->
+      <div class="conversation-bubble conversation-bubble-system">
+        <div class="bubble-content">
+          <div class="bubble-message bubble-message-system px-4 py-2 rounded-full">
+            <span class="message-text">Conversation started</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Message -->
+      <div class="conversation-bubble conversation-bubble-user flex flex-row-reverse gap-3">
+        <div class="bubble-content items-end">
+          <div class="bubble-message bubble-message-user px-4 py-3 rounded-2xl" style="background: var(--primary); color: white;">
+            <span class="message-text">Hello! Can you help me with my project?</span>
+          </div>
+          <div class="bubble-timestamp text-xs px-3 mt-1">3:42 PM</div>
+        </div>
+      </div>
+      
+      <!-- Assistant Message -->
+      <div class="conversation-bubble conversation-bubble-assistant flex gap-3">
+        <div class="bubble-avatar w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center">
+          <span class="avatar-emoji text-xl">🤖</span>
+        </div>
+        <div class="bubble-content">
+          <div class="bubble-name text-sm font-medium px-3 mb-1">AI Assistant</div>
+          <div class="bubble-message px-4 py-3 rounded-2xl bg-surface-2">
+            <span class="message-text">Of course! I'd be happy to help you with your project. What specific aspect would you like assistance with?</span>
+          </div>
+          <div class="bubble-timestamp text-xs px-3 mt-1">3:43 PM</div>
+          <div class="bubble-reactions flex gap-2 px-3 mt-2">
+            <button class="reaction-pill reaction-active px-3 py-1 rounded-full text-sm border flex items-center gap-1">
+              <span class="reaction-emoji">👍</span>
+              <span class="reaction-count">1</span>
+            </button>
+            <button class="reaction-pill px-3 py-1 rounded-full text-sm border flex items-center gap-1">
+              <span class="reaction-emoji">❤️</span>
+              <span class="reaction-count">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Animation Showcase -->
+  <section class="test-section">
+    <h2 class="test-header">Animation System</h2>
+    <p class="test-description">Spring-based animations and transitions</p>
+    
+    <div class="space-y-6">
+      <div class="flex flex-wrap gap-4">
+        <div class="p-6 bg-surface-2 rounded-xl fade-in">Fade In</div>
+        <div class="p-6 bg-surface-2 rounded-xl slide-up">Slide Up</div>
+        <div class="p-6 bg-surface-2 rounded-xl scale-in">Scale In</div>
+        <div class="p-6 bg-surface-2 rounded-xl bounce-in">Bounce In</div>
+      </div>
+      
+      <div>
+        <p class="text-sm text-secondary mb-2">Hover over cards to see depth transitions</p>
+        <div class="flex gap-4">
+          <div class="floating-card depth-1 depth-hover p-6 cursor-pointer">
+            <p>Hover for depth change</p>
+          </div>
+          <div class="floating-card depth-2 depth-hover-subtle p-6 cursor-pointer">
+            <p>Subtle hover effect</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accessibility Features -->
+  <section class="test-section">
+    <h2 class="test-header">Accessibility Features</h2>
+    <p class="test-description">Built-in accessibility support</p>
+    
+    <div class="space-y-4">
+      <div class="p-4 bg-surface-2 rounded-lg">
+        <h3 class="font-semibold mb-2">Keyboard Navigation</h3>
+        <p class="text-sm text-secondary">All interactive elements are keyboard accessible with visible focus states</p>
+        <button class="neu-button neu-button-primary px-4 py-2 mt-3">Tab to me</button>
+      </div>
+      
+      <div class="p-4 bg-surface-2 rounded-lg">
+        <h3 class="font-semibold mb-2">Screen Reader Support</h3>
+        <p class="text-sm text-secondary">Semantic HTML and ARIA labels throughout</p>
+      </div>
+      
+      <div class="p-4 bg-surface-2 rounded-lg">
+        <h3 class="font-semibold mb-2">Reduced Motion</h3>
+        <p class="text-sm text-secondary">Respects prefers-reduced-motion for users sensitive to motion</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dark Mode Preview -->
+  <section class="test-section">
+    <h2 class="test-header">Dark Mode Support</h2>
+    <p class="test-description">Automatic dark mode adaptation</p>
+    
+    <div class="p-6 rounded-xl" style="background: #1c1c1e; color: #f2f2f7;">
+      <p class="mb-4">Components automatically adapt to dark mode preferences</p>
+      <div class="flex gap-4">
+        <button class="neu-button neu-button-primary px-4 py-2">Dark Primary</button>
+        <button class="neu-button neu-button-secondary px-4 py-2">Dark Secondary</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="test-section text-center">
+    <p class="text-secondary">OBT Helper GPT v5.0.0 - Component Test Harness</p>
+    <p class="text-sm text-tertiary mt-2">Built with Apple 2025 Design System</p>
+  </footer>
+
+  <script>
+    // Add any interactive testing functionality here
+    console.log('Component Test Harness loaded successfully');
+    
+    // Log design token values for debugging
+    const root = document.documentElement;
+    const computedStyle = getComputedStyle(root);
+    console.log('Design Tokens:', {
+      primary: computedStyle.getPropertyValue('--primary'),
+      surface1: computedStyle.getPropertyValue('--surface-1'),
+      shadow1: computedStyle.getPropertyValue('--shadow-1'),
+      springSmooth: computedStyle.getPropertyValue('--spring-smooth')
+    });
+  </script>
+</body>
+</html>

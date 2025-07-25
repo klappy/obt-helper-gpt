@@ -1,23 +1,28 @@
 :root {
-  /* 2025 Color Palette */
-  --color-primary: #667eea;
-  --color-primary-dark: #5a67d8;
-  --color-secondary: #764ba2;
-  --color-accent: #f093fb;
-  --color-accent-2: #f5576c;
-  --color-success: #48bb78;
-  --color-warning: #ed8936;
-  --color-error: #f56565;
+  /* 2025 Color Palette - Updated to use design tokens */
+  /* NOTE: Most colors now come from tokens.css */
+  
+  /* Legacy color mappings for backwards compatibility */
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-hover);
+  --color-secondary: var(--surface-3);
+  --color-accent: var(--info);
+  --color-accent-2: var(--error);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
 
-  /* Dark mode colors (2025 default) */
-  --color-bg-dark: #0a0a0b;
-  --color-bg-dark-secondary: #1a1a1b;
-  --color-bg-dark-tertiary: #2a2a2b;
-  --color-text-dark: #e2e8f0;
-  --color-text-dark-muted: #a0aec0;
-  --color-text-dark-subtle: #718096;
+  /* Dark mode colors now handled by tokens.css */
+  --color-bg-dark: var(--background-primary);
+  --color-bg-dark-secondary: var(--surface-1);
+  --color-bg-dark-tertiary: var(--surface-2);
+  --color-text-dark: var(--text-primary);
+  --color-text-dark-muted: var(--text-secondary);
+  --color-text-dark-subtle: var(--text-tertiary);
 
-  /* Glassmorphism variables */
+  /* REMOVED: Glassmorphism variables - NO LONGER USED IN 2025 DESIGN */
+  /* Per UI redesign requirements, we're using clean spatial design instead */
+  /*
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-bg-light: rgba(255, 255, 255, 0.1);
   --glass-bg-strong: rgba(255, 255, 255, 0.15);
@@ -25,8 +30,10 @@
   --glass-border-strong: rgba(255, 255, 255, 0.2);
   --glass-blur: 20px;
   --glass-blur-strong: 40px;
+  */
 
-  /* Neural network gradient */
+  /* REMOVED: Complex gradients - replaced with simpler accent gradient */
+  /*
   --gradient-neural: conic-gradient(
     from 180deg at 50% 50%,
     #ff006e,
@@ -36,18 +43,21 @@
     #ff006e
   );
   --gradient-mesh: linear-gradient(135deg, #667eea 0%, #764ba2 35%, #f093fb 65%, #f5576c 100%);
-  --gradient-text: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  */
+  
+  /* Clean gradient for special cases only */
+  --gradient-text: var(--accent-gradient);
 
-  /* Animation timings */
-  --transition-base: 0.2s ease;
-  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* Animation timings - now use tokens.css values */
+  --transition-base: var(--transition-fast);
+  --transition-smooth: var(--transition-default);
+  --transition-bounce: var(--transition-bounce);
+  --transition-spring: var(--transition-bounce);
 
-  /* Shadows with purple glow */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  /* Shadows - now use tokens.css shadow system */
+  --shadow-sm: var(--shadow-1);
+  --shadow-md: var(--shadow-2);
+  --shadow-lg: var(--shadow-3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
   --shadow-glow-strong: 0 0 40px rgba(139, 92, 246, 0.5);
@@ -75,95 +85,64 @@ body {
   overflow-x: hidden;
 }
 
-/* Utility classes for the new design system */
-@layer utilities {
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-  }
+/* REMOVED: All glass-related classes */
+/* These violated the 2025 design principles of clean, spatial design */
+/* Use card classes from app.css instead */
 
-  .glass-light {
-    background: var(--glass-bg-light);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-  }
-
-  .glass-strong {
-    background: var(--glass-bg-strong);
-    backdrop-filter: blur(var(--glass-blur-strong));
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
-    border: 1px solid var(--glass-border-strong);
-  }
-
-  .glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .glow-strong {
-    box-shadow: var(--shadow-glow-strong);
-  }
-
-  .neural-glow {
-    box-shadow: var(--shadow-neural);
-  }
-
-  .text-gradient {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .bg-neural {
-    background: var(--gradient-neural);
-  }
-
-  .bg-mesh {
-    background: var(--gradient-mesh);
-  }
-
-  /* Animated classes */
-  .animate-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-neural {
-    background-size: 400% 400%;
-    animation: neural-flow 8s ease infinite;
-  }
-
-  .animate-mesh {
-    background-size: 200% 200%;
-    animation: mesh-rotate 20s linear infinite;
-  }
-
-  .gradient-text-primary {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .gradient-text-neural {
-    background: var(--gradient-neural);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+/*
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
 }
+
+.glass-light {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border-strong);
+}
+*/
+
+/* Modern utility classes using spatial design */
+.elevated-1 {
+  box-shadow: var(--shadow-1);
+}
+
+.elevated-2 {
+  box-shadow: var(--shadow-2);
+  transform: translateZ(0); /* Activate GPU */
+}
+
+.elevated-3 {
+  box-shadow: var(--shadow-3);
+  transform: translateZ(0);
+}
+
+/* Text utilities */
+.text-gradient {
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* REMOVED: Neural animations - too complex for clean design */
+/*
+.neural-bg {
+  background: var(--gradient-neural);
+  background-size: 400% 400%;
+  animation: neural-shift 10s ease infinite;
+}
+*/
 
 /* Hover states for interactive elements */
 .interactive {
@@ -279,3 +258,16 @@ html {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
 }
+
+/* IMPORTANT NOTE: 
+ * This file has been cleaned of all glassmorphism effects
+ * per the 2025 UI redesign requirements.
+ * 
+ * DO NOT reintroduce:
+ * - Glass backgrounds
+ * - Backdrop filters
+ * - Complex mesh gradients
+ * - Neural network animations
+ * 
+ * Use the clean, spatial design system from tokens.css instead.
+ */

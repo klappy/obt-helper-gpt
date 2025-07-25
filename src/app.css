@@ -1,199 +1,220 @@
-/* Import our 2025 theme system FIRST */
+/* OBT Helper GPT - Apple 2025 Design System */
+/* Version 5.0.0 */
+
+/* Import design system in correct order */
+@import "./lib/styles/reset.css";
+@import "./lib/styles/tokens.css";
+@import "./lib/styles/shadows.css";
+@import "./lib/styles/animations.css";
 @import "./lib/styles/theme.css";
 
+/* Tailwind imports */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Glass utilities defined here for @apply compatibility */
-@layer utilities {
-  .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+/* =================================================================
+   Base Styles
+   ================================================================= */
 
-  .glass-light {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+/* Ensure design tokens are applied globally */
+:root {
+  color-scheme: light dark;
+}
 
-  .glass-strong {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+/* Base layout */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content area */
+main {
+  flex: 1;
+  width: 100%;
+}
+
+/* Container utilities */
+.container {
+  width: 100%;
+  max-width: var(--content-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
   }
 }
 
-/* Modern button styles with glassmorphism */
-.btn-primary {
-  @apply relative overflow-hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: 600;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  border: none;
+/* =================================================================
+   Component Base Styles
+   ================================================================= */
+
+/* Modern button styles - NO glassmorphism */
+.btn {
+  @apply inline-flex items-center justify-center;
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-button);
+  transition: var(--transition-default);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px -3px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px -5px rgba(102, 126, 234, 0.4);
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.btn-primary:active {
+/* Button variants */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  padding: var(--space-3) var(--space-6);
+  box-shadow: var(--shadow-2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-3);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--primary-active);
   transform: translateY(0);
+  box-shadow: var(--shadow-1);
 }
 
 .btn-secondary {
-  @apply glass relative overflow-hidden;
-  color: #e2e8f0;
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  padding: var(--space-3) var(--space-6);
+  box-shadow: var(--shadow-1);
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--surface-3);
+  box-shadow: var(--shadow-2);
 }
 
-/* Modern card with glassmorphism */
+/* =================================================================
+   Card Styles - Clean, spatial design
+   ================================================================= */
+
 .card {
-  @apply glass-light rounded-2xl p-6 relative overflow-hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 1.5rem;
+  background-color: var(--surface-1);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  transition: var(--transition-default);
 }
 
-.card:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-4px);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+.card-raised {
+  box-shadow: var(--shadow-2);
 }
 
-/* Interactive card variant */
-.card-interactive {
-  @apply card cursor-pointer;
+.card-floating {
+  box-shadow: var(--shadow-3);
 }
 
-.card-interactive:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
+.card:hover.card-interactive {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-4);
 }
 
-/* Tool card specific styles */
-.tool-card {
-  @apply glass-light rounded-2xl p-6 relative overflow-hidden cursor-pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* =================================================================
+   Form Styles
+   ================================================================= */
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-input);
+  font-size: var(--text-base);
+  transition: var(--transition-fast);
 }
 
-.tool-card:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #667eea;
-  transform: translateY(-8px) scale(1.03);
-  box-shadow:
-    0 20px 40px -10px rgba(102, 126, 234, 0.3),
-    0 0 0 1px rgba(102, 126, 234, 0.2);
-}
-
-.tool-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #667eea, transparent);
-  opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tool-card:hover::before {
-  opacity: 1;
-}
-
-/* Floating elements */
-.floating {
-  animation: float 6s ease-in-out infinite;
-}
-
-.floating:nth-child(even) {
-  animation-delay: -3s;
-}
-
-/* Input styles */
-.input-glass {
-  @apply glass rounded-xl px-4 py-3 w-full;
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.input-glass:focus {
+.input:focus,
+.textarea:focus,
+.select:focus {
   outline: none;
-  border-color: #667eea;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-.input-glass::placeholder {
-  color: #718096;
+/* Label styles */
+.label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
 }
 
-/* Animation keyframes */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
+/* =================================================================
+   Utility Classes
+   ================================================================= */
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
+/* Text utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+/* Background utilities */
+.bg-primary { background-color: var(--background-primary); }
+.bg-secondary { background-color: var(--background-secondary); }
+
+/* Spacing utilities that use our tokens */
+.p-0 { padding: 0; }
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-6 { padding: var(--space-6); }
+.p-8 { padding: var(--space-8); }
+
+/* Gap utilities */
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
 
 /* Loading states */
-.loading-shimmer {
+.skeleton {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
 }
 
-/* Responsive utilities */
-@media (max-width: 768px) {
-  .card,
-  .tool-card {
-    padding: 1rem;
-  }
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
-  .btn-primary,
-  .btn-secondary {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
-  }
+/* Focus visible only for keyboard navigation */
+.focus-visible:focus {
+  outline: none;
+}
+
+.focus-visible:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
