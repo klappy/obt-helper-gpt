@@ -146,3 +146,42 @@ _This archive prevents us from repeating these mistakes. Refer to current docume
 **Replaced by**: PRD's simple password + email/phone auth
 **Why abandoned**: Conflicts with PRD's minimal auth requirements; too complex for single-org toolkit.
 **Key lesson**: Stick to simple auth for antifragile design.
+
+---
+
+## UI/UX Redesign Conflicts
+
+### [2025-01-16] UI Modernization Plan with Glassmorphism
+
+**Replaced by**: MODERN_UI_PRD_2025.md (Apple 2025 clean design)
+**Why abandoned**: Glassmorphism is outdated, complex animations hurt performance, conflicts with Apple's spatial design language
+**Key lesson**: Follow current design trends (spatial, clean) not past ones (glassmorphism)
+**Files to ignore**: `docs/issues/UI_MODERNIZATION_PLAN.md`
+
+### [2025-01-16] First UI Complete Redesign Plan
+
+**Replaced by**: MODERN_UI_PRD_2025.md with detailed task list
+**Why abandoned**: Less detailed than final version, still had some 2020 design concepts
+**Key lesson**: Apple 2025 is about spatial depth, not flat design
+**Files to ignore**: `docs/UI_COMPLETE_REDESIGN_PLAN.md`
+
+### [2025-01-16] Multimodal Implementation as Priority
+
+**Replaced by**: UI redesign as immediate priority (Version 5.0.0+)
+**Why abandoned**: UI/UX must be fixed first before adding complex features; WhatsApp-first approach more important
+**Key lesson**: Fix core UX before adding advanced features
+**Files to ignore**: `docs/issues/MULTIMODAL_IMPLEMENTATION.md`
+
+### [2025-01-16] Original Phase 1-3 Roadmap
+
+**Replaced by**: UI_REDESIGN_TASK_LIST.md phases 0-4
+**Why abandoned**: Different priorities; UI wasn't broken when these were written
+**Key lesson**: Adapt roadmap when fundamental issues discovered
+**Files to ignore**: `docs/issues/phase1.md`, `docs/issues/phase2.md`, `docs/issues/phase3.md`, `docs/issues/epics.md`
+
+### [2025-01-16] Scattered UI Instructions
+
+**Replaced by**: Centralized UI redesign documentation
+**Why abandoned**: Multiple conflicting UI approaches causing confusion
+**Key lesson**: Have ONE source of truth for design direction
+**Current source**: `docs/MODERN_UI_PRD_2025.md` and `docs/UI_REDESIGN_TASK_LIST.md`
