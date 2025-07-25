@@ -117,7 +117,7 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 | 3.1.1 | Build spatial metrics cards | ☑ Closed | `src/routes/admin/+page.svelte`            | Visual test      | Depth hierarchy   |
 | 3.1.2 | Add live activity feed      | ☑ Closed | `src/lib/components/ActivityFeed.svelte`   | Update test      | Real-time updates |
 | 3.1.3 | Create expandable analytics | ☑ Closed | `src/lib/components/AnalyticsPanel.svelte` | Interaction test | Smooth expand     |
-| 3.1.4 | Implement health indicators | ☐ Open | `src/lib/components/SystemHealth.svelte`   | Status test      | Accurate health   |
+| 3.1.4 | Implement health indicators | ☑ Closed | `src/lib/components/SystemHealth.svelte`   | Status test      | Accurate health   |
 | 3.1.5 | Add quick stats summary     | ☑ Closed | `src/routes/admin/+page.svelte`            | Data test        | Correct numbers   |
 
 ### Epic 3.2: Assistant Builder
@@ -125,20 +125,20 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 | ID    | Task                       | Status | Files                                             | Tests            | Validation        |
 | ----- | -------------------------- | ------ | ------------------------------------------------- | ---------------- | ----------------- |
 | 3.2.1 | Create split-view editor   | ☑ Closed | `src/routes/admin/tools/[id]/+page.svelte`        | Layout test      | Split works       |
-| 3.2.2 | Build visual configuration | ☐ Open | `src/lib/components/AssistantConfigurator.svelte` | Drag test        | Modules draggable |
-| 3.2.3 | Add personality sliders    | ☐ Open | `src/lib/components/PersonalityControls.svelte`   | Value test       | Settings apply    |
-| 3.2.4 | Implement live preview     | ☐ Open | `src/lib/components/AssistantPreview.svelte`      | Preview test     | Real-time update  |
-| 3.2.5 | Create cost estimator      | ☐ Open | `src/lib/components/CostEstimator.svelte`         | Calculation test | Accurate costs    |
+| 3.2.2 | Build visual configuration | ☑ Closed | `src/lib/components/AssistantConfigurator.svelte` | Drag test        | Modules draggable |
+| 3.2.3 | Add personality sliders    | ☑ Closed | `src/lib/components/PersonalityControls.svelte`   | Value test       | Settings apply    |
+| 3.2.4 | Implement live preview     | ☑ Closed | `src/lib/components/AssistantPreview.svelte`      | Preview test     | Real-time update  |
+| 3.2.5 | Create cost estimator      | ☑ Closed | `src/lib/components/CostEstimator.svelte`         | Calculation test | Accurate costs    |
 
 ### Epic 3.3: System Management
 
 | ID    | Task                    | Status | Files                                       | Tests       | Validation        |
 | ----- | ----------------------- | ------ | ------------------------------------------- | ----------- | ----------------- |
-| 3.3.1 | Build ambient status bg | ☐ Open | `src/routes/admin/+layout.svelte`           | Color test  | Status visible    |
-| 3.3.2 | Create floating alerts  | ☐ Open | `src/lib/components/FloatingAlerts.svelte`  | Alert test  | Notices appear    |
-| 3.3.3 | Add log viewer          | ☐ Open | `src/lib/components/LogViewer.svelte`       | Scroll test | Logs readable     |
-| 3.3.4 | Implement diagnostics   | ☐ Open | `src/lib/components/Diagnostics.svelte`     | Check test  | Issues detected   |
-| 3.3.5 | Create batch operations | ☐ Open | `src/lib/components/BatchOperations.svelte` | Multi test  | Bulk actions work |
+| 3.3.1 | Build ambient status bg | ☑ Closed | `src/routes/admin/+layout.svelte`           | Color test  | Status visible    |
+| 3.3.2 | Create floating alerts  | ☑ Closed | `src/lib/components/FloatingAlerts.svelte`  | Alert test  | Notices appear    |
+| 3.3.3 | Add log viewer          | ☑ Closed | `src/lib/components/LogViewer.svelte`       | Scroll test | Logs readable     |
+| 3.3.4 | Implement diagnostics   | ☑ Closed | `src/lib/components/Diagnostics.svelte`     | Check test  | Issues detected   |
+| 3.3.5 | Create batch operations | ☑ Closed | `src/lib/components/BatchOperations.svelte` | Multi test  | Bulk actions work |
 
 ## Phase 4: Integration & Polish (Version 5.4.0)
 
