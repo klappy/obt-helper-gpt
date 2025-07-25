@@ -23,20 +23,20 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 | ID    | Task                               | Status | Files                                             | Tests              | Validation               |
 | ----- | ---------------------------------- | ------ | ------------------------------------------------- | ------------------ | ------------------------ |
 | 0.2.1 | Create FloatingCard component      | ☑ Closed | `src/lib/components/ui/FloatingCard.svelte`       | Unit + visual      | Depth layers work        |
-| 0.2.2 | Build AdaptiveButton component     | ☐ Open | `src/lib/components/ui/AdaptiveButton.svelte`     | Interaction test   | All states render        |
-| 0.2.3 | Implement SpatialGrid layout       | ☐ Open | `src/lib/components/ui/SpatialGrid.svelte`        | Responsive test    | Adapts to viewports      |
-| 0.2.4 | Create LiveMetric component        | ☐ Open | `src/lib/components/ui/LiveMetric.svelte`         | Animation test     | Updates smoothly         |
-| 0.2.5 | Build ConversationBubble component | ☐ Open | `src/lib/components/ui/ConversationBubble.svelte` | Accessibility test | Screen reader compatible |
+| 0.2.2 | Build AdaptiveButton component     | ☑ Closed | `src/lib/components/ui/AdaptiveButton.svelte`     | Interaction test   | All states render        |
+| 0.2.3 | Implement SpatialGrid layout       | ☑ Closed | `src/lib/components/ui/SpatialGrid.svelte`        | Responsive test    | Adapts to viewports      |
+| 0.2.4 | Create LiveMetric component        | ☑ Closed | `src/lib/components/ui/LiveMetric.svelte`         | Animation test     | Updates smoothly         |
+| 0.2.5 | Build ConversationBubble component | ☑ Closed | `src/lib/components/ui/ConversationBubble.svelte` | Accessibility test | Screen reader compatible |
 
 ### Epic 0.3: Testing Infrastructure
 
 | ID    | Task                              | Status | Files                                   | Tests       | Validation             |
 | ----- | --------------------------------- | ------ | --------------------------------------- | ----------- | ---------------------- |
-| 0.3.1 | Set up Playwright visual tests    | ☐ Open | `tests/visual/`, `playwright.config.ts` | Self-test   | Screenshots captured   |
-| 0.3.2 | Create component test harness     | ☐ Open | `tests/components/test-harness.html`    | Render test | All components visible |
-| 0.3.3 | Build accessibility test suite    | ☐ Open | `tests/a11y/`                           | WCAG scan   | No violations          |
-| 0.3.4 | Add performance monitoring        | ☐ Open | `tests/performance/`                    | Lighthouse  | Score > 90             |
-| 0.3.5 | Create visual regression workflow | ☐ Open | `.github/workflows/visual-tests.yml`    | CI run      | Detects changes        |
+| 0.3.1 | Set up Playwright visual tests    | ☑ Closed | `tests/visual/`, `playwright.config.ts` | Self-test   | Screenshots captured   |
+| 0.3.2 | Create component test harness     | ☑ Closed | `tests/components/test-harness.html`    | Render test | All components visible |
+| 0.3.3 | Build accessibility test suite    | ☑ Closed | `tests/a11y/`                           | WCAG scan   | No violations          |
+| 0.3.4 | Add performance monitoring        | ☑ Closed | `tests/performance/`                    | Lighthouse  | Score > 90             |
+| 0.3.5 | Create visual regression workflow | ☑ Closed | `.github/workflows/visual-tests.yml`    | CI run      | Detects changes        |
 
 ## Phase 1: Homepage Transformation (Version 5.1.0)
 
@@ -46,31 +46,31 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 
 | ID    | Task                               | Status | Files                                | Tests            | Validation          |
 | ----- | ---------------------------------- | ------ | ------------------------------------ | ---------------- | ------------------- |
-| 1.1.1 | Clean navigation header            | ☐ Open | `src/routes/+layout.svelte`          | Visual test      | Clean, minimal nav  |
-| 1.1.2 | Remove existing hero section       | ☐ Open | `src/routes/+page.svelte`            | Build test       | No broken imports   |
-| 1.1.3 | Build new WhatsApp-first hero      | ☐ Open | `src/routes/+page.svelte`            | Interaction test | Phone input works   |
-| 1.1.4 | Implement phone number persistence | ☐ Open | `src/routes/+page.svelte`            | Storage test     | Number saved/loaded |
-| 1.1.5 | Add live demo preview component    | ☐ Open | `src/lib/components/LiveDemo.svelte` | Mock test        | Shows fake messages |
+| 1.1.1 | Clean navigation header            | ☑ Closed | `src/routes/+layout.svelte`          | Visual test      | Clean, minimal nav  |
+| 1.1.2 | Remove existing hero section       | ☑ Closed | `src/routes/+page.svelte`            | Build test       | No broken imports   |
+| 1.1.3 | Build new WhatsApp-first hero      | ☑ Closed | `src/routes/+page.svelte`            | Interaction test | Phone input works   |
+| 1.1.4 | Implement phone number persistence | ☑ Closed | `src/routes/+page.svelte`            | Storage test     | Number saved/loaded |
+| 1.1.5 | Add live demo preview component    | ☑ Closed | `src/lib/components/LiveDemo.svelte` | Mock test        | Shows fake messages |
 
 ### Epic 1.2: Assistant Grid Redesign
 
 | ID    | Task                                   | Status | Files                                     | Tests            | Validation            |
 | ----- | -------------------------------------- | ------ | ----------------------------------------- | ---------------- | --------------------- |
-| 1.2.1 | Replace tool cards with spatial design | ☐ Open | `src/lib/components/AssistantCard.svelte` | Visual test      | Depth effects visible |
-| 1.2.2 | Add hover preview states               | ☐ Open | `src/lib/components/AssistantCard.svelte` | Interaction test | Preview on hover      |
-| 1.2.3 | Implement popularity-based depth       | ☐ Open | `src/routes/+page.svelte`                 | Sort test        | Popular cards raised  |
-| 1.2.4 | Add parallax scroll effect             | ☐ Open | `src/routes/+page.svelte`                 | Scroll test      | Smooth parallax       |
-| 1.2.5 | Create loading skeleton                | ☐ Open | `src/routes/+page.svelte`                 | Loading test     | Graceful loading      |
+| 1.2.1 | Replace tool cards with spatial design | ☑ Closed | `src/lib/components/AssistantCard.svelte` | Visual test      | Depth effects visible |
+| 1.2.2 | Add hover preview states               | ☑ Closed | `src/lib/components/AssistantCard.svelte` | Interaction test | Preview on hover      |
+| 1.2.3 | Implement popularity-based depth       | ☑ Closed | `src/routes/+page.svelte`                 | Sort test        | Popular cards raised  |
+| 1.2.4 | Add parallax scroll effect             | ☑ Closed | `src/routes/+page.svelte`                 | Scroll test      | Smooth parallax       |
+| 1.2.5 | Create loading skeleton                | ☑ Closed | `src/routes/+page.svelte`                 | Loading test     | Graceful loading      |
 
 ### Epic 1.3: Trust & Metrics
 
 | ID    | Task                          | Status | Files                                   | Tests            | Validation        |
 | ----- | ----------------------------- | ------ | --------------------------------------- | ---------------- | ----------------- |
-| 1.3.1 | Build floating metrics badges | ☐ Open | `src/lib/components/TrustBadges.svelte` | Data test        | Shows real data   |
-| 1.3.2 | Add real-time animations      | ☐ Open | `src/lib/components/TrustBadges.svelte` | Animation test   | Smooth updates    |
-| 1.3.3 | Implement metric tooltips     | ☐ Open | `src/lib/components/TrustBadges.svelte` | Hover test       | Details on hover  |
-| 1.3.4 | Add social proof section      | ☐ Open | `src/routes/+page.svelte`               | Content test     | Testimonials load |
-| 1.3.5 | Create CTA animations         | ☐ Open | `src/routes/+page.svelte`               | Interaction test | Engaging CTAs     |
+| 1.3.1 | Build floating metrics badges | ☑ Closed | `src/lib/components/TrustBadges.svelte` | Data test        | Shows real data   |
+| 1.3.2 | Add real-time animations      | ☑ Closed | `src/lib/components/TrustBadges.svelte` | Animation test   | Smooth updates    |
+| 1.3.3 | Implement metric tooltips     | ☑ Closed | `src/lib/components/TrustBadges.svelte` | Hover test       | Details on hover  |
+| 1.3.4 | Add social proof section      | ☑ Closed | `src/routes/+page.svelte`               | Content test     | Testimonials load |
+| 1.3.5 | Create CTA animations         | ☑ Closed | `src/routes/+page.svelte`               | Interaction test | Engaging CTAs     |
 
 ## Phase 2: Conversation Experience (Version 5.2.0)
 
