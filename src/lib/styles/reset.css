@@ -1,0 +1,344 @@
+/* CSS Reset - Apple 2025 Design System */
+/* OBT Helper GPT - Version 5.0.0 */
+
+/* =================================================================
+   Box Model Reset
+   ================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* =================================================================
+   Document Reset
+   ================================================================= */
+
+html {
+  /* Prevent font size inflation */
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  
+  /* Better font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Base font size for rem calculations */
+  font-size: 16px;
+  
+  /* Prevent layout shift from scrollbars */
+  scrollbar-gutter: stable;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* =================================================================
+   Body Defaults
+   ================================================================= */
+
+body {
+  min-height: 100vh;
+  line-height: var(--leading-normal, 1.5);
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  background-color: var(--background-primary);
+  
+  /* Improve text rendering */
+  text-rendering: optimizeLegibility;
+  
+  /* Prevent horizontal scroll */
+  overflow-x: hidden;
+}
+
+/* =================================================================
+   Typography Reset
+   ================================================================= */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+  line-height: var(--leading-normal);
+}
+
+/* Remove default link styles */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Focus styles */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* =================================================================
+   List Reset
+   ================================================================= */
+
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+}
+
+ul:not([role='list']),
+ol:not([role='list']) {
+  padding-left: 1.5em;
+}
+
+/* =================================================================
+   Media Reset
+   ================================================================= */
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Maintain aspect ratio */
+img {
+  font-style: italic;
+  background-repeat: no-repeat;
+  background-size: cover;
+  shape-margin: 0.75rem;
+  image-rendering: crisp-edges;
+}
+
+/* High quality image rendering */
+img[data-quality="high"] {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimizeQuality;
+}
+
+/* =================================================================
+   Form Reset
+   ================================================================= */
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background-color: transparent;
+  border: none;
+}
+
+/* Remove spinner from number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Button reset */
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Textarea resize */
+textarea {
+  resize: vertical;
+  min-height: 3em;
+}
+
+/* Select reset */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+
+/* =================================================================
+   Table Reset
+   ================================================================= */
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* =================================================================
+   Dialog/Modal Reset
+   ================================================================= */
+
+dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+dialog::backdrop {
+  background: var(--background-overlay);
+  backdrop-filter: blur(var(--blur-md));
+}
+
+/* =================================================================
+   Details/Summary Reset
+   ================================================================= */
+
+details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* =================================================================
+   Accessibility Helpers
+   ================================================================= */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-4);
+  z-index: var(--z-spotlight);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+/* =================================================================
+   Selection Styles
+   ================================================================= */
+
+::selection {
+  background-color: var(--primary);
+  color: white;
+  text-shadow: none;
+}
+
+/* =================================================================
+   Scrollbar Styles (Webkit)
+   ================================================================= */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: var(--radius-full);
+  border: 3px solid var(--surface-2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Firefox scrollbar */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-tertiary) var(--surface-2);
+  }
+}
+
+/* =================================================================
+   Print Styles
+   ================================================================= */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  /* Hide UI elements */
+  nav,
+  aside,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure good contrast */
+  * {
+    color: black !important;
+    background: white !important;
+  }
+  
+  /* Page breaks */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+}

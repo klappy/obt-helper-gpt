@@ -12,17 +12,17 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 
 | ID    | Task                             | Status | Files                                     | Tests                  | Validation                 |
 | ----- | -------------------------------- | ------ | ----------------------------------------- | ---------------------- | -------------------------- |
-| 0.1.1 | Create design tokens file        | ☐ Open | `src/lib/styles/tokens.css`               | Visual regression      | Colors render correctly    |
-| 0.1.2 | Build CSS reset and base styles  | ☐ Open | `src/lib/styles/reset.css`, `src/app.css` | Playwright screenshots | No visual breaking changes |
-| 0.1.3 | Remove all glassmorphism effects | ☐ Open | `src/app.css`, `src/lib/styles/theme.css` | Visual comparison      | Clean, flat surfaces       |
-| 0.1.4 | Implement spatial shadow system  | ☐ Open | `src/lib/styles/shadows.css`              | Component gallery      | 5 shadow levels visible    |
-| 0.1.5 | Set up animation curves          | ☐ Open | `src/lib/styles/animations.css`           | Performance test       | 60fps animations           |
+| 0.1.1 | Create design tokens file        | ☑ Closed | `src/lib/styles/tokens.css`               | Visual regression      | Colors render correctly    |
+| 0.1.2 | Build CSS reset and base styles  | ☑ Closed | `src/lib/styles/reset.css`, `src/app.css` | Playwright screenshots | No visual breaking changes |
+| 0.1.3 | Remove all glassmorphism effects | ☑ Closed | `src/app.css`, `src/lib/styles/theme.css` | Visual comparison      | Clean, flat surfaces       |
+| 0.1.4 | Implement spatial shadow system  | ☑ Closed | `src/lib/styles/shadows.css`              | Component gallery      | 5 shadow levels visible    |
+| 0.1.5 | Set up animation curves          | ☑ Closed | `src/lib/styles/animations.css`           | Performance test       | 60fps animations           |
 
 ### Epic 0.2: Component Library Foundation
 
 | ID    | Task                               | Status | Files                                             | Tests              | Validation               |
 | ----- | ---------------------------------- | ------ | ------------------------------------------------- | ------------------ | ------------------------ |
-| 0.2.1 | Create FloatingCard component      | ☐ Open | `src/lib/components/ui/FloatingCard.svelte`       | Unit + visual      | Depth layers work        |
+| 0.2.1 | Create FloatingCard component      | ☑ Closed | `src/lib/components/ui/FloatingCard.svelte`       | Unit + visual      | Depth layers work        |
 | 0.2.2 | Build AdaptiveButton component     | ☐ Open | `src/lib/components/ui/AdaptiveButton.svelte`     | Interaction test   | All states render        |
 | 0.2.3 | Implement SpatialGrid layout       | ☐ Open | `src/lib/components/ui/SpatialGrid.svelte`        | Responsive test    | Adapts to viewports      |
 | 0.2.4 | Create LiveMetric component        | ☐ Open | `src/lib/components/ui/LiveMetric.svelte`         | Animation test     | Updates smoothly         |
