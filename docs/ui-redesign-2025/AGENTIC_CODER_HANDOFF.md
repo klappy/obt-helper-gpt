@@ -8,9 +8,9 @@ You are tasked with implementing a complete UI/UX redesign for OBT Helper GPT, t
 
 1. **READ FIRST** (in this exact order):
    - `@docs/AGENTIC_CODER_INSTRUCTIONS.md` - Your updated operational guidelines
-   - `@docs/MODERN_UI_PRD_2025.md` - The vision and design specifications
-   - `@docs/UI_REDESIGN_TASK_LIST.md` - Your complete task list (70 tasks)
-   - `@docs/ARCHIVE_NOTICE.md` - What NOT to follow
+   - `@docs/ui-redesign-2025/MODERN_UI_PRD_2025.md` - The vision and design specifications
+   - `@docs/ui-redesign-2025/UI_REDESIGN_TASK_LIST.md` - Your complete task list (70 tasks)
+   - `@docs/ui-redesign-2025/ARCHIVE_NOTICE.md` - What NOT to follow
 
 2. **DO NOT STOP** until all 70 tasks in the UI_REDESIGN_TASK_LIST.md are marked as ☑ Closed
 
@@ -41,7 +41,7 @@ You are tasked with implementing a complete UI/UX redesign for OBT Helper GPT, t
 
 ## Task Execution Pattern
 
-For each task in `@docs/UI_REDESIGN_TASK_LIST.md`:
+For each task in `@docs/ui-redesign-2025/UI_REDESIGN_TASK_LIST.md`:
 
 1. Find next ☐ Open task
 2. Create feature branch: `git checkout -b ui-redesign-[epic]-[task-id]`
