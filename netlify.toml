@@ -1,5 +1,10 @@
-# Fresh deployment attempt
 [build]
   command = "npm run build"
   functions = "netlify/functions"
   publish = "build"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 9173
+  port = 9888
+  autoLaunch = false

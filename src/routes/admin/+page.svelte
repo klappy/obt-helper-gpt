@@ -2,6 +2,7 @@
 	import { getAllTools, resetToolsToDefaults, exportTools, importTools, refreshTools, isLoading } from '$lib/stores/tools.js';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import { apiFetch } from '$lib/utils/api.js';
 	
 	// Issue 1.2.2: Import Chart.js for visualizations
 	import Chart from 'chart.js/auto';
@@ -57,7 +58,7 @@
 	
 	async function fetchWhatsAppStats() {
 		try {
-			const response = await fetch('/.netlify/functions/whatsapp-sessions');
+			const response = await apiFetch('/whatsapp-sessions');
 			const data = await response.json();
 			
 			if (response.ok) {
@@ -73,7 +74,7 @@
 	// Issue 1.2.2: Enhanced AI usage stats fetching with Chart.js integration
 	async function fetchAIUsageStats() {
 		try {
-			const response = await fetch('/.netlify/functions/ai-usage-stats?days=7');
+			const response = await apiFetch('/ai-usage-stats?days=7');
 			const data = await response.json();
 			
 			if (response.ok) {
@@ -427,50 +428,62 @@
 	<title>Admin Dashboard - OBT Helper</title>
 </svelte:head>
 
-<div class="space-y-6">
+<!-- 2025 Admin Dashboard with glassmorphic design -->
+<div class="space-y-8">
 	<div class="flex justify-between items-start">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-			<p class="text-gray-600">Manage your AI tools and system prompts</p>
+			<h1 class="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
+			<p class="text-gray-200 text-lg">Manage your AI tools and system prompts</p>
 		</div>
-		<div class="text-right text-sm text-gray-500">
-			<p>💾 Saved to {browser && window.location.hostname === 'localhost' ? 'Local File Storage' : 'Netlify Blobs'}</p>
-			<p>Last updated: {lastSaved}</p>
-			<p>Version: 1.1.0</p>
-			{#if $isLoading}
-				<p class="text-blue-600">🔄 Syncing...</p>
-			{/if}
+		<div class="text-right text-sm">
+			<div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+				<p class="text-gray-200">💾 Saved to {browser && window.location.hostname === 'localhost' ? 'Local File Storage' : 'Netlify Blobs'}</p>
+				<p class="text-gray-300">Last updated: {lastSaved}</p>
+				<p class="text-purple-300 font-medium">Version: 1.1.0</p>
+				{#if $isLoading}
+					<p class="text-blue-300 animate-pulse">🔄 Syncing...</p>
+				{/if}
+			</div>
 		</div>
 	</div>
 
-	<!-- Stats Cards -->
+	<!-- 2025 Stats Cards with glassmorphic design -->
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-		<div class="card">
-			<div class="flex items-center">
-				<div class="text-2xl mr-3">🤖</div>
-				<div>
-					<p class="text-2xl font-bold text-gray-900">{tools.length}</p>
-					<p class="text-sm text-gray-600">Total Tools</p>
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+				<div class="flex items-center">
+					<div class="text-3xl mr-4 filter drop-shadow-lg">🤖</div>
+					<div>
+						<p class="text-3xl font-bold text-white">{tools.length}</p>
+						<p class="text-gray-200">Total Tools</p>
+					</div>
 				</div>
 			</div>
 		</div>
 		
-		<div class="card">
-			<div class="flex items-center">
-				<div class="text-2xl mr-3">✅</div>
-				<div>
-					<p class="text-2xl font-bold text-green-600">{tools.filter(t => t.isActive).length}</p>
-					<p class="text-sm text-gray-600">Active Tools</p>
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+				<div class="flex items-center">
+					<div class="text-3xl mr-4 filter drop-shadow-lg">✅</div>
+					<div>
+						<p class="text-3xl font-bold text-green-300">{tools.filter(t => t.isActive).length}</p>
+						<p class="text-gray-200">Active Tools</p>
+					</div>
 				</div>
 			</div>
 		</div>
 		
-		<div class="card">
-			<div class="flex items-center">
-				<div class="text-2xl mr-3">🔧</div>
-				<div>
-					<p class="text-2xl font-bold text-blue-600">{tools.filter(t => t.model === 'gpt-4o').length}</p>
-					<p class="text-sm text-gray-600">GPT-4o Tools</p>
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+				<div class="flex items-center">
+					<div class="text-3xl mr-4 filter drop-shadow-lg">🔧</div>
+					<div>
+						<p class="text-3xl font-bold text-blue-300">{tools.filter(t => t.model === 'gpt-4o').length}</p>
+						<p class="text-gray-200">GPT-4o Tools</p>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -512,97 +525,79 @@
 		</div>
 	</div>
 
-	<!-- Issue 1.2.2: Chart.js Visualizations -->
+	<!-- 2025 Chart.js Visualizations -->
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 		<!-- Daily Cost Chart -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<div class="flex justify-between items-center mb-4">
-				<h3 class="text-lg font-semibold text-gray-900">Daily AI Costs</h3>
-				<div class="text-sm text-gray-500">
-					Avg: ${getAvgCost().toFixed(4)}/req
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-green-600 to-cyan-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-2xl">
+				<div class="flex justify-between items-center mb-6">
+					<h3 class="text-xl font-bold text-white">Daily AI Costs</h3>
+					<div class="text-sm text-gray-300 bg-white/10 px-3 py-1 rounded-full">
+						Avg: ${getAvgCost().toFixed(4)}/req
+					</div>
 				</div>
-			</div>
-			<div class="h-64">
-				<canvas bind:this={dailyCostCanvas}></canvas>
+				<div class="h-64 bg-white/5 rounded-xl p-4">
+					<canvas bind:this={dailyCostCanvas}></canvas>
+				</div>
 			</div>
 		</div>
 		
 		<!-- Tool Usage Chart -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Usage by Tool</h3>
-			<div class="h-64">
-				<canvas bind:this={toolUsageCanvas}></canvas>
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-2xl">
+				<h3 class="text-xl font-bold text-white mb-6">Usage by Tool</h3>
+				<div class="h-64 bg-white/5 rounded-xl p-4">
+					<canvas bind:this={toolUsageCanvas}></canvas>
+				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Issue 1.2.2: Additional charts and usage summary -->
+	<!-- 2025 Additional charts and usage summary -->
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 		<!-- Model Breakdown Chart -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Cost by Model</h3>
-			<div class="h-64">
-				<canvas bind:this={modelBreakdownCanvas}></canvas>
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-2xl">
+				<h3 class="text-xl font-bold text-white mb-6">Cost by Model</h3>
+				<div class="h-64 bg-white/5 rounded-xl p-4">
+					<canvas bind:this={modelBreakdownCanvas}></canvas>
+				</div>
 			</div>
 		</div>
 		
 		<!-- Usage Summary Stats -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Usage Summary (7 days)</h3>
-			<div class="space-y-3">
-				<div class="flex justify-between">
-					<span class="text-gray-600">Total Conversations:</span>
-					<span class="font-medium">{aiUsageLoading ? '...' : (aiUsageStats.total?.requests || 0)}</span>
-				</div>
-				<div class="flex justify-between">
-					<span class="text-gray-600">Total Cost:</span>
-					<span class="font-medium text-green-600">${getTotalCost().toFixed(4)}</span>
-				</div>
-				<div class="flex justify-between">
-					<span class="text-gray-600">Avg Cost/Chat:</span>
-					<span class="font-medium">${getAvgCost().toFixed(4)}</span>
-				</div>
-				<div class="flex justify-between">
-					<span class="text-gray-600">Total Tokens:</span>
-					<span class="font-medium">{aiUsageLoading ? '...' : ((aiUsageStats.total?.tokens || 0).toLocaleString())}</span>
-				</div>
-				<div class="flex justify-between">
-					<span class="text-gray-600">Avg Tokens/Chat:</span>
-					<span class="font-medium">{aiUsageLoading ? '...' : (aiUsageStats.total?.avgTokensPerRequest || 0)}</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- Cost Trends -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Insights</h3>
-			<div class="space-y-3">
-				{#if !aiUsageLoading && aiUsageStats.byTool}
-					{@const topTool = Object.entries(aiUsageStats.byTool).sort(([,a], [,b]) => b.cost - a.cost)[0]}
-					{#if topTool}
-						<div class="bg-blue-50 p-3 rounded-lg">
-							<p class="text-sm text-blue-800 font-medium">Most Expensive Tool</p>
-							<p class="text-lg text-blue-900">{topTool[0].replace(/-/g, ' ')}</p>
-							<p class="text-sm text-blue-700">${topTool[1].cost.toFixed(4)} total</p>
+		<div class="relative group lg:col-span-2">
+			<div class="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-2xl">
+				<h3 class="text-xl font-bold text-white mb-6">Usage Summary (7 days)</h3>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="bg-white/5 rounded-xl p-4 border border-white/10">
+						<div class="flex justify-between items-center">
+							<span class="text-gray-300">Total Conversations:</span>
+							<span class="font-bold text-white text-lg">{aiUsageLoading ? '...' : (aiUsageStats.total?.requests || 0)}</span>
 						</div>
-					{/if}
-				{/if}
-				
-				{#if !aiUsageLoading && aiUsageStats.byModel}
-					{@const topModel = Object.entries(aiUsageStats.byModel).sort(([,a], [,b]) => b.requests - a.requests)[0]}
-					{#if topModel}
-						<div class="bg-green-50 p-3 rounded-lg">
-							<p class="text-sm text-green-800 font-medium">Most Used Model</p>
-							<p class="text-lg text-green-900">{topModel[0]}</p>
-							<p class="text-sm text-green-700">{topModel[1].requests} requests</p>
+					</div>
+					<div class="bg-white/5 rounded-xl p-4 border border-white/10">
+						<div class="flex justify-between items-center">
+							<span class="text-gray-300">Total Cost:</span>
+							<span class="font-bold text-green-400 text-lg">${getTotalCost().toFixed(4)}</span>
 						</div>
-					{/if}
-				{/if}
-				
-				<div class="bg-gray-50 p-3 rounded-lg">
-					<p class="text-sm text-gray-600 font-medium">Daily Average</p>
-					<p class="text-lg text-gray-900">${(getTotalCost() / 7).toFixed(4)}</p>
-					<p class="text-sm text-gray-600">per day</p>
+					</div>
+					<div class="bg-white/5 rounded-xl p-4 border border-white/10">
+						<div class="flex justify-between items-center">
+							<span class="text-gray-300">Avg Cost/Chat:</span>
+							<span class="font-bold text-white text-lg">${getAvgCost().toFixed(4)}</span>
+						</div>
+					</div>
+					<div class="bg-white/5 rounded-xl p-4 border border-white/10">
+						<div class="flex justify-between items-center">
+							<span class="text-gray-300">Total Tokens:</span>
+							<span class="font-bold text-white text-lg">{aiUsageLoading ? '...' : ((aiUsageStats.total?.tokens || 0).toLocaleString())}</span>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

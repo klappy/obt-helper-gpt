@@ -75,8 +75,22 @@ async function mirrorToWhatsApp(linkedSession, userMessage, aiResponse) {
 }
 
 export default async (req, context) => {
+  // Helper function for CORS-enabled responses
+  const createResponse = (data, statusCode = 200, contentType = "application/json") => {
+    const body = typeof data === "string" ? data : JSON.stringify(data);
+    return new Response(body, {
+      status: statusCode,
+      headers: {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
+    });
+  };
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return createResponse("Method not allowed", 405, "text/plain");
   }
 
   try {
@@ -93,28 +107,22 @@ export default async (req, context) => {
 
     // Validate required fields
     if (!messages || !tool) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required fields (messages, tool)",
-        }),
+      return createResponse(
         {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "Missing required fields (messages, tool)",
+        },
+        400
       );
     }
 
     // Use server-side API key
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({
-          error: "OpenAI API key not configured on server",
-        }),
+      return createResponse(
         {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "OpenAI API key not configured on server",
+        },
+        500
       );
     }
 
@@ -123,14 +131,11 @@ export default async (req, context) => {
     const toolConfig = tools.find((t) => t.id === tool.id);
 
     if (!toolConfig) {
-      return new Response(
-        JSON.stringify({
-          error: "Tool not found",
-        }),
+      return createResponse(
         {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "Tool not found",
+        },
+        404
       );
     }
 
@@ -139,10 +144,7 @@ export default async (req, context) => {
     const aiData = await response.json();
 
     if (!response.ok) {
-      return new Response(JSON.stringify(aiData), {
-        status: response.status,
-        headers: { "Content-Type": "application/json" },
-      });
+      return createResponse(aiData, response.status);
     }
 
     const aiResponse = aiData.choices[0].message.content;
@@ -162,20 +164,20 @@ export default async (req, context) => {
       status: 200,
       headers: {
         "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         ...rateCheck.headers,
       },
     });
   } catch (error) {
     console.error("Chat function error:", error);
-    return new Response(
-      JSON.stringify({
+    return createResponse(
+      {
         error: "Internal server error",
         details: error.message,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      500
     );
   }
 };

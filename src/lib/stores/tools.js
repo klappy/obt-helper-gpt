@@ -1,7 +1,7 @@
 // @ts-check
 import { writable } from "svelte/store";
 // Server-side safe browser detection
-const browser = typeof window !== 'undefined';
+const browser = typeof window !== "undefined";
 
 /**
  * @typedef {Object} Tool
@@ -99,8 +99,12 @@ const defaultTools = [
   },
 ];
 
-// API endpoints
-const API_BASE = browser ? window.location.origin : "";
+// API endpoints - use correct backend port during development
+const API_BASE = browser
+  ? window.location.hostname === "localhost"
+    ? "http://localhost:9888"
+    : window.location.origin
+  : "";
 const TOOLS_API = `${API_BASE}/.netlify/functions/tools`;
 
 // Store for tools data

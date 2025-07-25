@@ -17,7 +17,7 @@
 	<title>{tool ? `${tool.name} - OBT Helper` : 'Chat - OBT Helper'}</title>
 </svelte:head>
 
-{#if tool}
+{#if tool && tool.id}
 	<div class="h-screen flex flex-col">
 		<!-- Back button -->
 		<div class="bg-white border-b px-4 py-2">
@@ -35,12 +35,16 @@
 			<ChatInterface {tool} />
 		</div>
 	</div>
-{:else}
+{:else if toolId}
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
 		<h1 class="text-2xl font-bold text-gray-900 mb-4">Tool Not Found</h1>
-		<p class="text-gray-600 mb-6">The AI tool you're looking for doesn't exist.</p>
+		<p class="text-gray-600 mb-6">The tool "{toolId}" could not be found.</p>
 		<button on:click={() => goto('/')} class="btn-primary">
 			Back to Tools
 		</button>
+	</div>
+{:else}
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+		<h1 class="text-2xl font-bold text-gray-900 mb-4">Loading...</h1>
 	</div>
 {/if} 

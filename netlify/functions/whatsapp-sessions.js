@@ -26,6 +26,20 @@ function isLocalDevelopment() {
 }
 
 export default async (request, context) => {
+  // Helper function for CORS-enabled responses
+  const createResponse = (data, statusCode = 200, contentType = "application/json") => {
+    const body = typeof data === "string" ? data : JSON.stringify(data);
+    return new Response(body, {
+      status: statusCode,
+      headers: {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
+    });
+  };
+
   const url = new URL(request.url);
   const method = request.method;
   const sessionId = url.searchParams.get("id");
@@ -43,27 +57,18 @@ export default async (request, context) => {
         if (sessionId) {
           return await deleteSession(sessionId);
         } else {
-          return new Response(JSON.stringify({ error: "Session ID required" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
+          return createResponse({ error: "Session ID required" }, 400);
         }
 
       case "POST":
         return await createTestSession(request);
 
       default:
-        return new Response(JSON.stringify({ error: "Method not allowed" }), {
-          status: 405,
-          headers: { "Content-Type": "application/json" },
-        });
+        return createResponse({ error: "Method not allowed" }, 405);
     }
   } catch (error) {
     console.error("WhatsApp sessions API error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return createResponse({ error: "Internal server error" }, 500);
   }
 };
 
@@ -131,7 +136,12 @@ async function getAllSessions() {
     };
 
     return new Response(JSON.stringify({ sessions: sessionArray, stats }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
     });
   } catch (error) {
     console.error("Error getting all sessions:", error);
@@ -172,7 +182,12 @@ async function getSession(sessionId) {
     if (!sessionData) {
       return new Response(JSON.stringify({ error: "Session not found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        },
       });
     }
 
@@ -181,7 +196,12 @@ async function getSession(sessionId) {
     sessionData.duration = getSessionDuration(sessionData);
 
     return new Response(JSON.stringify(sessionData), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
     });
   } catch (error) {
     console.error("Error getting session:", error);
@@ -220,7 +240,12 @@ async function deleteSession(sessionId) {
     }
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
     });
   } catch (error) {
     console.error("Error deleting session:", error);
@@ -239,7 +264,12 @@ async function createTestSession(request) {
     if (!phoneNumber) {
       return new Response(JSON.stringify({ error: "Phone number required" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        },
       });
     }
 
@@ -308,7 +338,12 @@ async function createTestSession(request) {
     }
 
     return new Response(JSON.stringify({ success: true, session: testSession }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
     });
   } catch (error) {
     console.error("Error creating test session:", error);

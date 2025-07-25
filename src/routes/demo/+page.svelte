@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { getActiveTools } from '$lib/stores/tools.js';
+	import { apiFetch } from '$lib/utils/api.js';
 	
 	let messages = [];
 	let input = '';
@@ -60,7 +61,7 @@
 		
 		try {
 			// Call the same endpoint that WhatsApp uses
-			const response = await fetch('/.netlify/functions/whatsapp', {
+			const response = await apiFetch('/whatsapp', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
@@ -281,7 +282,7 @@ I'm your intelligent AI assistant! I can help you with:
 			console.log('JSON stringified:', JSON.stringify(requestPayload));
 			
 			linkingStatus = 'Sending code...';
-			const response = await fetch('/.netlify/functions/send-link-code', {
+			const response = await apiFetch('/send-link-code', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(requestPayload)
@@ -309,7 +310,7 @@ I'm your intelligent AI assistant! I can help you with:
 	async function verifyLinkingCode() {
 		try {
 			linkingStatus = 'Verifying code...';
-			const response = await fetch('/.netlify/functions/verify-link-code', {
+			const response = await apiFetch('/verify-link-code', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ 
@@ -375,7 +376,7 @@ I'm your intelligent AI assistant! I can help you with:
 		syncInterval = setInterval(async () => {
 			if (linkedWhatsAppSession) {
 				try {
-					const response = await fetch(`/.netlify/functions/get-synced-messages?sessionId=${currentSessionId}`);
+					const response = await apiFetch(`/get-synced-messages?sessionId=${currentSessionId}`);
 					if (response.ok) {
 						const syncData = await response.json();
 						if (syncData.messages.length > 0) {
@@ -426,7 +427,7 @@ I'm your intelligent AI assistant! I can help you with:
 				const linkData = JSON.parse(savedLinkState);
 				
 				// Verify the link is still valid (optional)
-				const verifyResponse = await fetch('/.netlify/functions/verify-sync?sessionId=' + linkData.webSessionId);
+				const verifyResponse = await apiFetch('/verify-sync?sessionId=' + linkData.webSessionId);
 				if (verifyResponse.ok) {
 					const verifyData = await verifyResponse.json();
 					if (verifyData.isLinked) {
@@ -482,55 +483,68 @@ I'm your intelligent AI assistant! I can help you with:
 	<title>WhatsApp Demo Chat - OBT Helper GPT</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 py-8">
+<!-- 2025 WhatsApp Demo with glassmorphic design -->
+<div class="min-h-screen py-8">
 	<div class="max-w-2xl mx-auto px-4">
-		<!-- Header -->
-		<div class="bg-white rounded-t-lg shadow-sm border-b p-4">
-			<div class="flex items-center space-x-3">
-				<div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-					<span class="text-white font-bold text-lg">🤖</span>
-				</div>
-				<div class="flex-1">
-					<h1 class="font-semibold text-gray-900">OBT Helper GPT</h1>
-					<p class="text-sm text-gray-500">WhatsApp Demo Chat</p>
-				</div>
-				<div class="flex items-center space-x-2">
-					<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-						Demo Mode
-					</span>
+		<!-- 2025 Header -->
+		<div class="relative group">
+			<div class="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-t-3xl blur opacity-20"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl rounded-t-3xl border border-white/20 border-b-0 p-6 shadow-2xl">
+				<div class="flex items-center space-x-4">
+					<div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center filter drop-shadow-lg">
+						<span class="text-white font-bold text-xl">🤖</span>
+					</div>
+					<div class="flex-1">
+						<h1 class="font-bold text-white text-xl">OBT Helper GPT</h1>
+						<p class="text-gray-200">WhatsApp Demo Chat</p>
+					</div>
+					<div class="flex items-center space-x-3">
+						<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-400/30 backdrop-blur-sm">
+							✨ Demo Mode
+						</span>
+					</div>
 				</div>
 			</div>
-			
-			<!-- Phone Number Input -->
-			<div class="mt-3 flex items-center space-x-2">
-				<div class="flex-1">
-					<input 
-						type="tel"
-						bind:this={phoneInputElement}
-						bind:value={phoneNumber}
-						placeholder="Enter your WhatsApp number (+1234567890)"
-						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-					/>
+		</div>
+		
+		<!-- 2025 Phone Number Input -->
+		<div class="relative">
+			<div class="bg-white/10 backdrop-blur-xl border-x border-white/20 p-4">
+				<div class="flex items-center space-x-3">
+					<div class="flex-1">
+						<input 
+							type="tel"
+							bind:this={phoneInputElement}
+							bind:value={phoneNumber}
+							placeholder="Enter your WhatsApp number (+1234567890)"
+							class="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-400/50 transition-all duration-300"
+						/>
+					</div>
+					<button 
+						on:click={() => showLinkingForm = true}
+						disabled={!phoneNumber.trim()}
+						class="inline-flex items-center px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+						title="Link for bidirectional syncing"
+					>
+						🔗 {linkedWhatsAppSession ? 'Linked' : 'Link & Sync'}
+					</button>
 				</div>
-				<button 
-					on:click={() => showLinkingForm = true}
-					disabled={!phoneNumber.trim()}
-					class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-					title="Link for bidirectional syncing"
-				>
-					🔗 {linkedWhatsAppSession ? 'Linked' : 'Link & Sync'}
-				</button>
 			</div>
+		</div>
 			
-			{#if phoneNumber && !linkedWhatsAppSession}
-				<p class="text-xs text-gray-500 mt-1">
-					Demo will simulate WhatsApp messages to <strong>{phoneNumber}</strong>. Click "Link & Sync" to enable real bidirectional syncing.
+					<!-- 2025 Status Messages -->
+		{#if phoneNumber && !linkedWhatsAppSession}
+			<div class="bg-white/10 backdrop-blur-sm border-x border-white/20 px-4 py-3">
+				<p class="text-gray-200">
+					Demo will simulate WhatsApp messages to <strong class="text-white">{phoneNumber}</strong>. Click "Link & Sync" to enable real bidirectional syncing.
 				</p>
-			{/if}
-			
-			{#if linkedWhatsAppSession}
-				<div class="mt-1 flex items-center space-x-2">
-					<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+			</div>
+		{/if}
+		
+		{#if linkedWhatsAppSession}
+			<div class="bg-white/10 backdrop-blur-sm border-x border-white/20 px-4 py-3">
+				<div class="flex items-center justify-between">
+					<span class="inline-flex items-center px-4 py-2 rounded-full font-medium bg-green-500/20 text-green-300 border border-green-400/30">
 						🔗 Synced with {phoneNumber}
 					</span>
 					<button 
@@ -538,8 +552,8 @@ I'm your intelligent AI assistant! I can help you with:
 							linkedWhatsAppSession = null;
 							linkingStep = 'phone';
 							
-										// Clear localStorage
-			localStorage.removeItem('whatsapp-link-state');
+							// Clear localStorage
+							localStorage.removeItem('whatsapp-link-state');
 							
 							// Stop polling
 							if (syncInterval) {
@@ -556,92 +570,115 @@ I'm your intelligent AI assistant! I can help you with:
 							}];
 							scrollToBottom();
 						}}
-						class="text-xs text-red-600 hover:text-red-800"
+						class="px-3 py-1 bg-red-500/20 text-red-300 border border-red-400/30 rounded-lg hover:bg-red-500/30 transition-all duration-300"
 					>
 						Disconnect
 					</button>
 				</div>
-			{/if}
+			</div>
+		{/if}
 		</div>
 
-		<!-- Chat Messages -->
-		<div 
-			bind:this={chatContainer}
-			class="bg-white h-96 overflow-y-auto p-4 space-y-4"
-		>
+		<!-- 2025 Chat Messages Container -->
+		<div class="relative">
+			<div class="absolute -inset-1 bg-gradient-to-r from-green-600 to-blue-600 rounded-b-3xl blur opacity-20"></div>
+			<div 
+				bind:this={chatContainer}
+				class="relative bg-white/10 backdrop-blur-xl h-96 overflow-y-auto p-6 space-y-4 border-x border-b border-white/20 rounded-b-3xl shadow-2xl"
+			>
 			{#each messages as message (message.id)}
 				<div class="flex {message.sender === 'user' ? 'justify-end' : 'justify-start'}">
-					<div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {
-						message.sender === 'user' 
-							? 'bg-blue-500 text-white' 
-							: message.sender === 'system'
-							? 'bg-gray-100 text-gray-700 border'
-							: 'bg-green-100 text-gray-900'
-					}">
-						<p class="text-sm whitespace-pre-line">{message.text}</p>
-						<p class="text-xs opacity-70 mt-1">
-							{message.timestamp.toLocaleTimeString()}
-						</p>
+					<div class="max-w-xs lg:max-w-md group">
+						<div class="relative">
+							<!-- Glow effect for messages -->
+							{#if message.sender === 'user'}
+								<div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+							{:else if message.sender === 'system'}
+								<div class="absolute -inset-1 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+							{:else}
+								<div class="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+							{/if}
+							
+							<div class="relative px-4 py-3 rounded-2xl backdrop-blur-xl border transition-all duration-300 {
+								message.sender === 'user' 
+									? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-white border-blue-400/30' 
+									: message.sender === 'system'
+									? 'bg-yellow-500/10 text-yellow-200 border-yellow-400/30'
+									: 'bg-green-500/10 text-green-200 border-green-400/30'
+							}">
+								<p class="whitespace-pre-line leading-relaxed">{message.text}</p>
+								<p class="text-xs opacity-70 mt-2 pt-1 border-t border-white/10">
+									{message.timestamp.toLocaleTimeString()}
+								</p>
+							</div>
+						</div>
 					</div>
 				</div>
 			{/each}
 			
 			{#if loading}
 				<div class="flex justify-start">
-					<div class="bg-gray-100 px-4 py-2 rounded-lg border">
-						<div class="flex items-center space-x-2">
-							<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-							<span class="text-sm text-gray-600">Processing...</span>
+					<div class="relative group">
+						<div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-20"></div>
+						<div class="relative bg-white/10 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/20">
+							<div class="flex items-center space-x-3">
+								<div class="animate-spin rounded-full h-5 w-5 border-2 border-purple-400 border-t-transparent"></div>
+								<span class="text-gray-200 font-medium">Processing...</span>
+							</div>
 						</div>
 					</div>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Input Area -->
-		<div class="bg-white rounded-b-lg shadow-sm border-t p-4">
-			<div class="flex space-x-2 items-end">
-				<div class="flex-1 relative">
-					<textarea
-						bind:this={chatInputElement}
-						bind:value={input}
-						on:keydown={handleKeyDown}
-						placeholder="Type your message... (Shift+Enter for new line)"
-						disabled={loading}
-						rows="1"
-						autofocus
-						class="w-full border border-gray-300 rounded-2xl px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-h-[2.5rem] max-h-32 overflow-y-auto"
-						style="field-sizing: content;"
+		</div>
+		
+		<!-- 2025 Input Area -->
+		<div class="relative">
+			<div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-b-3xl blur opacity-20"></div>
+			<div class="relative bg-white/10 backdrop-blur-xl border-x border-b border-white/20 rounded-b-3xl p-6 shadow-2xl">
+				<div class="flex space-x-4 items-end">
+					<div class="flex-1 relative">
+						<textarea
+							bind:this={chatInputElement}
+							bind:value={input}
+							on:keydown={handleKeyDown}
+							placeholder="Type your message... (Shift+Enter for new line)"
+							disabled={loading}
+							rows="1"
+							autofocus
+							class="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3 resize-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 disabled:opacity-50 min-h-[2.5rem] max-h-32 overflow-y-auto transition-all duration-300"
+							style="field-sizing: content;"
 					></textarea>
 				</div>
-				<button
-					on:click={sendMessage}
-					disabled={!input.trim() || loading}
-					class="bg-blue-500 text-white rounded-full px-6 py-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-				>
-					Send
-				</button>
-			</div>
-			
-			<!-- Quick Actions -->
-			<div class="mt-3 flex flex-wrap gap-2">
-				<button
-					on:click={() => { input = 'help'; sendMessage(); }}
-					disabled={loading}
-					class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 disabled:opacity-50"
-				>
-					📋 Help
-				</button>
-				<button
-					on:click={() => { input = '1'; sendMessage(); }}
-					disabled={loading}
-					class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 disabled:opacity-50"
-				>
-					✍️ Creative Writing
-				</button>
-				<button
-					on:click={() => { input = '5'; sendMessage(); }}
-					disabled={loading}
+					<button
+						on:click={sendMessage}
+						disabled={!input.trim() || loading}
+						class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl px-8 py-3 hover:from-blue-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-shrink-0 font-medium shadow-lg"
+					>
+						Send
+					</button>
+				</div>
+				
+				<!-- 2025 Quick Actions -->
+				<div class="mt-4 flex flex-wrap gap-3">
+					<button
+						on:click={() => { input = 'help'; sendMessage(); }}
+						disabled={loading}
+						class="px-4 py-2 bg-white/10 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-white/20 hover:text-white disabled:opacity-50 transition-all duration-300 border border-white/20"
+					>
+						📋 Help
+					</button>
+					<button
+						on:click={() => { input = '1'; sendMessage(); }}
+						disabled={loading}
+						class="px-4 py-2 bg-white/10 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-white/20 hover:text-white disabled:opacity-50 transition-all duration-300 border border-white/20"
+					>
+						✍️ Creative Writing
+					</button>
+					<button
+						on:click={() => { input = '5'; sendMessage(); }}
+						disabled={loading}
 					class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 disabled:opacity-50"
 				>
 					🧮 Math Tutor

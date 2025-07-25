@@ -1,0 +1,281 @@
+:root {
+  /* 2025 Color Palette */
+  --color-primary: #667eea;
+  --color-primary-dark: #5a67d8;
+  --color-secondary: #764ba2;
+  --color-accent: #f093fb;
+  --color-accent-2: #f5576c;
+  --color-success: #48bb78;
+  --color-warning: #ed8936;
+  --color-error: #f56565;
+
+  /* Dark mode colors (2025 default) */
+  --color-bg-dark: #0a0a0b;
+  --color-bg-dark-secondary: #1a1a1b;
+  --color-bg-dark-tertiary: #2a2a2b;
+  --color-text-dark: #e2e8f0;
+  --color-text-dark-muted: #a0aec0;
+  --color-text-dark-subtle: #718096;
+
+  /* Glassmorphism variables */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-light: rgba(255, 255, 255, 0.1);
+  --glass-bg-strong: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-strong: rgba(255, 255, 255, 0.2);
+  --glass-blur: 20px;
+  --glass-blur-strong: 40px;
+
+  /* Neural network gradient */
+  --gradient-neural: conic-gradient(
+    from 180deg at 50% 50%,
+    #ff006e,
+    #8338ec,
+    #3a86ff,
+    #06ffb4,
+    #ff006e
+  );
+  --gradient-mesh: linear-gradient(135deg, #667eea 0%, #764ba2 35%, #f093fb 65%, #f5576c 100%);
+  --gradient-text: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* Animation timings */
+  --transition-base: 0.2s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Shadows with purple glow */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  --shadow-glow-strong: 0 0 40px rgba(139, 92, 246, 0.5);
+  --shadow-neural: 0 0 60px rgba(255, 0, 110, 0.2);
+
+  /* Spacing with golden ratio */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.618rem;
+  --space-xl: 2.618rem;
+  --space-2xl: 4.236rem;
+
+  /* Typography */
+  --font-mono: "SF Mono", "Monaco", "Cascadia Code", monospace;
+  --font-system:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Dark mode default (2025 style) */
+body {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-dark);
+  font-family: var(--font-system);
+  overflow-x: hidden;
+}
+
+/* Utility classes for the new design system */
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-light {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+    border: 1px solid var(--glass-border-strong);
+  }
+
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-strong {
+    box-shadow: var(--shadow-glow-strong);
+  }
+
+  .neural-glow {
+    box-shadow: var(--shadow-neural);
+  }
+
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-neural {
+    background: var(--gradient-neural);
+  }
+
+  .bg-mesh {
+    background: var(--gradient-mesh);
+  }
+
+  /* Animated classes */
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-neural {
+    background-size: 400% 400%;
+    animation: neural-flow 8s ease infinite;
+  }
+
+  .animate-mesh {
+    background-size: 200% 200%;
+    animation: mesh-rotate 20s linear infinite;
+  }
+
+  .gradient-text-primary {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-neural {
+    background: var(--gradient-neural);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Hover states for interactive elements */
+.interactive {
+  transition: all var(--transition-smooth);
+  cursor: pointer;
+}
+
+.interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Magnetic effect variables */
+.magnetic {
+  --mouse-x: 0;
+  --mouse-y: 0;
+  transition: transform var(--transition-spring);
+}
+
+.magnetic:hover {
+  transform: translate(calc(var(--mouse-x) * 0.3), calc(var(--mouse-y) * 0.3));
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+/* Scrollbar styling for dark mode */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-dark-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-bg-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-bg-strong);
+}
+
+/* Animation keyframes */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+  }
+}
+
+@keyframes neural-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes mesh-rotate {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Focus states for accessibility */
+*:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Custom focus for glass elements */
+.glass:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}

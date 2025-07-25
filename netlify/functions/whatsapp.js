@@ -183,7 +183,12 @@ export default async (req, context) => {
   const respondToTwilio = (statusCode = 200, message = "") => {
     return new Response(message, {
       status: statusCode,
-      headers: { "Content-Type": "text/plain" },
+      headers: {
+        "Content-Type": "text/plain",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      },
     });
   };
 
