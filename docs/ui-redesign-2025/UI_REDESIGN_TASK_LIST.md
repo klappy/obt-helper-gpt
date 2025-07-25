@@ -124,7 +124,7 @@ Complete UI/UX transformation following Apple's 2025 design language. Each task 
 
 | ID    | Task                       | Status | Files                                             | Tests            | Validation        |
 | ----- | -------------------------- | ------ | ------------------------------------------------- | ---------------- | ----------------- |
-| 3.2.1 | Create split-view editor   | ☐ Open | `src/routes/admin/tools/[id]/+page.svelte`        | Layout test      | Split works       |
+| 3.2.1 | Create split-view editor   | ☑ Closed | `src/routes/admin/tools/[id]/+page.svelte`        | Layout test      | Split works       |
 | 3.2.2 | Build visual configuration | ☐ Open | `src/lib/components/AssistantConfigurator.svelte` | Drag test        | Modules draggable |
 | 3.2.3 | Add personality sliders    | ☐ Open | `src/lib/components/PersonalityControls.svelte`   | Value test       | Settings apply    |
 | 3.2.4 | Implement live preview     | ☐ Open | `src/lib/components/AssistantPreview.svelte`      | Preview test     | Real-time update  |

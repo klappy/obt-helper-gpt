@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte';
 	import { getAllTools, isLoading } from '$lib/stores/tools.js';
 	import { FloatingCard, LiveMetric, SpatialGrid } from '$lib/components/ui/index.js';
-	import { CostMeter } from '$lib/components/CostMeter.svelte';
-	import { SessionTimer } from '$lib/components/SessionTimer.svelte';
-	import { AssistantPresence } from '$lib/components/AssistantPresence.svelte';
+	import CostMeter from '$lib/components/CostMeter.svelte';
+	import SessionTimer from '$lib/components/SessionTimer.svelte';
+	import AssistantPresence from '$lib/components/AssistantPresence.svelte';
 	import { assistants, activeAssistant } from '$lib/stores/assistants.js';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { flip } from 'svelte/animate';

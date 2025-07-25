@@ -2,22 +2,8 @@ import { getStore } from "@netlify/blobs";
 // Server-side safe browser detection
 const browser = typeof window !== "undefined";
 
-// Issue 1.2.1: Import tiktoken for accurate token counting (server-side only)
-let tiktoken;
-
-// Only import tiktoken on server-side
-async function initializeTiktoken() {
-  if (browser || tiktoken) return tiktoken;
-
-  try {
-    // Dynamic import for tiktoken to handle potential import issues
-    tiktoken = await import("tiktoken");
-    return tiktoken;
-  } catch (error) {
-    console.warn("tiktoken not available, falling back to estimation:", error.message);
-    return null;
-  }
-}
+// Tiktoken removed from this module to prevent WASM loading issues
+// For server-side token counting, use tiktoken-server.js module directly
 
 // Local file storage path helper (server-side only)
 function getLocalStoragePath() {
@@ -61,28 +47,14 @@ const MODEL_PRICING = {
   },
 };
 
-// Issue 1.2.1: Accurate token counting with tiktoken
+// Issue 1.2.1: Token counting using estimation
+// For accurate server-side counting, use tiktoken-server.js module
 async function countTokens(text, model = "gpt-4o-mini") {
-  if (browser || !text) {
-    // Always use fallback in browser
-    return Math.ceil(text.length * 0.25);
-  }
-
-  const tiktokenModule = await initializeTiktoken();
-  if (!tiktokenModule) {
-    // Fallback to rough estimation if tiktoken unavailable
-    return Math.ceil(text.length * 0.25);
-  }
-
-  try {
-    const encoding = tiktokenModule.encoding_for_model(model);
-    const tokens = encoding.encode(text);
-    encoding.free(); // Free memory
-    return tokens.length;
-  } catch (error) {
-    console.warn(`Token counting failed for model ${model}, using estimation:`, error.message);
-    return Math.ceil(text.length * 0.25);
-  }
+  if (!text) return 0;
+  
+  // Use estimation formula for all contexts to avoid WASM issues
+  // Rough approximation: ~4 characters per token on average
+  return Math.ceil(text.length * 0.25);
 }
 
 // Issue 1.2.1: Calculate precise costs based on token counts and model pricing

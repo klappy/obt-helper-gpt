@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import { getToolById, updateTool } from '$lib/stores/tools.js';
 	import { goto } from '$app/navigation';
+	import SplitView from '$lib/components/SplitView.svelte';
+	import { FloatingCard } from '$lib/components/ui/index.js';
 
 	$: toolId = $page.params.id;
 	$: tool = getToolById(toolId);
@@ -302,9 +304,10 @@
 			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-			<!-- Editor Panel -->
-			<div class="space-y-6">
+		<div class="split-view-container">
+			<SplitView initialSplit={55} minLeftWidth={400} minRightWidth={350}>
+				<!-- Editor Panel -->
+				<div slot="left" class="split-panel-content space-y-6">
 				<!-- Basic Info -->
 				<div class="card">
 					<h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
@@ -614,10 +617,10 @@
 						{/if}
 					</div>
 				</div>
-			</div>
+				</div>
 
-			<!-- Preview Panel -->
-			<div class="space-y-6">
+				<!-- Preview Panel -->
+				<div slot="right" class="split-panel-content space-y-6">
 				<!-- Issue 1.2.4: Enhanced Live Preview with Human Override -->
 				<div class="card">
 					<div class="flex justify-between items-center mb-4">
@@ -745,6 +748,7 @@
 					</div>
 				</div>
 			</div>
+			</SplitView>
 		</div>
 	</div>
 	
@@ -793,4 +797,56 @@
 		<h1 class="text-2xl font-bold text-gray-900 mb-4">Tool Not Found</h1>
 		<a href="/admin" class="btn-primary">Back to Dashboard</a>
 	</div>
-{/if} 
+{/if}
+
+<style>
+	.split-view-container {
+		height: calc(100vh - 300px);
+		min-height: 600px;
+		margin-top: 1.5rem;
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-elevated);
+		overflow: hidden;
+	}
+	
+	.split-panel-content {
+		padding: 1.5rem;
+		height: 100%;
+		overflow-y: auto;
+	}
+	
+	.split-panel-content::-webkit-scrollbar {
+		width: 8px;
+	}
+	
+	.split-panel-content::-webkit-scrollbar-track {
+		background: var(--color-background-secondary);
+	}
+	
+	.split-panel-content::-webkit-scrollbar-thumb {
+		background: var(--color-border-secondary);
+		border-radius: 4px;
+	}
+	
+	.split-panel-content::-webkit-scrollbar-thumb:hover {
+		background: var(--color-border-primary);
+	}
+	
+	/* Adjust card styles for split view */
+	.split-panel-content .card {
+		background: var(--color-background-primary);
+		border: 1px solid var(--color-border-secondary);
+		box-shadow: var(--shadow-subtle);
+	}
+	
+	@media (max-width: 768px) {
+		.split-view-container {
+			height: auto;
+			min-height: auto;
+		}
+		
+		.split-panel-content {
+			padding: 1rem;
+		}
+	}
+</style> 
