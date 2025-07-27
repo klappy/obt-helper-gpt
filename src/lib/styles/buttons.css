@@ -1,0 +1,366 @@
+/* Button Styles - Apple 2025 Design System */
+/* OBT Helper GPT - Version 5.0.0 */
+
+/* =================================================================
+   Base Button Styles
+   ================================================================= */
+
+.neu-button {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  
+  /* Sizing */
+  padding: var(--space-3) var(--space-6);
+  min-height: 44px; /* Apple HIG minimum touch target */
+  
+  /* Typography */
+  font-family: var(--font-system);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  
+  /* Appearance */
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-button);
+  
+  /* Effects */
+  box-shadow: var(--shadow-1);
+  transition: all var(--transition-default);
+  
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Layout */
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Hover state */
+.neu-button:hover:not(:disabled) {
+  background-color: var(--surface-3);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+}
+
+/* Active state */
+.neu-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-0);
+}
+
+/* Focus state */
+.neu-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.neu-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* =================================================================
+   Button Variants
+   ================================================================= */
+
+/* Primary Button */
+.neu-button-primary {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-2);
+}
+
+.neu-button-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-3);
+}
+
+.neu-button-primary:active:not(:disabled) {
+  background-color: var(--primary-active);
+  box-shadow: var(--shadow-1);
+}
+
+/* Secondary Button */
+.neu-button-secondary {
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-1);
+}
+
+.neu-button-secondary:hover:not(:disabled) {
+  background-color: var(--surface-3);
+  box-shadow: var(--shadow-2);
+}
+
+/* Ghost Button */
+.neu-button-ghost {
+  background-color: transparent;
+  color: var(--primary);
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+}
+
+.neu-button-ghost:hover:not(:disabled) {
+  background-color: var(--primary-bg);
+  border-color: var(--primary);
+}
+
+/* Danger Button */
+.neu-button-danger {
+  background-color: var(--error);
+  color: white;
+  box-shadow: var(--shadow-2);
+}
+
+.neu-button-danger:hover:not(:disabled) {
+  background-color: var(--error-hover);
+  box-shadow: var(--shadow-3);
+}
+
+/* =================================================================
+   Button Sizes
+   ================================================================= */
+
+/* Small */
+.neu-button-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  min-height: 36px;
+}
+
+/* Large */
+.neu-button-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-lg);
+  min-height: 52px;
+}
+
+/* Full Width */
+.neu-button-full {
+  width: 100%;
+}
+
+/* =================================================================
+   Button Icons
+   ================================================================= */
+
+.neu-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-full);
+}
+
+.neu-button-icon.neu-button-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.neu-button-icon.neu-button-lg {
+  width: 52px;
+  height: 52px;
+}
+
+/* Icon positioning */
+.neu-button > .icon-left {
+  margin-right: var(--space-2);
+  margin-left: calc(var(--space-2) * -1);
+}
+
+.neu-button > .icon-right {
+  margin-left: var(--space-2);
+  margin-right: calc(var(--space-2) * -1);
+}
+
+/* =================================================================
+   Button Groups
+   ================================================================= */
+
+.neu-button-group {
+  display: inline-flex;
+  border-radius: var(--radius-button);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+
+.neu-button-group .neu-button {
+  border-radius: 0;
+  box-shadow: none;
+  margin-right: 1px;
+}
+
+.neu-button-group .neu-button:last-child {
+  margin-right: 0;
+}
+
+.neu-button-group .neu-button:first-child {
+  border-top-left-radius: var(--radius-button);
+  border-bottom-left-radius: var(--radius-button);
+}
+
+.neu-button-group .neu-button:last-child {
+  border-top-right-radius: var(--radius-button);
+  border-bottom-right-radius: var(--radius-button);
+}
+
+/* =================================================================
+   Loading States
+   ================================================================= */
+
+.neu-button-loading {
+  color: transparent;
+  pointer-events: none;
+}
+
+.neu-button-loading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =================================================================
+   Special Effects
+   ================================================================= */
+
+/* Ripple effect */
+.neu-button-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.neu-button-ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.neu-button-ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Shine effect */
+.neu-button-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.neu-button-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg) translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.neu-button-shine:hover::after {
+  transform: rotate(45deg) translateX(100%);
+}
+
+/* =================================================================
+   Dark Mode
+   ================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  .neu-button {
+    background-color: var(--surface-2-dark);
+    color: var(--text-primary-dark);
+  }
+  
+  .neu-button:hover:not(:disabled) {
+    background-color: var(--surface-3-dark);
+  }
+  
+  .neu-button-secondary {
+    background-color: var(--surface-2-dark);
+    color: var(--text-primary-dark);
+  }
+  
+  .neu-button-secondary:hover:not(:disabled) {
+    background-color: var(--surface-3-dark);
+  }
+  
+  .neu-button-ghost {
+    color: var(--primary-dark);
+    border-color: var(--border-color-dark);
+  }
+  
+  .neu-button-ghost:hover:not(:disabled) {
+    background-color: var(--primary-bg-dark);
+    border-color: var(--primary-dark);
+  }
+}
+
+/* =================================================================
+   Mobile Optimizations
+   ================================================================= */
+
+@media (max-width: 640px) {
+  /* Increase touch targets on mobile */
+  .neu-button {
+    min-height: 48px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .neu-button-sm {
+    min-height: 40px;
+  }
+  
+  .neu-button-lg {
+    min-height: 56px;
+  }
+  
+  /* Simplify effects on mobile */
+  .neu-button-shine::after,
+  .neu-button-ripple::before {
+    display: none;
+  }
+}

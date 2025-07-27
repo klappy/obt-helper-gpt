@@ -1,0 +1,414 @@
+/* Safari Mobile Fixes - OBT Helper GPT */
+/* Critical fixes for iOS Safari rendering issues */
+
+/* =================================================================
+   Safari Viewport and Touch Fixes
+   ================================================================= */
+
+/* Fix Safari viewport height issues */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  
+  /* Fix 100vh issue on iOS Safari */
+  .homepage,
+  .hero-section,
+  body,
+  #app {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Fix position fixed elements */
+  .fixed-top,
+  .fixed-bottom {
+    position: -webkit-sticky;
+    position: sticky;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0; /* Remove iOS default styling */
+  }
+  
+  /* Fix input styling on iOS */
+  input[type="tel"]::-webkit-input-placeholder {
+    color: var(--text-tertiary);
+    opacity: 1;
+  }
+  
+  /* Disable tap highlight */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Fix button active states */
+  button:active {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* =================================================================
+   Safari Flexbox and Grid Fixes
+   ================================================================= */
+
+/* Fix flexbox issues in Safari */
+.assistants-grid,
+.features-grid,
+.testimonials-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: grid;
+  -webkit-box-align: start;
+  -webkit-align-items: start;
+  -ms-flex-align: start;
+  align-items: start;
+}
+
+/* Fix grid auto-fill in Safari */
+@supports not (display: grid) {
+  .assistants-grid,
+  .features-grid,
+  .testimonials-grid {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin: calc(var(--spacing-6) * -0.5);
+  }
+  
+  .assistants-grid > *,
+  .features-grid > *,
+  .testimonials-grid > * {
+    -webkit-flex: 1 1 300px;
+    flex: 1 1 300px;
+    margin: calc(var(--spacing-6) * 0.5);
+  }
+}
+
+/* =================================================================
+   Safari Animation Fixes
+   ================================================================= */
+
+/* Force hardware acceleration */
+.hero-emoji,
+.assistant-icon,
+.feature-icon,
+.pulse-cta,
+.assistant-button {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Fix animation flicker */
+@media (max-width: 768px) {
+  * {
+    -webkit-animation: none !important;
+    animation: none !important;
+    -webkit-transition: opacity 0.3s ease !important;
+    transition: opacity 0.3s ease !important;
+  }
+  
+  /* Keep essential animations */
+  .spinner {
+    -webkit-animation: spin 0.6s linear infinite !important;
+    animation: spin 0.6s linear infinite !important;
+  }
+}
+
+/* =================================================================
+   Safari Overflow and Scroll Fixes
+   ================================================================= */
+
+/* Fix overflow scrolling */
+.homepage,
+.section-container,
+.assistants-grid {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Prevent horizontal scroll */
+body,
+html {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Fix parallax scrolling performance */
+@supports (-webkit-touch-callout: none) {
+  .hero-container,
+  .section-container {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* =================================================================
+   Safari Typography Fixes
+   ================================================================= */
+
+/* Fix font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Fix gradient text in Safari */
+.hero-gradient {
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  display: inline-block;
+}
+
+/* =================================================================
+   Safari Card and Shadow Fixes
+   ================================================================= */
+
+/* Fix card shadows on Safari */
+:global(.floating-card) {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+}
+
+/* Simplify shadows for mobile Safari */
+@media (max-width: 768px) {
+  :global(.floating-card) {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .neu-button {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+/* =================================================================
+   Safari Form Fixes
+   ================================================================= */
+
+/* Fix form elements */
+.phone-input {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-color: var(--background-primary) !important;
+  border: 2px solid var(--surface-3) !important;
+  font-size: 16px !important; /* Prevent zoom */
+  line-height: 1.5 !important;
+  padding: 16px 16px 16px 48px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Fix button styles */
+.neu-button,
+.link-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  text-align: center !important;
+  display: -webkit-box !important;
+  display: -webkit-flex !important;
+  display: flex !important;
+  -webkit-box-align: center !important;
+  -webkit-align-items: center !important;
+  align-items: center !important;
+  -webkit-box-pack: center !important;
+  -webkit-justify-content: center !important;
+  justify-content: center !important;
+}
+
+/* =================================================================
+   Safari Mobile Specific Layout Fixes
+   ================================================================= */
+
+@media only screen and (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2) {
+  /* iPhone specific fixes */
+  
+  /* Fix hero section */
+  .hero-section {
+    padding: 60px 0 40px 0 !important;
+  }
+  
+  .hero-title {
+    font-size: 28px !important;
+    line-height: 1.3 !important;
+  }
+  
+  .hero-emoji {
+    font-size: 48px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .hero-subtitle {
+    font-size: 16px !important;
+    padding: 0 20px !important;
+  }
+  
+  /* Fix container padding */
+  .hero-container,
+  .section-container {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  
+  /* Fix card spacing */
+  .assistants-grid {
+    gap: 16px !important;
+    padding: 0 !important;
+  }
+  
+  /* Fix assistant cards */
+  .assistant-button {
+    padding: 24px 16px !important;
+  }
+  
+  .assistant-icon {
+    font-size: 40px !important;
+  }
+  
+  .assistant-name {
+    font-size: 18px !important;
+  }
+  
+  .assistant-description {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Fix form elements */
+  .phone-input-container {
+    margin-bottom: 40px !important;
+  }
+  
+  .phone-form {
+    padding: 24px !important;
+  }
+  
+  /* Fix demo preview */
+  .demo-preview {
+    margin-top: 32px !important;
+  }
+  
+  .demo-messages {
+    padding: 0 16px !important;
+  }
+  
+  /* Disable complex effects on mobile */
+  .pulse-cta::after,
+  .neu-button-primary::before {
+    display: none !important;
+  }
+  
+  /* Simplify hover states */
+  .assistant-button:hover {
+    transform: none !important;
+  }
+  
+  .assistant-button:hover .assistant-icon {
+    transform: none !important;
+  }
+}
+
+/* =================================================================
+   Safari Performance Optimizations
+   ================================================================= */
+
+/* Disable parallax on mobile Safari */
+@media (max-width: 768px) and (-webkit-touch-callout: none) {
+  .hero-container,
+  .section-container,
+  .assistants-grid > div {
+    transform: none !important;
+  }
+}
+
+/* Optimize rendering performance */
+@supports (-webkit-touch-callout: none) {
+  .homepage {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Reduce paint areas */
+  .assistant-card,
+  .feature-card,
+  .testimonial-card {
+    contain: layout style paint;
+  }
+}
+
+/* =================================================================
+   Safari Dark Mode Fixes
+   ================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  @supports (-webkit-touch-callout: none) {
+    /* Fix dark mode colors in Safari */
+    .phone-input {
+      background-color: var(--surface-1) !important;
+      color: var(--text-primary) !important;
+      -webkit-text-fill-color: var(--text-primary) !important;
+    }
+    
+    .hero-gradient {
+      -webkit-text-fill-color: transparent !important;
+    }
+  }
+}
+
+/* =================================================================
+   Critical Mobile Safari Bug Fixes
+   ================================================================= */
+
+/* Fix the half-rendered issue */
+@supports (-webkit-touch-callout: none) {
+  /* Force repaint on load */
+  .homepage {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix CSS loading order issue */
+  * {
+    -webkit-font-smoothing: antialiased !important;
+  }
+  
+  /* Ensure variables are loaded */
+  :root {
+    --primary: #007AFF !important;
+    --surface-1: #FFFFFF !important;
+    --surface-2: #F5F5F7 !important;
+    --surface-3: #E8E8ED !important;
+    --text-primary: #1D1D1F !important;
+    --text-secondary: #86868B !important;
+    --background-primary: #FFFFFF !important;
+  }
+}
+
+/* Force GPU acceleration for smooth rendering */
+.homepage,
+.hero-section,
+.assistants-section,
+.social-proof-section,
+.features-section {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
