@@ -144,12 +144,11 @@
 						<span class="brand-icon">🛠️</span>
 						<div class="brand-info">
 							<h1 class="brand-title">Control Center</h1>
-							<span class="brand-status" class:status-{$systemStatus.health}>
+							<span class="brand-status {$systemStatus.health === 'warning' ? 'status-warning' : $systemStatus.health === 'error' ? 'status-error' : $systemStatus.health === 'critical' ? 'status-critical' : ''}">
 								System {$systemStatus.health}
 							</span>
 						</div>
 					</div>
-				</div>
 				
 				<!-- Right Section -->
 				<div class="nav-right">
