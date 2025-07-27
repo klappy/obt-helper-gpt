@@ -1,0 +1,380 @@
+/* Mobile Optimizations - Apple 2025 Design System */
+/* OBT Helper GPT - Professional Mobile UI */
+
+/* =================================================================
+   Mobile-First Typography
+   ================================================================= */
+
+@media (max-width: 640px) {
+  /* Optimize font sizes for mobile readability */
+  :root {
+    --text-xs: 0.75rem;    /* 12px */
+    --text-sm: 0.875rem;   /* 14px */
+    --text-base: 1rem;     /* 16px - prevents zoom */
+    --text-lg: 1.125rem;   /* 18px */
+    --text-xl: 1.25rem;    /* 20px */
+    --text-2xl: 1.5rem;    /* 24px */
+    --text-3xl: 1.875rem;  /* 30px */
+    --text-4xl: 2.25rem;   /* 36px */
+    --text-5xl: 3rem;      /* 48px */
+  }
+  
+  /* Adjust line heights for mobile */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.3;
+  }
+  
+  p {
+    line-height: 1.6;
+  }
+}
+
+/* =================================================================
+   Mobile Layout Adjustments
+   ================================================================= */
+
+@media (max-width: 768px) {
+  /* Optimize container padding */
+  .container {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+  
+  /* Stack layouts on mobile */
+  .grid,
+  [class*="grid-cols"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Optimize section spacing */
+  section {
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+  
+  /* Full-width buttons on mobile */
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  
+  .button-group > * {
+    width: 100%;
+  }
+}
+
+/* =================================================================
+   Mobile Card Optimizations
+   ================================================================= */
+
+@media (max-width: 640px) {
+  /* Simplify card shadows */
+  .card,
+  [class*="depth-"] {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  /* Reduce card padding */
+  .card {
+    padding: var(--space-4);
+  }
+  
+  /* Stack card content */
+  .card > * + * {
+    margin-top: var(--space-3);
+  }
+  
+  /* Full-bleed cards on small screens */
+  .card-full-bleed {
+    margin-left: calc(var(--space-4) * -1);
+    margin-right: calc(var(--space-4) * -1);
+    border-radius: 0;
+  }
+}
+
+/* =================================================================
+   Mobile Navigation
+   ================================================================= */
+
+@media (max-width: 768px) {
+  /* Sticky navigation */
+  .nav-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .nav-header {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+  }
+  
+  /* Mobile nav layout */
+  .nav-content {
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  /* Hide desktop nav items */
+  .nav-desktop {
+    display: none;
+  }
+  
+  /* Show mobile menu button */
+  .nav-mobile {
+    display: block;
+  }
+}
+
+/* =================================================================
+   Mobile Form Optimizations
+   ================================================================= */
+
+@media (max-width: 640px) {
+  /* Ensure inputs are touch-friendly */
+  input,
+  textarea,
+  select,
+  button {
+    min-height: 48px;
+    font-size: 16px !important; /* Prevent zoom */
+  }
+  
+  /* Stack form fields */
+  .form-row {
+    flex-direction: column;
+  }
+  
+  /* Full-width form elements */
+  .form-control {
+    width: 100%;
+  }
+  
+  /* Larger touch targets for checkboxes/radios */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* Better label spacing */
+  label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-weight: var(--font-medium);
+  }
+}
+
+/* =================================================================
+   Mobile Touch Optimizations
+   ================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  /* Add active states for better feedback */
+  button:active,
+  a:active,
+  .clickable:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  
+  /* Disable hover animations */
+  *:hover {
+    animation: none !important;
+    transition: opacity 0.2s ease !important;
+  }
+}
+
+/* =================================================================
+   Mobile Performance
+   ================================================================= */
+
+@media (max-width: 768px) {
+  /* Disable parallax effects */
+  [data-parallax] {
+    transform: none !important;
+  }
+  
+  /* Simplify animations */
+  * {
+    animation-duration: 0.3s !important;
+    animation-delay: 0s !important;
+  }
+  
+  /* Disable complex filters */
+  .blur,
+  .backdrop-blur {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+  
+  /* Reduce shadow complexity */
+  * {
+    box-shadow: none !important;
+  }
+  
+  /* Add simple shadows back where needed */
+  .card,
+  .button,
+  .elevated {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+/* =================================================================
+   Mobile Specific Components
+   ================================================================= */
+
+/* Mobile-optimized hero */
+@media (max-width: 640px) {
+  .hero-section {
+    min-height: 80vh;
+    padding: var(--space-8) 0;
+  }
+  
+  .hero-title {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+    margin-bottom: var(--space-4);
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: var(--space-6);
+  }
+  
+  .hero-emoji {
+    font-size: 3rem;
+    margin-bottom: var(--space-3);
+  }
+}
+
+/* Mobile-optimized cards grid */
+@media (max-width: 640px) {
+  .assistants-grid,
+  .features-grid,
+  .testimonials-grid {
+    gap: var(--space-4);
+    padding: 0;
+  }
+  
+  .assistant-card {
+    margin-bottom: 0;
+  }
+  
+  .assistant-button {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  .assistant-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-3);
+  }
+  
+  .assistant-name {
+    font-size: 1.125rem;
+  }
+  
+  .assistant-description {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile-optimized forms */
+@media (max-width: 640px) {
+  .phone-input-container {
+    margin: 0 var(--space-4);
+  }
+  
+  .phone-form {
+    padding: var(--space-6);
+  }
+  
+  .phone-input {
+    font-size: 16px !important;
+    padding: var(--space-4) var(--space-4) var(--space-4) var(--space-12);
+  }
+  
+  .link-button {
+    font-size: 1rem;
+    padding: var(--space-4) var(--space-6);
+    min-height: 48px;
+  }
+}
+
+/* =================================================================
+   Mobile Bottom Sheet Pattern
+   ================================================================= */
+
+@media (max-width: 640px) {
+  .modal,
+  .dialog {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 90vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  .modal-content,
+  .dialog-content {
+    padding: var(--space-6);
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+}
+
+/* =================================================================
+   iOS Safe Areas
+   ================================================================= */
+
+@supports (padding: max(0px)) {
+  .container {
+    padding-left: max(var(--space-4), env(safe-area-inset-left));
+    padding-right: max(var(--space-4), env(safe-area-inset-right));
+  }
+  
+  .footer {
+    padding-bottom: max(var(--space-8), env(safe-area-inset-bottom));
+  }
+  
+  .fixed-bottom {
+    bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* =================================================================
+   Landscape Mobile Optimizations
+   ================================================================= */
+
+@media (max-width: 896px) and (orientation: landscape) {
+  /* Reduce vertical spacing in landscape */
+  .hero-section {
+    min-height: 100vh;
+    padding: var(--space-4) 0;
+  }
+  
+  .hero-emoji {
+    font-size: 2rem;
+  }
+  
+  section {
+    padding: var(--space-8) 0;
+  }
+  
+  /* Side-by-side layout for landscape */
+  .assistants-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

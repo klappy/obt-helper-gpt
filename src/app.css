@@ -8,6 +8,7 @@
 @import "./lib/styles/animations.css";
 @import "./lib/styles/theme.css";
 @import "./lib/styles/buttons.css";
+@import "./lib/styles/mobile-optimizations.css";
 @import "./lib/styles/safari-fixes.css";
 
 /* Tailwind imports */

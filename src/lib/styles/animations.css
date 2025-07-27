@@ -20,6 +20,24 @@
    Core Animation Classes
    ================================================================= */
 
+/* Bounce animations */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Fade animations */
 @keyframes fade-in {
   from {
@@ -41,6 +59,10 @@
 
 .animate-fade-in {
   animation: fade-in var(--duration-normal) var(--spring-smooth) both;
+}
+
+.animate-bounce-in {
+  animation: bounce-in var(--duration-normal) var(--spring-elastic) both;
 }
 
 .animate-fade-out {
