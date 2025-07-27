@@ -1,69 +1,95 @@
 <script lang="ts">
 	import { getActiveTools } from '$lib/stores/tools.js';
 	import { goto } from '$app/navigation';
-	import { FloatingCard } from '$lib/components/ui/index.js';
-	import TrustBadges from '$lib/components/TrustBadges.svelte';
 	import { onMount } from 'svelte';
+	import { spring } from 'svelte/motion';
+	import { fade, fly, scale, blur } from 'svelte/transition';
 	
 	const tools = getActiveTools();
 	
-	// Sort tools by popularity (you'd get this from analytics in real app)
-	// For now, using a mock popularity score
-	const toolsWithPopularity = tools.map((tool, index) => ({
-		...tool,
-		popularity: Math.random() * 100, // Mock popularity score
-		// Assign depth based on popularity rank
-		depth: 2 // Will be updated after sorting
-	}));
-	
-	// Sort by popularity (highest first)
-	const sortedTools = toolsWithPopularity.sort((a, b) => b.popularity - a.popularity);
-	
-	// Assign depth levels based on popularity rank
-	sortedTools.forEach((tool, index) => {
-		if (index === 0) tool.depth = 4; // Most popular
-		else if (index <= 2) tool.depth = 3; // Top 3
-		else if (index <= 5) tool.depth = 2; // Top 6
-		else tool.depth = 1; // Rest
-	});
+	// Animation states
+	let mounted = false;
+	let heroLoaded = false;
 	let phoneNumber = '';
 	let phoneError = '';
 	let isLinking = false;
+	let currentTestimonial = 0;
+	let mouseX = spring(0, { stiffness: 0.1, damping: 0.9 });
+	let mouseY = spring(0, { stiffness: 0.1, damping: 0.9 });
 	
-	// Load saved phone number on mount
-	let scrollY = 0;
-	let heroRef: HTMLElement;
-	let assistantsRef: HTMLElement;
-	let isLoading = true;
+	// Feature showcase states
+	let activeFeature = 0;
+	let chatMessages = [
+		{ type: 'user', text: 'Help me write a professional email' },
+		{ type: 'assistant', text: "I'd be happy to help! What's the purpose?" },
+		{ type: 'user', text: 'Following up on a job interview' },
+		{ type: 'assistant', text: 'Great! Here\'s a professional template...' }
+	];
+	
+	// Stats for social proof
+	const stats = [
+		{ number: '50K+', label: 'Active Users' },
+		{ number: '2M+', label: 'Messages Sent' },
+		{ number: '4.9★', label: 'User Rating' },
+		{ number: '24/7', label: 'Availability' }
+	];
+	
+	// Testimonials with rotation
+	const testimonials = [
+		{
+			text: "This AI assistant transformed how I work. It's like having a genius in my pocket!",
+			author: 'Sarah Chen',
+			role: 'CEO, TechStart',
+			avatar: '👩‍💼'
+		},
+		{
+			text: "The code suggestions are incredibly accurate. Saved me hours of debugging time.",
+			author: 'Marcus Johnson',
+			role: 'Senior Developer',
+			avatar: '👨‍💻'
+		},
+		{
+			text: "I use it for everything - emails, planning, research. Can't imagine work without it.",
+			author: 'Emily Rodriguez',
+			role: 'Product Manager',
+			avatar: '👩‍💼'
+		}
+	];
 	
 	onMount(() => {
-		const saved = localStorage.getItem('obt-phone-number');
-		if (saved) {
-			phoneNumber = saved;
-		}
+		mounted = true;
+		setTimeout(() => heroLoaded = true, 100);
 		
-		// Add parallax scroll listener
-		const handleScroll = () => {
-			scrollY = window.scrollY;
+		// Handle mouse movement for parallax
+		const handleMouseMove = (e: MouseEvent) => {
+			const x = (e.clientX / window.innerWidth - 0.5) * 20;
+			const y = (e.clientY / window.innerHeight - 0.5) * 20;
+			mouseX.set(x);
+			mouseY.set(y);
 		};
 		
-		window.addEventListener('scroll', handleScroll, { passive: true });
+		// Rotate testimonials
+		const testimonialInterval = setInterval(() => {
+			currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+		}, 5000);
 		
-		// Simulate loading delay
-		setTimeout(() => {
-			isLoading = false;
-		}, 800);
+		// Rotate features
+		const featureInterval = setInterval(() => {
+			activeFeature = (activeFeature + 1) % 3;
+		}, 4000);
+		
+		window.addEventListener('mousemove', handleMouseMove);
 		
 		return () => {
-			window.removeEventListener('scroll', handleScroll);
+			window.removeEventListener('mousemove', handleMouseMove);
+			clearInterval(testimonialInterval);
+			clearInterval(featureInterval);
 		};
 	});
 	
 	// Validate phone number
 	function validatePhone(number: string): boolean {
-		// Remove all non-digit characters
 		const digits = number.replace(/\D/g, '');
-		// Check if it's a valid length (10-15 digits)
 		return digits.length >= 10 && digits.length <= 15;
 	}
 	
@@ -82,25 +108,19 @@
 		}
 		
 		isLinking = true;
-		
-		// Save phone number
 		localStorage.setItem('obt-phone-number', phoneNumber);
 		
-		// TODO: Implement actual WhatsApp linking
-		// For now, just show success
+		// Simulate connection animation
 		setTimeout(() => {
 			isLinking = false;
-			// Show success message or redirect
 			goto('/demo');
 		}, 1500);
 	}
 	
 	// Format phone number as user types
 	function formatPhoneNumber(value: string) {
-		// Remove all non-digit characters
 		const digits = value.replace(/\D/g, '');
 		
-		// Format based on length
 		if (digits.length <= 3) {
 			phoneNumber = digits;
 		} else if (digits.length <= 6) {
@@ -112,569 +132,1152 @@
 </script>
 
 <svelte:head>
-	<title>OBT Helper GPT - WhatsApp AI Assistant</title>
-	<meta name="description" content="Connect your WhatsApp to powerful AI assistants. Get help with writing, coding, analysis, and more - right in your chats.">
+	<title>OBT Helper GPT - AI That Speaks Your Language | WhatsApp AI Assistant</title>
+	<meta name="description" content="Transform your WhatsApp into an AI powerhouse. Get instant help with writing, coding, analysis, and more. Join 50,000+ users revolutionizing their productivity.">
 </svelte:head>
 
-<div class="homepage">
-	<!-- Hero Section - WhatsApp First -->
-	<section class="hero-section" bind:this={heroRef}>
-		<div class="hero-container" style="transform: translateY({scrollY * 0.3}px)">
-			<!-- Main Hero Content -->
-			<div class="hero-content">
-				<h1 class="hero-title">
-					<span class="hero-emoji">💬</span>
-					AI Assistants in Your
-					<span class="hero-gradient">WhatsApp</span>
-				</h1>
+<div class="homepage-2025">
+	<!-- Animated Background -->
+	<div class="animated-bg">
+		<div class="gradient-orb orb-1" style="transform: translate({$mouseX}px, {$mouseY}px)"></div>
+		<div class="gradient-orb orb-2" style="transform: translate({-$mouseX}px, {-$mouseY}px)"></div>
+		<div class="gradient-orb orb-3" style="transform: translate({$mouseX * 0.5}px, {$mouseY * 0.5}px)"></div>
+		<div class="mesh-gradient"></div>
+	</div>
+	
+	<!-- Hero Section - Epic & Immersive -->
+	{#if mounted}
+		<section class="hero-2025" in:fade={{ duration: 800 }}>
+			<div class="hero-content-wrapper">
+				<!-- Floating UI Elements -->
+				<div class="floating-ui-elements">
+					<div class="floating-card-demo card-1" style="transform: translate({$mouseX * 0.3}px, {$mouseY * 0.3}px)">
+						<span class="tool-icon">🤖</span>
+						<span class="tool-label">AI Assistant</span>
+					</div>
+					<div class="floating-card-demo card-2" style="transform: translate({$mouseX * -0.2}px, {$mouseY * -0.2}px)">
+						<span class="tool-icon">💻</span>
+						<span class="tool-label">Code Helper</span>
+					</div>
+					<div class="floating-card-demo card-3" style="transform: translate({$mouseX * 0.4}px, {$mouseY * -0.3}px)">
+						<span class="tool-icon">✍️</span>
+						<span class="tool-label">Writer Pro</span>
+					</div>
+				</div>
 				
-				<p class="hero-subtitle">
-					Connect your phone number to access 10+ specialized AI tools directly in WhatsApp. 
-					No app downloads, no complex setup - just text and go.
-				</p>
-				
-				<!-- Phone Number Input -->
-				<div class="phone-input-container">
-					<FloatingCard depth={2} padding="md">
-						<form on:submit|preventDefault={handleWhatsAppLink} class="phone-form">
-							<label for="phone" class="phone-label">
-								Enter your WhatsApp number to get started
-							</label>
-							
-							<div class="phone-input-group">
-								<span class="phone-icon">📱</span>
-								<input
-									id="phone"
-									type="tel"
-									bind:value={phoneNumber}
-									on:input={(e) => formatPhoneNumber(e.currentTarget.value)}
-									placeholder="(555) 123-4567"
-									class="phone-input"
-									class:error={phoneError}
-									disabled={isLinking}
-									autocomplete="tel"
-								/>
-							</div>
-							
-							{#if phoneError}
-								<p class="error-message" role="alert">{phoneError}</p>
-							{/if}
-							
-							<button 
-								type="submit" 
-								class="neu-button neu-button-primary link-button pulse-cta"
-								disabled={isLinking}
-							>
-								{#if isLinking}
-									<span class="spinner"></span>
-									Connecting...
-								{:else}
-									<span class="button-text">Link WhatsApp</span>
-									<span class="button-arrow">→</span>
+				<!-- Main Hero Content -->
+				<div class="hero-main">
+					{#if heroLoaded}
+						<div class="hero-badge" in:fly={{ y: -20, duration: 600, delay: 200 }}>
+							<span class="badge-icon">🚀</span>
+							<span class="badge-text">50,000+ Users Trust Us</span>
+						</div>
+						
+						<h1 class="hero-title-2025" in:fly={{ y: 20, duration: 800, delay: 400 }}>
+							Your AI Assistant
+							<span class="title-gradient">Lives in WhatsApp</span>
+							<span class="title-emoji">💬</span>
+						</h1>
+						
+						<p class="hero-subtitle-2025" in:fly={{ y: 20, duration: 800, delay: 600 }}>
+							No apps. No downloads. Just text your new AI companion and watch the magic happen.
+							<br />
+							<span class="subtitle-highlight">10+ specialized tools at your fingertips.</span>
+						</p>
+						
+						<!-- CTA Section with Phone Input -->
+						<div class="hero-cta-section" in:scale={{ duration: 600, delay: 800 }}>
+							<form on:submit|preventDefault={handleWhatsAppLink} class="hero-form">
+								<div class="input-wrapper">
+									<div class="input-icon">📱</div>
+									<input
+										type="tel"
+										bind:value={phoneNumber}
+										on:input={(e) => formatPhoneNumber(e.currentTarget.value)}
+										placeholder="Enter your WhatsApp number"
+										class="hero-input"
+										class:error={phoneError}
+										disabled={isLinking}
+										autocomplete="tel"
+									/>
+									<button 
+										type="submit" 
+										class="hero-cta-button"
+										class:loading={isLinking}
+										disabled={isLinking}
+									>
+										{#if isLinking}
+											<span class="button-spinner"></span>
+										{:else}
+											<span>Start Free</span>
+											<span class="button-icon">→</span>
+										{/if}
+									</button>
+								</div>
+								{#if phoneError}
+									<p class="error-message" in:fly={{ y: -10, duration: 300 }}>{phoneError}</p>
 								{/if}
-							</button>
+							</form>
 							
-							<p class="privacy-note">
-								🔒 Your number is stored locally. We never share your data.
-							</p>
-						</form>
-					</FloatingCard>
+							<div class="cta-features">
+								<span class="cta-feature">
+									<span class="feature-icon">✅</span>
+									No Credit Card
+								</span>
+								<span class="cta-feature">
+									<span class="feature-icon">⚡</span>
+									Instant Setup
+								</span>
+								<span class="cta-feature">
+									<span class="feature-icon">🔒</span>
+									100% Private
+								</span>
+							</div>
+						</div>
+					{/if}
 				</div>
 				
 				<!-- Live Demo Preview -->
-				<div class="demo-preview">
-					<p class="demo-label">See it in action</p>
-					<div class="demo-messages">
-						<div class="demo-message user">
-							Help me write a professional email
-						</div>
-						<div class="demo-message assistant">
-							I'd be happy to help! What's the purpose of your email?
+				{#if heroLoaded}
+					<div class="live-demo-preview" in:fly={{ x: 50, duration: 800, delay: 1000 }}>
+						<div class="demo-phone">
+							<div class="phone-notch"></div>
+							<div class="demo-chat">
+								<div class="chat-header">
+									<span class="chat-avatar">🤖</span>
+									<span class="chat-name">OBT Assistant</span>
+									<span class="chat-status">● Online</span>
+								</div>
+								<div class="chat-messages">
+									{#each chatMessages as message, i}
+										<div 
+											class="chat-message {message.type}"
+											in:fly={{ x: message.type === 'user' ? 20 : -20, delay: 1200 + i * 300 }}
+										>
+											{message.text}
+										</div>
+									{/each}
+								</div>
+							</div>
 						</div>
 					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
+	
+	<!-- Social Proof Stats -->
+	<section class="stats-section">
+		<div class="stats-wrapper">
+			{#each stats as stat, i}
+				<div class="stat-card" in:scale={{ delay: 200 + i * 100, duration: 600 }}>
+					<div class="stat-number">{stat.number}</div>
+					<div class="stat-label">{stat.label}</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+	
+	<!-- Interactive Feature Showcase -->
+	<section class="features-showcase">
+		<div class="showcase-container">
+			<h2 class="section-title-2025">
+				<span class="title-label">WHY CHOOSE US</span>
+				Experience the Future of AI Assistance
+			</h2>
+			
+			<div class="showcase-grid">
+				<!-- Feature Cards -->
+				<div class="feature-cards">
+					<button 
+						class="feature-card-2025"
+						class:active={activeFeature === 0}
+						on:click={() => activeFeature = 0}
+					>
+						<div class="feature-icon-wrapper">
+							<span class="feature-icon">🎯</span>
+						</div>
+						<h3>Instant Responses</h3>
+						<p>Get answers in seconds, not minutes. Our AI is always ready.</p>
+					</button>
+					
+					<button 
+						class="feature-card-2025"
+						class:active={activeFeature === 1}
+						on:click={() => activeFeature = 1}
+					>
+						<div class="feature-icon-wrapper">
+							<span class="feature-icon">🧠</span>
+						</div>
+						<h3>Context Aware</h3>
+						<p>Remembers your conversations and learns your preferences.</p>
+					</button>
+					
+					<button 
+						class="feature-card-2025"
+						class:active={activeFeature === 2}
+						on:click={() => activeFeature = 2}
+					>
+						<div class="feature-icon-wrapper">
+							<span class="feature-icon">🛡️</span>
+						</div>
+						<h3>Privacy First</h3>
+						<p>Your data stays yours. End-to-end encryption always.</p>
+					</button>
+				</div>
+				
+				<!-- Feature Display -->
+				<div class="feature-display">
+					{#if activeFeature === 0}
+						<div class="display-content" in:fade={{ duration: 300 }}>
+							<div class="speed-demo">
+								<div class="speed-bar">
+									<div class="speed-fill"></div>
+								</div>
+								<p class="speed-text">Average response time: <strong>1.2 seconds</strong></p>
+							</div>
+						</div>
+					{:else if activeFeature === 1}
+						<div class="display-content" in:fade={{ duration: 300 }}>
+							<div class="context-demo">
+								<div class="memory-item">📝 Remembers your writing style</div>
+								<div class="memory-item">🎨 Knows your preferences</div>
+								<div class="memory-item">📊 Learns from feedback</div>
+							</div>
+						</div>
+					{:else}
+						<div class="display-content" in:fade={{ duration: 300 }}>
+							<div class="security-badges">
+								<div class="security-badge">🔐 E2E Encrypted</div>
+								<div class="security-badge">🚫 No Data Selling</div>
+								<div class="security-badge">🗑️ Auto-Delete Option</div>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
 	</section>
 	
-	<!-- Available Assistants Grid -->
-	<section class="assistants-section" bind:this={assistantsRef}>
-		<div class="section-container" style="transform: translateY({scrollY * -0.1}px)">
-			<h2 class="section-title">
-				Choose Your AI Assistant
+	<!-- Tool Grid - Modern & Engaging -->
+	<section class="tools-section-2025">
+		<div class="tools-container">
+			<h2 class="section-title-2025">
+				<span class="title-label">OUR TOOLS</span>
+				One Number. Endless Possibilities.
 			</h2>
 			
-			<p class="section-subtitle">
-				Each assistant is specialized for different tasks. Pick one to start chatting.
-			</p>
-			
-			<div class="assistants-grid">
-				{#if isLoading}
-					<!-- Loading Skeletons -->
-					{#each Array(8) as _, index}
-						<FloatingCard depth={1} class="assistant-card skeleton-card">
-							<div class="skeleton-content">
-								<div class="skeleton-icon"></div>
-								<div class="skeleton-title"></div>
-								<div class="skeleton-description"></div>
-								<div class="skeleton-description short"></div>
-								<div class="skeleton-badge"></div>
+			<div class="tools-grid-2025">
+				{#each tools as tool, i}
+					<button 
+						class="tool-card-2025"
+						on:click={() => goto(`/chat/${tool.id}`)}
+						in:scale={{ delay: 100 + i * 50, duration: 500 }}
+					>
+						<div class="tool-glow"></div>
+						<div class="tool-content">
+							<span class="tool-emoji">{tool.icon}</span>
+							<h3 class="tool-name">{tool.name}</h3>
+							<p class="tool-description">{tool.description}</p>
+							<div class="tool-meta">
+								<span class="tool-model">{tool.model}</span>
+								<span class="tool-arrow">→</span>
 							</div>
-						</FloatingCard>
-					{/each}
-				{:else}
-					<!-- Actual Content -->
-					{#each sortedTools as tool, index}
-					<div style="transform: translateY({scrollY * -0.05 * (index % 3)}px)">
-						<FloatingCard 
-							depth={tool.depth} 
-							hover={true} 
-							animate={true}
-							delay={index * 50}
-							class="assistant-card"
-						>
+						</div>
+					</button>
+				{/each}
+			</div>
+		</div>
+	</section>
+	
+	<!-- Testimonials - Auto-rotating -->
+	<section class="testimonials-2025">
+		<div class="testimonials-container">
+			<h2 class="section-title-2025">
+				<span class="title-label">TESTIMONIALS</span>
+				Join Thousands of Happy Users
+			</h2>
+			
+			<div class="testimonial-wrapper">
+				{#key currentTestimonial}
+					<div class="testimonial-card-2025" in:scale={{ duration: 500 }}>
+						<div class="quote-icon">"</div>
+						<p class="testimonial-text">{testimonials[currentTestimonial].text}</p>
+						<div class="testimonial-author">
+							<span class="author-avatar">{testimonials[currentTestimonial].avatar}</span>
+							<div class="author-info">
+								<p class="author-name">{testimonials[currentTestimonial].author}</p>
+								<p class="author-role">{testimonials[currentTestimonial].role}</p>
+							</div>
+						</div>
+					</div>
+				{/key}
+				
+				<!-- Testimonial dots -->
+				<div class="testimonial-dots">
+					{#each testimonials as _, i}
 						<button 
-							class="assistant-button"
-							style="--index: {index}"
-							on:click={() => goto(`/chat/${tool.id}`)}
-							aria-label="Open {tool.name} assistant"
-						>
-							<span class="assistant-icon">{tool.icon}</span>
-							<h3 class="assistant-name">{tool.name}</h3>
-							<p class="assistant-description">{tool.description}</p>
-							<span class="assistant-model">{tool.model}</span>
-						</button>
-						</FloatingCard>
-					</div>
+							class="dot"
+							class:active={i === currentTestimonial}
+							on:click={() => currentTestimonial = i}
+						></button>
 					{/each}
-				{/if}
+				</div>
 			</div>
 		</div>
 	</section>
 	
-	<!-- Social Proof Section -->
-	<section class="social-proof-section">
-		<div class="section-container">
-			<h2 class="section-title">What Our Users Say</h2>
-			<p class="section-subtitle">
-				Join thousands of satisfied users who've transformed their WhatsApp experience
-			</p>
-			
-			<div class="testimonials-grid">
-				<FloatingCard depth={1} class="testimonial-card">
-					<div class="testimonial-content">
-						<div class="stars">⭐⭐⭐⭐⭐</div>
-						<p class="testimonial-text">
-							"The AI responses are incredibly fast and accurate. It's like having a personal assistant in WhatsApp!"
-						</p>
-						<div class="testimonial-author">
-							<span class="author-avatar">👩‍💼</span>
-							<div>
-								<p class="author-name">Sarah Chen</p>
-								<p class="author-role">Marketing Manager</p>
-							</div>
-						</div>
-					</div>
-				</FloatingCard>
-				
-				<FloatingCard depth={1} class="testimonial-card">
-					<div class="testimonial-content">
-						<div class="stars">⭐⭐⭐⭐⭐</div>
-						<p class="testimonial-text">
-							"I use the Code Helper daily. It's saved me hours of debugging time. Absolutely essential tool!"
-						</p>
-						<div class="testimonial-author">
-							<span class="author-avatar">👨‍💻</span>
-							<div>
-								<p class="author-name">Alex Rodriguez</p>
-								<p class="author-role">Software Developer</p>
-							</div>
-						</div>
-					</div>
-				</FloatingCard>
-				
-				<FloatingCard depth={1} class="testimonial-card">
-					<div class="testimonial-content">
-						<div class="stars">⭐⭐⭐⭐⭐</div>
-						<p class="testimonial-text">
-							"The Email Assistant helps me write professional emails in seconds. Game changer for productivity!"
-						</p>
-						<div class="testimonial-author">
-							<span class="author-avatar">👨‍💼</span>
-							<div>
-								<p class="author-name">David Park</p>
-								<p class="author-role">Business Owner</p>
-							</div>
-						</div>
-					</div>
-				</FloatingCard>
-			</div>
-			
-			<!-- Trust Badges -->
-			<div class="trust-badges-wrapper">
-				<TrustBadges position="inline" />
-			</div>
-		</div>
-	</section>
-	
-	<!-- Features Section -->
-	<section class="features-section">
-		<div class="section-container">
-			<h2 class="section-title">Why OBT Helper GPT?</h2>
-			
-			<div class="features-grid">
-				<FloatingCard depth={1} class="feature-card">
-					<span class="feature-icon">⚡</span>
-					<h3 class="feature-title">Instant Access</h3>
-					<p class="feature-description">
-						No app downloads or signups. Just save our number and start chatting.
-					</p>
-				</FloatingCard>
-				
-				<FloatingCard depth={1} class="feature-card">
-					<span class="feature-icon">🎯</span>
-					<h3 class="feature-title">Specialized Tools</h3>
-					<p class="feature-description">
-						Each assistant is fine-tuned for specific tasks with custom instructions.
-					</p>
-				</FloatingCard>
-				
-				<FloatingCard depth={1} class="feature-card">
-					<span class="feature-icon">🔒</span>
-					<h3 class="feature-title">Privacy First</h3>
-					<p class="feature-description">
-						Your conversations stay private. No tracking, no data collection.
-					</p>
-				</FloatingCard>
-			</div>
+	<!-- Final CTA -->
+	<section class="final-cta-2025">
+		<div class="cta-container">
+			<h2 class="cta-title">Ready to Transform Your WhatsApp?</h2>
+			<p class="cta-subtitle">Join 50,000+ users who've already upgraded their messaging experience</p>
+			<button 
+				class="cta-button-large"
+				on:click={() => document.querySelector('.hero-input')?.focus()}
+			>
+				<span>Get Started Now</span>
+				<span class="button-sparkle">✨</span>
+			</button>
 		</div>
 	</section>
 </div>
 
 <style>
-	/* Hero Section */
-	.hero-section {
-		padding: var(--spacing-20) 0;
-		background: linear-gradient(to bottom, var(--surface-1), var(--background-primary));
-	}
-	
-	.hero-container {
-		max-width: var(--content-lg);
-		margin: 0 auto;
-		padding: 0 var(--spacing-6);
-	}
-	
-	.hero-content {
-		text-align: center;
-	}
-	
-	.hero-title {
-		font-size: clamp(2.5rem, 5vw, 4rem);
-		font-weight: 800;
-		line-height: 1.2;
-		margin-bottom: var(--spacing-6);
-		color: var(--text-primary);
-	}
-	
-	.hero-emoji {
-		display: block;
-		font-size: 5rem;
-		margin-bottom: var(--spacing-4);
-		animation: bounce-in var(--spring-elastic) both;
-	}
-	
-	.hero-gradient {
-		background: linear-gradient(135deg, #25D366, #128C7E);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-	}
-	
-	.hero-subtitle {
-		font-size: 1.25rem;
-		color: var(--text-secondary);
-		max-width: 600px;
-		margin: 0 auto var(--spacing-12);
-		line-height: 1.6;
-	}
-	
-	/* Phone Input */
-	.phone-input-container {
-		max-width: 500px;
-		margin: 0 auto var(--spacing-12);
-	}
-	
-	.phone-form {
-		padding: var(--spacing-8);
-	}
-	
-	.phone-label {
-		display: block;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: var(--spacing-4);
-		font-size: 1.125rem;
-	}
-	
-	.phone-input-group {
+	/* 2025 Homepage Styles - Epic & Immersive */
+	.homepage-2025 {
 		position: relative;
-		margin-bottom: var(--spacing-4);
+		overflow: hidden;
+		background: var(--background-primary);
 	}
 	
-	.phone-icon {
+	/* Animated Background */
+	.animated-bg {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+	}
+	
+	.gradient-orb {
 		position: absolute;
-		left: var(--spacing-4);
+		border-radius: 50%;
+		filter: blur(80px);
+		opacity: 0.6;
+		animation: float 20s ease-in-out infinite;
+	}
+	
+	.orb-1 {
+		width: 600px;
+		height: 600px;
+		background: radial-gradient(circle, #007AFF 0%, transparent 70%);
+		top: -200px;
+		left: -200px;
+	}
+	
+	.orb-2 {
+		width: 500px;
+		height: 500px;
+		background: radial-gradient(circle, #00D4FF 0%, transparent 70%);
+		bottom: -150px;
+		right: -150px;
+		animation-delay: -5s;
+	}
+	
+	.orb-3 {
+		width: 400px;
+		height: 400px;
+		background: radial-gradient(circle, #FF6B6B 0%, transparent 70%);
 		top: 50%;
-		transform: translateY(-50%);
+		left: 50%;
+		animation-delay: -10s;
+	}
+	
+	.mesh-gradient {
+		position: absolute;
+		inset: 0;
+		background-image: 
+			radial-gradient(at 40% 20%, hsla(210, 100%, 56%, 0.3) 0px, transparent 50%),
+			radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.3) 0px, transparent 50%),
+			radial-gradient(at 0% 50%, hsla(355, 100%, 70%, 0.3) 0px, transparent 50%);
+		opacity: 0.4;
+	}
+	
+	@keyframes float {
+		0%, 100% { transform: translate(0, 0) scale(1); }
+		33% { transform: translate(30px, -30px) scale(1.1); }
+		66% { transform: translate(-20px, 20px) scale(0.9); }
+	}
+	
+	/* Hero Section 2025 */
+	.hero-2025 {
+		position: relative;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		padding: var(--space-8) var(--space-6);
+		z-index: 1;
+	}
+	
+	.hero-content-wrapper {
+		max-width: 1400px;
+		margin: 0 auto;
+		width: 100%;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-12);
+		align-items: center;
+	}
+	
+	/* Floating UI Elements */
+	.floating-ui-elements {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 0;
+	}
+	
+	.floating-card-demo {
+		position: absolute;
+		background: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 16px;
+		padding: 12px 20px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		transition: transform 0.3s ease;
+	}
+	
+	.card-1 {
+		top: 20%;
+		left: 10%;
+		animation: float-slow 15s ease-in-out infinite;
+	}
+	
+	.card-2 {
+		top: 60%;
+		right: 15%;
+		animation: float-slow 20s ease-in-out infinite reverse;
+	}
+	
+	.card-3 {
+		bottom: 30%;
+		left: 20%;
+		animation: float-slow 18s ease-in-out infinite;
+		animation-delay: -5s;
+	}
+	
+	@keyframes float-slow {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-20px); }
+	}
+	
+	.tool-icon {
 		font-size: 1.5rem;
 	}
 	
-	.phone-input {
-		width: 100%;
-		padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) var(--spacing-12);
-		font-size: 1.125rem;
-		border: 2px solid var(--surface-3);
-		border-radius: var(--radius-lg);
-		background: var(--background-primary);
+	.tool-label {
+		font-size: 0.875rem;
+		font-weight: 500;
 		color: var(--text-primary);
-		transition: all var(--spring-smooth);
 	}
 	
-	.phone-input:focus {
+	/* Hero Main Content */
+	.hero-main {
+		position: relative;
+		z-index: 2;
+	}
+	
+	.hero-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background: linear-gradient(135deg, #007AFF, #00D4FF);
+		color: white;
+		padding: 8px 16px;
+		border-radius: 24px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		margin-bottom: var(--space-6);
+		box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+	}
+	
+	.badge-icon {
+		font-size: 1rem;
+		animation: pulse 2s ease-in-out infinite;
+	}
+	
+	@keyframes pulse {
+		0%, 100% { transform: scale(1); }
+		50% { transform: scale(1.1); }
+	}
+	
+	.hero-title-2025 {
+		font-size: clamp(3rem, 8vw, 5rem);
+		font-weight: 800;
+		line-height: 1.1;
+		margin-bottom: var(--space-6);
+		letter-spacing: -0.02em;
+	}
+	
+	.title-gradient {
+		background: linear-gradient(135deg, #007AFF, #00D4FF, #FF6B6B);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		display: block;
+	}
+	
+	.title-emoji {
+		display: inline-block;
+		font-size: 0.8em;
+		animation: bounce 2s ease-in-out infinite;
+		margin-left: 0.2em;
+	}
+	
+	@keyframes bounce {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-10px); }
+	}
+	
+	.hero-subtitle-2025 {
+		font-size: clamp(1.125rem, 2vw, 1.5rem);
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin-bottom: var(--space-8);
+		max-width: 600px;
+	}
+	
+	.subtitle-highlight {
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+	
+	/* Hero CTA Section */
+	.hero-cta-section {
+		max-width: 500px;
+	}
+	
+	.hero-form {
+		margin-bottom: var(--space-4);
+	}
+	
+	.input-wrapper {
+		position: relative;
+		display: flex;
+		background: white;
+		border-radius: 64px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+		overflow: hidden;
+		transition: all 0.3s ease;
+	}
+	
+	.input-wrapper:focus-within {
+		box-shadow: 0 12px 48px rgba(0, 122, 255, 0.25);
+		transform: translateY(-2px);
+	}
+	
+	.input-icon {
+		position: absolute;
+		left: 24px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 1.5rem;
+		pointer-events: none;
+	}
+	
+	.hero-input {
+		flex: 1;
+		padding: 20px 24px 20px 60px;
+		font-size: 1.125rem;
+		border: none;
+		background: transparent;
+		color: var(--text-primary);
 		outline: none;
-		border-color: var(--primary);
-		box-shadow: 0 0 0 3px var(--primary-bg);
 	}
 	
-	.phone-input.error {
-		border-color: var(--error);
+	.hero-input::placeholder {
+		color: var(--text-tertiary);
 	}
 	
-	.phone-input:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
+	.hero-cta-button {
+		padding: 20px 32px;
+		background: linear-gradient(135deg, #007AFF, #0051D5);
+		color: white;
+		border: none;
+		font-size: 1.125rem;
+		font-weight: 600;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		transition: all 0.3s ease;
+		white-space: nowrap;
+	}
+	
+	.hero-cta-button:hover:not(.loading) {
+		background: linear-gradient(135deg, #0051D5, #003D9D);
+		transform: translateX(2px);
+	}
+	
+	.hero-cta-button.loading {
+		pointer-events: none;
+		opacity: 0.8;
+	}
+	
+	.button-spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	
+	.button-icon {
+		transition: transform 0.3s ease;
+	}
+	
+	.hero-cta-button:hover .button-icon {
+		transform: translateX(4px);
+	}
+	
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 	
 	.error-message {
 		color: var(--error);
 		font-size: 0.875rem;
-		margin-top: var(--spacing-2);
+		margin-top: 8px;
+		padding-left: 24px;
 	}
 	
-	.link-button {
-		width: 100%;
-		padding: var(--spacing-4) var(--spacing-6);
-		font-size: 1.125rem;
-		font-weight: 600;
-		margin-top: var(--spacing-4);
+	.cta-features {
+		display: flex;
+		gap: var(--space-6);
+		justify-content: center;
+	}
+	
+	.cta-feature {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+	}
+	
+	.feature-icon {
+		font-size: 1rem;
+		color: var(--primary);
+	}
+	
+	/* Live Demo Preview */
+	.live-demo-preview {
+		position: relative;
+		z-index: 2;
+	}
+	
+	.demo-phone {
+		width: 320px;
+		height: 640px;
+		background: #000;
+		border-radius: 36px;
+		padding: 12px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.phone-notch {
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 120px;
+		height: 30px;
+		background: #000;
+		border-radius: 0 0 16px 16px;
+		z-index: 10;
+	}
+	
+	.demo-chat {
+		background: white;
+		height: 100%;
+		border-radius: 24px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.chat-header {
+		background: #f0f0f0;
+		padding: 48px 20px 16px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		border-bottom: 1px solid #e0e0e0;
+	}
+	
+	.chat-avatar {
+		width: 40px;
+		height: 40px;
+		background: linear-gradient(135deg, #007AFF, #00D4FF);
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: var(--spacing-2);
+		font-size: 1.5rem;
 	}
 	
-	.spinner {
-		width: 1.25rem;
-		height: 1.25rem;
-		border: 2px solid transparent;
-		border-top-color: currentColor;
-		border-radius: 50%;
-		animation: spin 0.6s linear infinite;
-	}
-	
-	.privacy-note {
-		text-align: center;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		margin-top: var(--spacing-4);
-	}
-	
-	/* Demo Preview */
-	.demo-preview {
-		max-width: 400px;
-		margin: 0 auto;
-		animation: fade-in var(--spring-smooth) 0.5s both;
-	}
-	
-	.demo-label {
-		text-align: center;
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-		margin-bottom: var(--spacing-3);
-	}
-	
-	.demo-messages {
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-3);
-	}
-	
-	.demo-message {
-		padding: var(--spacing-3) var(--spacing-4);
-		border-radius: var(--radius-xl);
-		font-size: 0.875rem;
-		max-width: 80%;
-		animation: slide-up var(--spring-smooth) both;
-	}
-	
-	.demo-message.user {
-		align-self: flex-end;
-		background: #25D366;
-		color: white;
-		animation-delay: 0.2s;
-	}
-	
-	.demo-message.assistant {
-		align-self: flex-start;
-		background: var(--surface-2);
-		color: var(--text-primary);
-		animation-delay: 0.4s;
-	}
-	
-	/* Assistants Section */
-	.assistants-section {
-		padding: var(--spacing-20) 0;
-		background: var(--background-primary);
-	}
-	
-	.section-container {
-		max-width: var(--content-xl);
-		margin: 0 auto;
-		padding: 0 var(--spacing-6);
-	}
-	
-	.section-title {
-		font-size: clamp(2rem, 4vw, 3rem);
-		font-weight: 700;
-		text-align: center;
-		margin-bottom: var(--spacing-4);
-		color: var(--text-primary);
-	}
-	
-	.section-subtitle {
-		text-align: center;
-		color: var(--text-secondary);
-		font-size: 1.125rem;
-		margin-bottom: var(--spacing-12);
-		max-width: 600px;
-		margin-left: auto;
-		margin-right: auto;
-	}
-	
-	.assistants-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: var(--spacing-6);
-	}
-	
-	:global(.assistant-card) {
-		height: 100%;
-	}
-	
-	.assistant-button {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		padding: var(--spacing-8);
-		width: 100%;
-		height: 100%;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		color: inherit;
-		text-decoration: none;
-	}
-	
-	.assistant-icon {
-		font-size: 3rem;
-		margin-bottom: var(--spacing-4);
-		transition: transform var(--spring-bounce);
-	}
-	
-	.assistant-button:hover .assistant-icon {
-		transform: scale(1.2) rotate(-5deg);
-	}
-	
-	.assistant-name {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin-bottom: var(--spacing-2);
-		color: var(--text-primary);
-	}
-	
-	.assistant-description {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		margin-bottom: var(--spacing-4);
+	.chat-name {
 		flex: 1;
+		font-weight: 600;
+		color: #1a1a1a;
 	}
 	
-	.assistant-model {
+	.chat-status {
 		font-size: 0.75rem;
-		padding: var(--spacing-1) var(--spacing-3);
-		background: var(--primary-bg);
-		color: var(--primary);
-		border-radius: var(--radius-full);
+		color: #25D366;
+	}
+	
+	.chat-messages {
+		flex: 1;
+		padding: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		background: #f5f5f5;
+	}
+	
+	.chat-message {
+		max-width: 70%;
+		padding: 12px 16px;
+		border-radius: 18px;
+		font-size: 0.875rem;
+		line-height: 1.4;
+		animation: message-pop 0.3s ease;
+	}
+	
+	.chat-message.user {
+		align-self: flex-end;
+		background: #007AFF;
+		color: white;
+		border-bottom-right-radius: 4px;
+	}
+	
+	.chat-message.assistant {
+		align-self: flex-start;
+		background: white;
+		color: #1a1a1a;
+		border-bottom-left-radius: 4px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	}
+	
+	@keyframes message-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.8) translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+	
+	/* Stats Section */
+	.stats-section {
+		padding: var(--space-16) var(--space-6);
+		background: rgba(255, 255, 255, 0.02);
+		backdrop-filter: blur(10px);
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		position: relative;
+		z-index: 1;
+	}
+	
+	.stats-wrapper {
+		max-width: 1200px;
+		margin: 0 auto;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: var(--space-8);
+	}
+	
+	.stat-card {
+		text-align: center;
+		padding: var(--space-6);
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		transition: all 0.3s ease;
+	}
+	
+	.stat-card:hover {
+		transform: translateY(-4px);
+		background: rgba(255, 255, 255, 0.08);
+		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.1);
+	}
+	
+	.stat-number {
+		font-size: 3rem;
+		font-weight: 800;
+		background: linear-gradient(135deg, #007AFF, #00D4FF);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		margin-bottom: var(--space-2);
+	}
+	
+	.stat-label {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
 		font-weight: 500;
 	}
 	
-	/* Social Proof Section */
-	.social-proof-section {
-		padding: var(--spacing-20) 0;
-		background: var(--background-primary);
+	/* Features Showcase */
+	.features-showcase {
+		padding: var(--space-20) var(--space-6);
+		position: relative;
+		z-index: 1;
 	}
 	
-	.testimonials-grid {
+	.showcase-container {
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+	
+	.section-title-2025 {
+		text-align: center;
+		margin-bottom: var(--space-16);
+	}
+	
+	.title-label {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--primary);
+		letter-spacing: 0.1em;
+		margin-bottom: var(--space-3);
+	}
+	
+	.section-title-2025 {
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-weight: 800;
+		line-height: 1.2;
+		color: var(--text-primary);
+	}
+	
+	.showcase-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-		gap: var(--spacing-8);
-		margin-bottom: var(--spacing-16);
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-12);
+		align-items: center;
 	}
 	
-	:global(.testimonial-card) {
-		height: 100%;
-	}
-	
-	.testimonial-content {
-		padding: var(--spacing-8);
-		height: 100%;
+	.feature-cards {
 		display: flex;
 		flex-direction: column;
+		gap: var(--space-4);
 	}
 	
-	.stars {
+	.feature-card-2025 {
+		padding: var(--space-6);
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 20px;
+		text-align: left;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+	}
+	
+	.feature-card-2025:hover {
+		transform: translateX(8px);
+		background: rgba(255, 255, 255, 0.08);
+	}
+	
+	.feature-card-2025.active {
+		background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(0, 212, 255, 0.1));
+		border-color: var(--primary);
+		transform: translateX(8px);
+	}
+	
+	.feature-icon-wrapper {
+		width: 60px;
+		height: 60px;
+		background: linear-gradient(135deg, #007AFF, #00D4FF);
+		border-radius: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	
+	.feature-icon {
+		font-size: 2rem;
+	}
+	
+	.feature-card-2025 h3 {
 		font-size: 1.25rem;
-		margin-bottom: var(--spacing-4);
-		letter-spacing: 0.25rem;
+		font-weight: 700;
+		margin-bottom: var(--space-2);
+		color: var(--text-primary);
+	}
+	
+	.feature-card-2025 p {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+	
+	.feature-display {
+		height: 400px;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-8);
+	}
+	
+	.display-content {
+		width: 100%;
+		text-align: center;
+	}
+	
+	.speed-demo {
+		max-width: 300px;
+		margin: 0 auto;
+	}
+	
+	.speed-bar {
+		height: 8px;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 4px;
+		overflow: hidden;
+		margin-bottom: var(--space-4);
+	}
+	
+	.speed-fill {
+		height: 100%;
+		width: 0;
+		background: linear-gradient(90deg, #007AFF, #00D4FF);
+		border-radius: 4px;
+		animation: speed-fill 2s ease forwards;
+	}
+	
+	@keyframes speed-fill {
+		to { width: 85%; }
+	}
+	
+	.speed-text {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
+	}
+	
+	.speed-text strong {
+		color: var(--primary);
+		font-size: 1.5rem;
+	}
+	
+	.context-demo,
+	.security-badges {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		max-width: 400px;
+		margin: 0 auto;
+	}
+	
+	.memory-item,
+	.security-badge {
+		padding: var(--space-4) var(--space-6);
+		background: rgba(255, 255, 255, 0.08);
+		border-radius: 12px;
+		font-size: 1.125rem;
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	
+	/* Tools Section */
+	.tools-section-2025 {
+		padding: var(--space-20) var(--space-6);
+		background: rgba(0, 0, 0, 0.02);
+		position: relative;
+		z-index: 1;
+	}
+	
+	.tools-container {
+		max-width: 1400px;
+		margin: 0 auto;
+	}
+	
+	.tools-grid-2025 {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: var(--space-6);
+		margin-top: var(--space-12);
+	}
+	
+	.tool-card-2025 {
+		position: relative;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 24px;
+		padding: var(--space-8);
+		cursor: pointer;
+		transition: all 0.3s ease;
+		overflow: hidden;
+		text-align: left;
+	}
+	
+	.tool-glow {
+		position: absolute;
+		top: -50%;
+		left: -50%;
+		width: 200%;
+		height: 200%;
+		background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+		opacity: 0;
+		transition: opacity 0.3s ease;
+		pointer-events: none;
+	}
+	
+	.tool-card-2025:hover {
+		transform: translateY(-8px);
+		border-color: var(--primary);
+		box-shadow: 0 20px 40px rgba(0, 122, 255, 0.2);
+	}
+	
+	.tool-card-2025:hover .tool-glow {
+		opacity: 0.1;
+	}
+	
+	.tool-content {
+		position: relative;
+		z-index: 1;
+	}
+	
+	.tool-emoji {
+		font-size: 3rem;
+		display: block;
+		margin-bottom: var(--space-4);
+		animation: float-gentle 4s ease-in-out infinite;
+	}
+	
+	@keyframes float-gentle {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-5px); }
+	}
+	
+	.tool-name {
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin-bottom: var(--space-3);
+		color: var(--text-primary);
+	}
+	
+	.tool-description {
+		font-size: 1rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin-bottom: var(--space-6);
+	}
+	
+	.tool-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	.tool-model {
+		font-size: 0.875rem;
+		padding: 6px 12px;
+		background: rgba(0, 122, 255, 0.1);
+		color: var(--primary);
+		border-radius: 20px;
+		font-weight: 500;
+	}
+	
+	.tool-arrow {
+		font-size: 1.5rem;
+		color: var(--primary);
+		transition: transform 0.3s ease;
+	}
+	
+	.tool-card-2025:hover .tool-arrow {
+		transform: translateX(4px);
+	}
+	
+	/* Testimonials */
+	.testimonials-2025 {
+		padding: var(--space-20) var(--space-6);
+		position: relative;
+		z-index: 1;
+	}
+	
+	.testimonials-container {
+		max-width: 800px;
+		margin: 0 auto;
+		text-align: center;
+	}
+	
+	.testimonial-wrapper {
+		margin-top: var(--space-12);
+	}
+	
+	.testimonial-card-2025 {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 24px;
+		padding: var(--space-12);
+		position: relative;
+	}
+	
+	.quote-icon {
+		position: absolute;
+		top: var(--space-6);
+		left: var(--space-6);
+		font-size: 4rem;
+		color: var(--primary);
+		opacity: 0.2;
+		font-family: Georgia, serif;
 	}
 	
 	.testimonial-text {
-		flex: 1;
-		font-size: 1.125rem;
+		font-size: 1.5rem;
 		line-height: 1.6;
 		color: var(--text-primary);
-		margin-bottom: var(--spacing-6);
+		margin-bottom: var(--space-8);
 		font-style: italic;
 	}
 	
 	.testimonial-author {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-3);
-		padding-top: var(--spacing-4);
-		border-top: 1px solid var(--surface-3);
+		justify-content: center;
+		gap: var(--space-4);
 	}
 	
 	.author-avatar {
-		font-size: 2.5rem;
-		display: block;
+		font-size: 3rem;
+	}
+	
+	.author-info {
+		text-align: left;
 	}
 	
 	.author-name {
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--text-primary);
-		margin-bottom: var(--spacing-1);
+		margin-bottom: 4px;
 	}
 	
 	.author-role {
@@ -682,260 +1285,185 @@
 		color: var(--text-secondary);
 	}
 	
-	.trust-badges-wrapper {
-		margin-top: var(--spacing-12);
-	}
-	
-	/* Features Section */
-	.features-section {
-		padding: var(--spacing-20) 0;
-		background: var(--surface-1);
-	}
-	
-	.features-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: var(--spacing-8);
-		margin-top: var(--spacing-12);
-	}
-	
-	:global(.feature-card) {
-		text-align: center;
-		padding: var(--spacing-8);
-	}
-	
-	.feature-icon {
-		display: block;
-		font-size: 3rem;
-		margin-bottom: var(--spacing-4);
-		animation: bounce-in var(--spring-elastic) both;
-	}
-	
-	.feature-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin-bottom: var(--spacing-3);
-		color: var(--text-primary);
-	}
-	
-	.feature-description {
-		color: var(--text-secondary);
-		line-height: 1.6;
-	}
-	
-	/* CTA Animations */
-	.pulse-cta {
-		position: relative;
-		overflow: hidden;
-		animation: pulse-shadow 2s ease-in-out infinite;
-	}
-	
-	@keyframes pulse-shadow {
-		0%, 100% {
-			box-shadow: 0 0 0 0 var(--primary);
-		}
-		50% {
-			box-shadow: 0 0 20px 5px var(--primary);
-		}
-	}
-	
-	.button-arrow {
-		display: inline-block;
-		margin-left: var(--spacing-2);
-		transition: transform var(--spring-bounce);
-	}
-	
-	.pulse-cta:hover .button-arrow {
-		transform: translateX(4px);
-		animation: arrow-bounce 0.6s ease-in-out infinite;
-	}
-	
-	@keyframes arrow-bounce {
-		0%, 100% { transform: translateX(4px); }
-		50% { transform: translateX(8px); }
-	}
-	
-	/* Ripple effect on click */
-	.pulse-cta::after {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 0;
-		height: 0;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.5);
-		transform: translate(-50%, -50%);
-		transition: width 0.6s, height 0.6s;
-	}
-	
-	.pulse-cta:active::after {
-		width: 300px;
-		height: 300px;
-	}
-	
-	/* Floating animation for assistant buttons */
-	.assistant-button {
-		animation: gentle-float 4s ease-in-out infinite;
-		animation-delay: calc(var(--index, 0) * 0.2s);
-	}
-	
-	@keyframes gentle-float {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(-4px); }
-	}
-	
-	/* Hover lift animation */
-	.assistant-button:hover {
-		animation-play-state: paused;
-		transform: translateY(-8px) scale(1.02);
-		transition: all var(--spring-bounce);
-	}
-	
-	/* Add shine effect to CTAs */
-	.neu-button-primary::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.2),
-			transparent
-		);
-		transition: left 0.5s;
-	}
-	
-	.neu-button-primary:hover::before {
-		left: 100%;
-	}
-	
-	/* Animations */
-	@keyframes spin {
-		to { transform: rotate(360deg); }
-	}
-	
-	/* Mobile Responsive */
-	@media (max-width: 640px) {
-		.hero-section {
-			padding: var(--spacing-12) 0;
-		}
-		
-		.hero-emoji {
-			font-size: 3.5rem;
-		}
-		
-		.hero-title {
-			font-size: 2rem;
-		}
-		
-		.hero-subtitle {
-			font-size: 1rem;
-		}
-		
-		.phone-form {
-			padding: var(--spacing-6);
-		}
-		
-		.assistants-grid {
-			grid-template-columns: 1fr;
-			gap: var(--spacing-4);
-		}
-		
-		.features-grid {
-			grid-template-columns: 1fr;
-			gap: var(--spacing-6);
-		}
-	}
-	
-	/* Skeleton Loading */
-	:global(.skeleton-card) {
-		pointer-events: none;
-	}
-	
-	.skeleton-content {
-		padding: var(--spacing-8);
+	.testimonial-dots {
 		display: flex;
-		flex-direction: column;
+		justify-content: center;
+		gap: var(--space-2);
+		margin-top: var(--space-6);
+	}
+	
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.3);
+		border: none;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		padding: 0;
+	}
+	
+	.dot.active {
+		width: 24px;
+		border-radius: 4px;
+		background: var(--primary);
+	}
+	
+	/* Final CTA */
+	.final-cta-2025 {
+		padding: var(--space-20) var(--space-6);
+		background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(0, 212, 255, 0.05));
+		position: relative;
+		z-index: 1;
+		text-align: center;
+	}
+	
+	.cta-container {
+		max-width: 800px;
+		margin: 0 auto;
+	}
+	
+	.cta-title {
+		font-size: clamp(2.5rem, 5vw, 4rem);
+		font-weight: 800;
+		margin-bottom: var(--space-4);
+		background: linear-gradient(135deg, #007AFF, #00D4FF);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+	
+	.cta-subtitle {
+		font-size: 1.25rem;
+		color: var(--text-secondary);
+		margin-bottom: var(--space-8);
+	}
+	
+	.cta-button-large {
+		padding: 24px 48px;
+		font-size: 1.25rem;
+		font-weight: 700;
+		background: linear-gradient(135deg, #007AFF, #0051D5);
+		color: white;
+		border: none;
+		border-radius: 64px;
+		cursor: pointer;
+		display: inline-flex;
 		align-items: center;
-		gap: var(--spacing-4);
-		height: 100%;
+		gap: 12px;
+		transition: all 0.3s ease;
+		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);
 	}
 	
-	.skeleton-icon,
-	.skeleton-title,
-	.skeleton-description,
-	.skeleton-badge {
-		background: linear-gradient(90deg, 
-			var(--surface-2) 25%, 
-			var(--surface-3) 50%, 
-			var(--surface-2) 75%
-		);
-		background-size: 200% 100%;
-		animation: skeleton-loading 1.5s ease-in-out infinite;
-		border-radius: var(--radius-md);
+	.cta-button-large:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 12px 48px rgba(0, 122, 255, 0.4);
 	}
 	
-	.skeleton-icon {
-		width: 60px;
-		height: 60px;
-		border-radius: var(--radius-full);
-		margin-bottom: var(--spacing-2);
+	.button-sparkle {
+		font-size: 1.5rem;
+		animation: sparkle 2s ease-in-out infinite;
 	}
 	
-	.skeleton-title {
-		width: 80%;
-		height: 24px;
+	@keyframes sparkle {
+		0%, 100% { opacity: 1; transform: rotate(0deg) scale(1); }
+		50% { opacity: 0.8; transform: rotate(180deg) scale(1.2); }
 	}
 	
-	.skeleton-description {
-		width: 100%;
-		height: 16px;
-	}
-	
-	.skeleton-description.short {
-		width: 60%;
-	}
-	
-	.skeleton-badge {
-		width: 100px;
-		height: 24px;
-		border-radius: var(--radius-full);
-		margin-top: auto;
-	}
-	
-	@keyframes skeleton-loading {
-		0% {
-			background-position: 200% 0;
+	/* Mobile Responsive - Make it look amazing on phones too! */
+	@media (max-width: 768px) {
+		.hero-content-wrapper {
+			grid-template-columns: 1fr;
+			text-align: center;
 		}
-		100% {
-			background-position: -200% 0;
+		
+		.live-demo-preview {
+			display: none; /* Hide on mobile for better performance */
+		}
+		
+		.floating-ui-elements {
+			display: none; /* Simplify mobile experience */
+		}
+		
+		.hero-title-2025 {
+			font-size: clamp(2.5rem, 10vw, 3.5rem);
+		}
+		
+		.input-wrapper {
+			flex-direction: column;
+			border-radius: 16px;
+		}
+		
+		.hero-input {
+			padding: 16px 16px 16px 56px;
+			font-size: 16px; /* Prevent zoom */
+		}
+		
+		.hero-cta-button {
+			width: 100%;
+			justify-content: center;
+			padding: 16px;
+			border-radius: 16px;
+		}
+		
+		.cta-features {
+			flex-wrap: wrap;
+			gap: var(--space-3);
+		}
+		
+		.showcase-grid {
+			grid-template-columns: 1fr;
+			gap: var(--space-8);
+		}
+		
+		.tools-grid-2025 {
+			grid-template-columns: 1fr;
+		}
+		
+		.stat-number {
+			font-size: 2.5rem;
+		}
+		
+		.testimonial-text {
+			font-size: 1.125rem;
+		}
+		
+		.gradient-orb {
+			filter: blur(60px);
+		}
+		
+		.orb-1, .orb-2, .orb-3 {
+			width: 300px;
+			height: 300px;
 		}
 	}
 	
-	/* Dark Mode */
+	/* Dark mode adjustments */
 	@media (prefers-color-scheme: dark) {
-		.phone-input {
-			background: var(--surface-1-dark);
+		.demo-chat {
+			background: #1a1a1a;
 		}
 		
-		.demo-message.assistant {
-			background: var(--surface-2-dark);
+		.chat-header {
+			background: #2a2a2a;
+			border-bottom-color: #3a3a3a;
 		}
 		
-		.skeleton-icon,
-		.skeleton-title,
-		.skeleton-description,
-		.skeleton-badge {
-			background: linear-gradient(90deg, 
-				var(--surface-2-dark) 25%, 
-				var(--surface-3-dark) 50%, 
-				var(--surface-2-dark) 75%
-			);
-			background-size: 200% 100%;
+		.chat-messages {
+			background: #1a1a1a;
+		}
+		
+		.chat-message.assistant {
+			background: #2a2a2a;
+			color: white;
+		}
+		
+		.input-wrapper {
+			background: rgba(255, 255, 255, 0.05);
+		}
+		
+		.hero-input {
+			color: white;
 		}
 	}
 </style> 
