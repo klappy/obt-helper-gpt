@@ -1,12 +1,18 @@
-<script>
+<script lang="ts">
 	import { isAdmin, adminEmail, login, logout } from '$lib/stores/auth.js';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { writable } from 'svelte/store';
+	import { spring } from 'svelte/motion';
+	import { fade, fly, scale } from 'svelte/transition';
 	
 	let email = '';
 	let password = '';
 	let loginError = false;
+	let loginLoading = false;
+	let mounted = false;
+	let mouseX = spring(0, { stiffness: 0.1, damping: 0.9 });
+	let mouseY = spring(0, { stiffness: 0.1, damping: 0.9 });
 	
 	// System status store
 	const systemStatus = writable({
@@ -16,7 +22,8 @@
 			cpu: 45,
 			memory: 62,
 			requests: 1234,
-			errors: 2
+			errors: 2,
+			uptime: 99.9
 		}
 	});
 	
@@ -24,6 +31,17 @@
 	let statusInterval;
 	
 	onMount(() => {
+		mounted = true;
+		
+		const handleMouseMove = (e: MouseEvent) => {
+			const x = (e.clientX / window.innerWidth - 0.5) * 20;
+			const y = (e.clientY / window.innerHeight - 0.5) * 20;
+			mouseX.set(x);
+			mouseY.set(y);
+		};
+		
+		window.addEventListener('mousemove', handleMouseMove);
+		
 		statusInterval = setInterval(() => {
 			systemStatus.update(s => {
 				// Simulate random status changes
@@ -40,38 +58,39 @@
 						cpu: Math.round(40 + Math.random() * 40),
 						memory: Math.round(50 + Math.random() * 30),
 						requests: s.metrics.requests + Math.round(Math.random() * 10),
-						errors: s.metrics.errors + (Math.random() > 0.9 ? 1 : 0)
+						errors: s.metrics.errors + (Math.random() > 0.9 ? 1 : 0),
+						uptime: Math.max(95, Math.min(100, 99.9 - (Math.random() * 0.5)))
 					}
 				};
 			});
 		}, 5000);
+		
+		return () => {
+			window.removeEventListener('mousemove', handleMouseMove);
+		};
 	});
 	
 	onDestroy(() => {
 		if (statusInterval) clearInterval(statusInterval);
 	});
 	
-	// Get ambient color based on status
-	function getAmbientColor(health) {
+	// Get status color
+	function getStatusColor(health: string) {
 		switch(health) {
-			case 'critical': return 'var(--color-error-subtle)';
-			case 'error': return 'var(--color-error-subtle)';
-			case 'warning': return 'var(--color-warning-subtle)';
-			default: return 'var(--color-success-subtle)';
-		}
-	}
-	
-	// Get pulse animation based on status
-	function getPulseAnimation(health) {
-		switch(health) {
-			case 'critical': return 'pulse-critical';
-			case 'error': return 'pulse-error';
-			case 'warning': return 'pulse-warning';
-			default: return 'pulse-normal';
+			case 'critical': return '#FF3737';
+			case 'error': return '#FF6B6B';
+			case 'warning': return '#FFD93D';
+			default: return '#51CF66';
 		}
 	}
 
-	function handleLogin() {
+	async function handleLogin() {
+		loginLoading = true;
+		loginError = false;
+		
+		// Simulate async login
+		await new Promise(resolve => setTimeout(resolve, 1000));
+		
 		if (login(email, password)) {
 			loginError = false;
 			email = '';
@@ -79,6 +98,8 @@
 		} else {
 			loginError = true;
 		}
+		
+		loginLoading = false;
 	}
 
 	function handleLogout() {
@@ -88,215 +109,332 @@
 </script>
 
 {#if $isAdmin}
-	<!-- Admin Interface with Ambient Status Background -->
-	<div class="admin-layout min-h-screen">
-		<!-- Ambient status background -->
-		<div 
-			class="ambient-status"
-			style="--ambient-color: {getAmbientColor($systemStatus.health)}"
-			class:pulse-critical={$systemStatus.health === 'critical'}
-			class:pulse-error={$systemStatus.health === 'error'}
-			class:pulse-warning={$systemStatus.health === 'warning'}
-			class:pulse-normal={$systemStatus.health === 'normal'}
-		>
-			<div class="ambient-gradient"></div>
-			<div class="ambient-particles"></div>
+	<!-- Admin Interface 2025 -->
+	<div class="admin-2025">
+		<!-- Animated Background -->
+		<div class="admin-bg">
+			<div class="bg-orb orb-1" style="transform: translate({$mouseX}px, {$mouseY}px)"></div>
+			<div class="bg-orb orb-2" style="transform: translate({-$mouseX * 0.5}px, {-$mouseY * 0.5}px)"></div>
+			<div class="bg-grid"></div>
 		</div>
 		
+		<!-- Status Glow Effect -->
+		<div 
+			class="status-glow"
+			style="--status-color: {getStatusColor($systemStatus.health)}"
+			class:pulse-warning={$systemStatus.health === 'warning'}
+			class:pulse-error={$systemStatus.health === 'error'}
+			class:pulse-critical={$systemStatus.health === 'critical'}
+		></div>
+		
 		<!-- Navigation -->
-		<nav class="admin-nav">
+		<nav class="admin-nav-2025">
+			<div class="nav-blur"></div>
 			<div class="nav-container">
+				<!-- Left Section -->
 				<div class="nav-left">
-					<a href="/" class="back-link">
-						<span class="back-arrow">←</span>
-						<span>Back to Site</span>
+					<a href="/" class="back-button">
+						<span class="back-icon">←</span>
+						<span class="back-text">Exit Admin</span>
 					</a>
-					<div class="nav-title">
-						<span class="nav-icon">🛠️</span>
-						<span class="nav-text">Admin Panel</span>
-						<span class="status-indicator status-{$systemStatus.health}"></span>
+					
+					<div class="nav-divider"></div>
+					
+					<div class="nav-brand">
+						<span class="brand-icon">🛠️</span>
+						<div class="brand-info">
+							<h1 class="brand-title">Control Center</h1>
+							<span class="brand-status" class:status-{$systemStatus.health}>
+								System {$systemStatus.health}
+							</span>
+						</div>
 					</div>
 				</div>
+				
+				<!-- Right Section -->
 				<div class="nav-right">
-					<div class="status-metrics">
-						<span class="metric" title="CPU Usage">
-							💻 {$systemStatus.metrics.cpu}%
-						</span>
-						<span class="metric" title="Memory Usage">
-							🧠 {$systemStatus.metrics.memory}%
-						</span>
-						<span class="metric" title="Total Requests">
-							📊 {$systemStatus.metrics.requests}
-						</span>
+					<!-- Live Metrics -->
+					<div class="live-metrics">
+						<div class="metric-item">
+							<span class="metric-icon">💻</span>
+							<div class="metric-data">
+								<span class="metric-value">{$systemStatus.metrics.cpu}%</span>
+								<span class="metric-label">CPU</span>
+							</div>
+						</div>
+						<div class="metric-item">
+							<span class="metric-icon">🧠</span>
+							<div class="metric-data">
+								<span class="metric-value">{$systemStatus.metrics.memory}%</span>
+								<span class="metric-label">Memory</span>
+							</div>
+						</div>
+						<div class="metric-item">
+							<span class="metric-icon">⚡</span>
+							<div class="metric-data">
+								<span class="metric-value">{$systemStatus.metrics.uptime}%</span>
+								<span class="metric-label">Uptime</span>
+							</div>
+						</div>
 						{#if $systemStatus.metrics.errors > 0}
-							<span class="metric metric-error" title="Errors">
-								⚠️ {$systemStatus.metrics.errors}
-							</span>
+							<div class="metric-item metric-error">
+								<span class="metric-icon">⚠️</span>
+								<div class="metric-data">
+									<span class="metric-value">{$systemStatus.metrics.errors}</span>
+									<span class="metric-label">Errors</span>
+								</div>
+							</div>
 						{/if}
 					</div>
-					<span class="user-info">Welcome, {$adminEmail}</span>
-					<button on:click={handleLogout} class="logout-btn">
-						Logout
-					</button>
+					
+					<!-- User Menu -->
+					<div class="user-menu">
+						<div class="user-info">
+							<span class="user-avatar">👤</span>
+							<div class="user-details">
+								<span class="user-name">{$adminEmail.split('@')[0]}</span>
+								<span class="user-role">Administrator</span>
+							</div>
+						</div>
+						<button on:click={handleLogout} class="logout-button">
+							<span class="logout-icon">🚪</span>
+							<span class="logout-text">Logout</span>
+						</button>
+					</div>
 				</div>
 			</div>
 		</nav>
 
 		<!-- Main Content -->
-		<main class="admin-main">
-			<slot />
+		<main class="admin-main-2025">
+			{#if mounted}
+				<div in:fade={{ duration: 300 }}>
+					<slot />
+				</div>
+			{/if}
 		</main>
 	</div>
 {:else}
-	<!-- Login Form -->
-	<div class="min-h-screen bg-gray-100 flex items-center justify-center">
-		<div class="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-			<h2 class="text-2xl font-bold text-center text-gray-900 mb-6">
-				🔐 Admin Login
-			</h2>
-			
-			<form on:submit|preventDefault={handleLogin} class="space-y-4">
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700">
-						Email
-					</label>
-					<input
-						type="email"
-						id="email"
-						bind:value={email}
-						class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-						placeholder="your.email@example.com"
-						required
-					/>
-				</div>
-				
-				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700">
-						Password
-					</label>
-					<input
-						type="password"
-						id="password"
-						bind:value={password}
-						class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-						placeholder="Enter password"
-						required
-					/>
-				</div>
-				
-				{#if loginError}
-					<div class="text-red-600 text-sm">
-						Invalid email or password. Make sure your email is authorized.
-					</div>
-				{/if}
-				
-				<button type="submit" class="w-full btn-primary">
-					Login
-				</button>
-			</form>
-			
-			<div class="mt-4 text-center">
-				<a href="/" class="text-sm text-gray-600 hover:text-gray-900">
-					← Back to homepage
-				</a>
-			</div>
+	<!-- Login Form 2025 -->
+	<div class="login-2025">
+		<!-- Animated Background -->
+		<div class="login-bg">
+			<div class="bg-orb orb-1" style="transform: translate({$mouseX}px, {$mouseY}px)"></div>
+			<div class="bg-orb orb-2" style="transform: translate({-$mouseX * 0.5}px, {-$mouseY * 0.5}px)"></div>
+			<div class="bg-mesh"></div>
 		</div>
+		
+		{#if mounted}
+			<div class="login-container" in:scale={{ duration: 600 }}>
+				<!-- Logo Section -->
+				<div class="login-header" in:fly={{ y: -20, duration: 600, delay: 200 }}>
+					<div class="login-logo">
+						<span class="logo-icon">🔐</span>
+					</div>
+					<h1 class="login-title">Admin Access</h1>
+					<p class="login-subtitle">Enter your credentials to continue</p>
+				</div>
+				
+				<!-- Login Form -->
+				<form on:submit|preventDefault={handleLogin} class="login-form" in:fade={{ duration: 600, delay: 400 }}>
+					<!-- Email Field -->
+					<div class="form-field">
+						<label for="email" class="field-label">Email</label>
+						<div class="field-wrapper">
+							<span class="field-icon">📧</span>
+							<input
+								type="email"
+								id="email"
+								bind:value={email}
+								class="field-input"
+								placeholder="admin@example.com"
+								required
+								disabled={loginLoading}
+							/>
+						</div>
+					</div>
+					
+					<!-- Password Field -->
+					<div class="form-field">
+						<label for="password" class="field-label">Password</label>
+						<div class="field-wrapper">
+							<span class="field-icon">🔑</span>
+							<input
+								type="password"
+								id="password"
+								bind:value={password}
+								class="field-input"
+								placeholder="••••••••"
+								required
+								disabled={loginLoading}
+							/>
+						</div>
+					</div>
+					
+					<!-- Error Message -->
+					{#if loginError}
+						<div class="error-box" in:fly={{ y: -10, duration: 300 }}>
+							<span class="error-icon">❌</span>
+							<span class="error-text">Invalid credentials. Please try again.</span>
+						</div>
+					{/if}
+					
+					<!-- Submit Button -->
+					<button 
+						type="submit" 
+						class="login-button"
+						class:loading={loginLoading}
+						disabled={loginLoading}
+					>
+						{#if loginLoading}
+							<span class="button-spinner"></span>
+							<span>Authenticating...</span>
+						{:else}
+							<span>Sign In</span>
+							<span class="button-arrow">→</span>
+						{/if}
+					</button>
+				</form>
+				
+				<!-- Footer Links -->
+				<div class="login-footer" in:fade={{ duration: 600, delay: 600 }}>
+					<a href="/" class="footer-link">
+						<span>←</span>
+						<span>Back to Homepage</span>
+					</a>
+					<span class="footer-divider">•</span>
+					<a href="#" class="footer-link">
+						<span>Need Help?</span>
+					</a>
+				</div>
+			</div>
+		{/if}
 	</div>
 {/if}
 
 <style>
-	/* Admin Layout */
-	.admin-layout {
+	/* Admin 2025 Layout */
+	.admin-2025 {
+		min-height: 100vh;
 		position: relative;
-		background: var(--color-background-primary);
 		overflow: hidden;
+		background: #0a0a0a;
 	}
 	
-	/* Ambient Status Background */
-	.ambient-status {
+	/* Animated Background */
+	.admin-bg,
+	.login-bg {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+	}
+	
+	.bg-orb {
+		position: absolute;
+		border-radius: 50%;
+		filter: blur(100px);
+		opacity: 0.3;
+		transition: transform 0.3s ease;
+	}
+	
+	.orb-1 {
+		width: 600px;
+		height: 600px;
+		background: radial-gradient(circle, #007AFF 0%, transparent 70%);
+		top: -200px;
+		right: -200px;
+	}
+	
+	.orb-2 {
+		width: 500px;
+		height: 500px;
+		background: radial-gradient(circle, #00D4FF 0%, transparent 70%);
+		bottom: -200px;
+		left: -200px;
+	}
+	
+	.bg-grid {
+		position: absolute;
+		inset: 0;
+		background-image: 
+			linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+		background-size: 50px 50px;
+		opacity: 0.5;
+	}
+	
+	.bg-mesh {
+		position: absolute;
+		inset: 0;
+		background-image: 
+			radial-gradient(at 20% 80%, hsla(210, 100%, 56%, 0.3) 0px, transparent 50%),
+			radial-gradient(at 80% 20%, hsla(189, 100%, 56%, 0.3) 0px, transparent 50%);
+		opacity: 0.5;
+	}
+	
+	/* Status Glow */
+	.status-glow {
 		position: fixed;
 		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		pointer-events: none;
-		z-index: 0;
-		opacity: 0.3;
-		transition: all var(--duration-slow);
-	}
-	
-	.ambient-gradient {
-		position: absolute;
-		top: -50%;
-		right: -25%;
-		width: 100%;
-		height: 100%;
-		background: radial-gradient(
-			ellipse at center,
-			var(--ambient-color) 0%,
-			transparent 70%
-		);
+		left: 50%;
+		transform: translateX(-50%);
+		width: 200%;
+		height: 200px;
+		background: radial-gradient(ellipse at center top, var(--status-color, #51CF66) 0%, transparent 70%);
+		opacity: 0.2;
 		filter: blur(100px);
-		transform: rotate(-15deg);
+		pointer-events: none;
+		z-index: 1;
 	}
 	
-	.ambient-particles {
+	.pulse-warning {
+		animation: pulse-glow 3s ease-in-out infinite;
+	}
+	
+	.pulse-error {
+		animation: pulse-glow 2s ease-in-out infinite;
+	}
+	
+	.pulse-critical {
+		animation: pulse-glow-critical 1s ease-in-out infinite;
+	}
+	
+	@keyframes pulse-glow {
+		0%, 100% { opacity: 0.2; transform: translateX(-50%) scale(1); }
+		50% { opacity: 0.4; transform: translateX(-50%) scale(1.1); }
+	}
+	
+	@keyframes pulse-glow-critical {
+		0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); }
+		25% { opacity: 0.6; transform: translateX(-50%) scale(1.2); }
+		50% { opacity: 0.3; transform: translateX(-50%) scale(1); }
+		75% { opacity: 0.6; transform: translateX(-50%) scale(1.2); }
+	}
+	
+	/* Navigation 2025 */
+	.admin-nav-2025 {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		height: 80px;
+	}
+	
+	.nav-blur {
 		position: absolute;
-		bottom: -50%;
-		left: -25%;
-		width: 100%;
-		height: 100%;
-		background: radial-gradient(
-			ellipse at center,
-			var(--ambient-color) 0%,
-			transparent 60%
-		);
-		filter: blur(120px);
-		transform: rotate(15deg);
-	}
-	
-	/* Pulse Animations */
-	@keyframes pulse-normal {
-		0%, 100% { opacity: 0.3; }
-		50% { opacity: 0.4; }
-	}
-	
-	@keyframes pulse-warning {
-		0%, 100% { opacity: 0.4; transform: scale(1); }
-		50% { opacity: 0.6; transform: scale(1.05); }
-	}
-	
-	@keyframes pulse-error {
-		0%, 100% { opacity: 0.5; transform: scale(1); }
-		50% { opacity: 0.7; transform: scale(1.1); }
-	}
-	
-	@keyframes pulse-critical {
-		0%, 100% { opacity: 0.6; transform: scale(1); }
-		25% { opacity: 0.8; transform: scale(1.15); }
-		50% { opacity: 0.6; transform: scale(1); }
-		75% { opacity: 0.8; transform: scale(1.15); }
-	}
-	
-	.pulse-normal { animation: pulse-normal 4s ease-in-out infinite; }
-	.pulse-warning { animation: pulse-warning 3s ease-in-out infinite; }
-	.pulse-error { animation: pulse-error 2s ease-in-out infinite; }
-	.pulse-critical { animation: pulse-critical 1s ease-in-out infinite; }
-	
-	/* Navigation */
-	.admin-nav {
-		position: relative;
-		z-index: 10;
-		background: var(--color-background-primary);
-		border-bottom: 1px solid var(--color-border-secondary);
-		box-shadow: var(--shadow-subtle);
+		inset: 0;
+		background: rgba(10, 10, 10, 0.8);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 	}
 	
 	.nav-container {
-		max-width: 90rem;
+		position: relative;
+		max-width: 1600px;
 		margin: 0 auto;
-		padding: 0 1.5rem;
-		height: 4rem;
+		padding: 0 2rem;
+		height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -306,169 +444,497 @@
 	.nav-right {
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
+		gap: 2rem;
 	}
 	
-	.back-link {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--color-text-secondary);
-		text-decoration: none;
-		font-size: 0.875rem;
-		transition: all var(--duration-fast);
-	}
-	
-	.back-link:hover {
-		color: var(--color-text-primary);
-		transform: translateX(-2px);
-	}
-	
-	.back-arrow {
-		font-size: 1.125rem;
-		transition: transform var(--duration-fast);
-	}
-	
-	.back-link:hover .back-arrow {
-		transform: translateX(-2px);
-	}
-	
-	.nav-title {
+	/* Back Button */
+	.back-button {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		padding: 0.75rem 1.5rem;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 12px;
+		color: rgba(255, 255, 255, 0.7);
+		text-decoration: none;
+		font-weight: 500;
+		transition: all 0.3s ease;
+	}
+	
+	.back-button:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
+		transform: translateX(-4px);
+	}
+	
+	.back-icon {
 		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--color-text-primary);
+		transition: transform 0.3s ease;
 	}
 	
-	.nav-icon {
+	.back-button:hover .back-icon {
+		transform: translateX(-4px);
+	}
+	
+	.nav-divider {
+		width: 1px;
+		height: 40px;
+		background: rgba(255, 255, 255, 0.1);
+	}
+	
+	/* Brand */
+	.nav-brand {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	
+	.brand-icon {
+		font-size: 2.5rem;
+		animation: float-gentle 4s ease-in-out infinite;
+	}
+	
+	@keyframes float-gentle {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-4px); }
+	}
+	
+	.brand-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	
+	.brand-title {
 		font-size: 1.5rem;
+		font-weight: 800;
+		color: white;
+		letter-spacing: -0.02em;
 	}
 	
-	/* Status Indicator */
-	.status-indicator {
-		width: 0.5rem;
-		height: 0.5rem;
-		border-radius: var(--radius-full);
-		background: var(--color-success-base);
-		box-shadow: 0 0 0 2px var(--color-success-subtle);
-		transition: all var(--duration-fast);
+	.brand-status {
+		font-size: 0.875rem;
+		color: rgba(255, 255, 255, 0.6);
+		text-transform: capitalize;
 	}
 	
-	.status-indicator.status-warning {
-		background: var(--color-warning-base);
-		box-shadow: 0 0 0 2px var(--color-warning-subtle);
+	.brand-status.status-warning {
+		color: #FFD93D;
 	}
 	
-	.status-indicator.status-error {
-		background: var(--color-error-base);
-		box-shadow: 0 0 0 2px var(--color-error-subtle);
+	.brand-status.status-error {
+		color: #FF6B6B;
 	}
 	
-	.status-indicator.status-critical {
-		background: var(--color-error-base);
-		box-shadow: 0 0 0 2px var(--color-error-subtle);
-		animation: blink 0.5s ease-in-out infinite;
+	.brand-status.status-critical {
+		color: #FF3737;
+		font-weight: 600;
+		animation: blink 1s ease-in-out infinite;
 	}
 	
 	@keyframes blink {
 		0%, 100% { opacity: 1; }
-		50% { opacity: 0.3; }
+		50% { opacity: 0.5; }
 	}
 	
-	/* Status Metrics */
-	.status-metrics {
+	/* Live Metrics */
+	.live-metrics {
 		display: flex;
-		align-items: center;
 		gap: 1rem;
-		padding: 0.5rem 1rem;
-		background: var(--color-background-secondary);
-		border-radius: var(--radius-full);
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-text-secondary);
+		padding: 0.75rem 1.25rem;
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 16px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 	
-	.metric {
+	.metric-item {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
+		gap: 0.75rem;
+		padding: 0 1rem;
+		border-right: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	
+	.metric-item:last-child {
+		border-right: none;
+		padding-right: 0;
+	}
+	
+	.metric-icon {
+		font-size: 1.5rem;
+		opacity: 0.8;
+	}
+	
+	.metric-data {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+	}
+	
+	.metric-value {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: white;
 		font-variant-numeric: tabular-nums;
-		cursor: help;
-		transition: color var(--duration-fast);
 	}
 	
-	.metric:hover {
-		color: var(--color-text-primary);
+	.metric-label {
+		font-size: 0.75rem;
+		color: rgba(255, 255, 255, 0.5);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 	
-	.metric-error {
-		color: var(--color-error);
+	.metric-error .metric-value {
+		color: #FF6B6B;
+	}
+	
+	/* User Menu */
+	.user-menu {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
 	}
 	
 	.user-info {
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-	}
-	
-	.logout-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
 		padding: 0.5rem 1rem;
-		background: var(--color-background-secondary);
-		border: 1px solid var(--color-border-secondary);
-		border-radius: var(--radius-sm);
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-text-primary);
-		cursor: pointer;
-		transition: all var(--duration-fast);
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 	
-	.logout-btn:hover {
-		background: var(--color-background-tertiary);
-		border-color: var(--color-border-primary);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-subtle);
+	.user-avatar {
+		font-size: 1.75rem;
+		opacity: 0.8;
+	}
+	
+	.user-details {
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.user-name {
+		font-weight: 600;
+		color: white;
+		font-size: 0.875rem;
+	}
+	
+	.user-role {
+		font-size: 0.75rem;
+		color: rgba(255, 255, 255, 0.5);
+	}
+	
+	.logout-button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.25rem;
+		background: rgba(255, 71, 87, 0.1);
+		border: 1px solid rgba(255, 71, 87, 0.2);
+		border-radius: 12px;
+		color: #FF4757;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+	
+	.logout-button:hover {
+		background: rgba(255, 71, 87, 0.2);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 20px rgba(255, 71, 87, 0.2);
+	}
+	
+	.logout-icon {
+		font-size: 1rem;
 	}
 	
 	/* Main Content */
-	.admin-main {
+	.admin-main-2025 {
 		position: relative;
-		z-index: 5;
-		max-width: 90rem;
+		z-index: 10;
+		max-width: 1600px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem;
-		min-height: calc(100vh - 4rem);
+		padding: 2rem;
+		min-height: calc(100vh - 80px);
+	}
+	
+	/* Login 2025 */
+	.login-2025 {
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		position: relative;
+		background: #0a0a0a;
+		overflow: hidden;
+	}
+	
+	.login-container {
+		position: relative;
+		z-index: 10;
+		width: 100%;
+		max-width: 420px;
+		background: rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 24px;
+		padding: 3rem;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+	}
+	
+	/* Login Header */
+	.login-header {
+		text-align: center;
+		margin-bottom: 2.5rem;
+	}
+	
+	.login-logo {
+		width: 80px;
+		height: 80px;
+		margin: 0 auto 1.5rem;
+		background: linear-gradient(135deg, #007AFF, #0051D5);
+		border-radius: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);
+		animation: float-gentle 4s ease-in-out infinite;
+	}
+	
+	.logo-icon {
+		font-size: 3rem;
+	}
+	
+	.login-title {
+		font-size: 2rem;
+		font-weight: 800;
+		color: white;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	
+	.login-subtitle {
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 1rem;
+	}
+	
+	/* Login Form */
+	.login-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	
+	.field-label {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.8);
+		margin-left: 0.25rem;
+	}
+	
+	.field-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	
+	.field-icon {
+		position: absolute;
+		left: 1rem;
+		font-size: 1.25rem;
+		opacity: 0.6;
+		pointer-events: none;
+	}
+	
+	.field-input {
+		width: 100%;
+		padding: 0.875rem 1rem 0.875rem 3rem;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 12px;
+		color: white;
+		font-size: 1rem;
+		transition: all 0.3s ease;
+	}
+	
+	.field-input::placeholder {
+		color: rgba(255, 255, 255, 0.3);
+	}
+	
+	.field-input:focus {
+		outline: none;
+		border-color: #007AFF;
+		background: rgba(255, 255, 255, 0.08);
+		box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+	}
+	
+	.field-input:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	/* Error Box */
+	.error-box {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem;
+		background: rgba(255, 71, 87, 0.1);
+		border: 1px solid rgba(255, 71, 87, 0.2);
+		border-radius: 12px;
+		color: #FF4757;
+		font-size: 0.875rem;
+	}
+	
+	.error-icon {
+		font-size: 1.25rem;
+		flex-shrink: 0;
+	}
+	
+	/* Login Button */
+	.login-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 1rem 2rem;
+		background: linear-gradient(135deg, #007AFF, #0051D5);
+		border: none;
+		border-radius: 12px;
+		color: white;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+		margin-top: 0.5rem;
+	}
+	
+	.login-button:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 30px rgba(0, 122, 255, 0.4);
+	}
+	
+	.login-button:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+	
+	.login-button.loading {
+		pointer-events: none;
+	}
+	
+	.button-spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+	
+	.button-arrow {
+		transition: transform 0.3s ease;
+	}
+	
+	.login-button:hover:not(:disabled) .button-arrow {
+		transform: translateX(4px);
+	}
+	
+	/* Login Footer */
+	.login-footer {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		margin-top: 2rem;
+		font-size: 0.875rem;
+	}
+	
+	.footer-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: rgba(255, 255, 255, 0.6);
+		text-decoration: none;
+		transition: color 0.3s ease;
+	}
+	
+	.footer-link:hover {
+		color: white;
+	}
+	
+	.footer-divider {
+		color: rgba(255, 255, 255, 0.3);
 	}
 	
 	/* Responsive */
-	@media (max-width: 1024px) {
-		.nav-container {
-			padding: 0 1rem;
-		}
-		
-		.status-metrics {
+	@media (max-width: 1200px) {
+		.live-metrics {
 			display: none;
 		}
 	}
 	
 	@media (max-width: 768px) {
-		.nav-left,
-		.nav-right {
+		.admin-nav-2025 {
+			height: 60px;
+		}
+		
+		.nav-container {
+			padding: 0 1rem;
+		}
+		
+		.nav-brand {
 			gap: 0.75rem;
 		}
 		
-		.nav-title .nav-text {
-			display: none;
+		.brand-icon {
+			font-size: 2rem;
+		}
+		
+		.brand-title {
+			font-size: 1.125rem;
+		}
+		
+		.brand-status {
+			font-size: 0.75rem;
 		}
 		
 		.user-info {
+			padding: 0.5rem;
+		}
+		
+		.user-details {
 			display: none;
 		}
 		
-		.ambient-gradient,
-		.ambient-particles {
-			filter: blur(60px);
+		.logout-text {
+			display: none;
+		}
+		
+		.login-container {
+			padding: 2rem;
+		}
+		
+		.admin-main-2025 {
+			padding: 1rem;
+			min-height: calc(100vh - 60px);
 		}
 	}
 </style> 
