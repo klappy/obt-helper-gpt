@@ -1,0 +1,295 @@
+/**
+ * User Management Endpoints
+ * 
+ * Handles user registration, login, and profile management
+ * 
+ * Routes:
+ * - POST /api/users - Register new user
+ * - POST /api/users/login - Login
+ * - GET /api/users/{userId} - Get user profile
+ * - PUT /api/users/{userId} - Update user profile
+ */
+
+import {
+  getUserBlob,
+  saveUserBlob,
+  deleteUserBlob,
+} from "../../src/lib/utils/blob-storage.js";
+import {
+  hashPassword,
+  verifyPassword,
+  generateToken,
+  verifyToken,
+  generateUserId,
+} from "../../src/lib/utils/auth.js";
+
+// Helper to create response
+function createResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    },
+  });
+}
+
+// Helper to extract userId from path
+function getUserIdFromPath(pathname) {
+  const match = pathname.match(/\/api\/users\/([^\/]+)/);
+  return match ? match[1] : null;
+}
+
+// Helper to get auth token from headers
+function getAuthToken(request) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return authHeader.substring(7);
+}
+
+// Helper to verify auth and get user
+async function verifyAuth(request) {
+  const token = getAuthToken(request);
+  if (!token) {
+    return { authenticated: false, error: "No token provided" };
+  }
+  
+  const { verifyToken } = await import("../../src/lib/utils/auth.js");
+  const payload = verifyToken(token);
+  if (!payload) {
+    return { authenticated: false, error: "Invalid token" };
+  }
+  
+  return { authenticated: true, userId: payload.userId, email: payload.email };
+}
+
+export const handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === "OPTIONS") {
+    return createResponse({}, 200);
+  }
+
+  const { httpMethod, path, pathParameters, queryStringParameters, body } = event;
+  const pathname = path || event.path || "";
+
+  try {
+    // POST /api/users - Register new user
+    if (httpMethod === "POST" && pathname === "/api/users" && !queryStringParameters?.action) {
+      const data = JSON.parse(body || "{}");
+      const { email, password } = data;
+
+      if (!email || !password) {
+        return createResponse(
+          { error: "Email and password are required" },
+          400
+        );
+      }
+
+      // Check if user already exists (simple check by email)
+      // In production, you'd want to maintain an email index
+      // For now, we'll use a simple lookup pattern
+      // This is a limitation - we'll need to scan or use email as part of ID
+      
+      // For workshop, use email-based userId
+      const userId = `user_${Buffer.from(email.toLowerCase()).toString("base64url").substring(0, 20)}`;
+      
+      // Check if user exists
+      const existingUser = await getUserBlob(userId);
+      if (existingUser && existingUser.email.toLowerCase() === email.toLowerCase()) {
+        return createResponse(
+          { error: "User already exists" },
+          409
+        );
+      }
+
+      // Create new user
+      const userData = {
+        id: userId,
+        email: email.toLowerCase(),
+        passwordHash: hashPassword(password),
+        createdAt: new Date().toISOString(),
+        lastLoginAt: null,
+        preferences: {
+          theme: "light",
+          defaultModel: "gpt-4o-mini",
+        },
+      };
+
+      await saveUserBlob(userId, userData);
+
+      // Generate token
+      const token = generateToken(userId, email);
+
+      return createResponse(
+        {
+          success: true,
+          user: {
+            id: userData.id,
+            email: userData.email,
+            createdAt: userData.createdAt,
+          },
+          token,
+        },
+        201
+      );
+    }
+
+    // POST /api/users/login - Login
+    if (httpMethod === "POST" && pathname === "/api/users" && queryStringParameters?.action === "login") {
+      const data = JSON.parse(body || "{}");
+      const { email, password } = data;
+
+      if (!email || !password) {
+        return createResponse(
+          { error: "Email and password are required" },
+          400
+        );
+      }
+
+      // For workshop, use email-based userId lookup
+      const userId = `user_${Buffer.from(email.toLowerCase()).toString("base64url").substring(0, 20)}`;
+      const user = await getUserBlob(userId);
+
+      if (!user || user.email.toLowerCase() !== email.toLowerCase()) {
+        return createResponse(
+          { error: "Invalid email or password" },
+          401
+        );
+      }
+
+      if (!verifyPassword(password, user.passwordHash)) {
+        return createResponse(
+          { error: "Invalid email or password" },
+          401
+        );
+      }
+
+      // Update last login
+      user.lastLoginAt = new Date().toISOString();
+      await saveUserBlob(userId, user);
+
+      // Generate token
+      const token = generateToken(userId, email);
+
+      return createResponse({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+        },
+        token,
+      });
+    }
+
+    // GET /api/users/{userId} - Get user profile
+    if (httpMethod === "GET") {
+      const userId = pathParameters?.userId || getUserIdFromPath(pathname);
+      
+      if (!userId) {
+        return createResponse(
+          { error: "User ID is required" },
+          400
+        );
+      }
+
+      // Verify auth
+      const auth = await verifyAuth({ headers: event.headers });
+      if (!auth.authenticated || auth.userId !== userId) {
+        return createResponse(
+          { error: "Unauthorized" },
+          401
+        );
+      }
+
+      const user = await getUserBlob(userId);
+      if (!user) {
+        return createResponse(
+          { error: "User not found" },
+          404
+        );
+      }
+
+      // Return user without password hash
+      return createResponse({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+          preferences: user.preferences,
+        },
+      });
+    }
+
+    // PUT /api/users/{userId} - Update user profile
+    if (httpMethod === "PUT") {
+      const userId = pathParameters?.userId || getUserIdFromPath(pathname);
+      
+      if (!userId) {
+        return createResponse(
+          { error: "User ID is required" },
+          400
+        );
+      }
+
+      // Verify auth
+      const auth = await verifyAuth({ headers: event.headers });
+      if (!auth.authenticated || auth.userId !== userId) {
+        return createResponse(
+          { error: "Unauthorized" },
+          401
+        );
+      }
+
+      const user = await getUserBlob(userId);
+      if (!user) {
+        return createResponse(
+          { error: "User not found" },
+          404
+        );
+      }
+
+      const data = JSON.parse(body || "{}");
+      const { preferences } = data;
+
+      // Update preferences if provided
+      if (preferences) {
+        user.preferences = { ...user.preferences, ...preferences };
+      }
+
+      await saveUserBlob(userId, user);
+
+      return createResponse({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+          preferences: user.preferences,
+        },
+      });
+    }
+
+    return createResponse(
+      { error: "Method not allowed" },
+      405
+    );
+  } catch (error) {
+    console.error("User endpoint error:", error);
+    return createResponse(
+      {
+        error: "Internal server error",
+        details: error.message,
+      },
+      500
+    );
+  }
+};

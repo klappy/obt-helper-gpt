@@ -6,6 +6,14 @@ import {
   withRateLimit,
   getClientIdentifier,
 } from "../../src/lib/utils/rate-limiter.js";
+import {
+  getConversationBlob,
+  saveConversationBlob,
+} from "../../src/lib/utils/blob-storage.js";
+import {
+  verifyToken,
+  generateConversationId,
+} from "../../src/lib/utils/auth.js";
 
 // Storage instances
 function getSessionStore() {
@@ -96,7 +104,7 @@ export default async (req, context) => {
   try {
     // Handle both string and stream body
     const bodyText = typeof req.body === "string" ? req.body : await req.text();
-    const { messages, tool, sessionId } = JSON.parse(bodyText);
+    const { messages, tool, sessionId, userId, conversationId, helperId } = JSON.parse(bodyText);
 
     // Apply rate limiting
     const clientId = getClientIdentifier(req, sessionId);
@@ -150,6 +158,83 @@ export default async (req, context) => {
     const aiResponse = aiData.choices[0].message.content;
     const userMessage = messages[messages.length - 1].content;
 
+    // Save conversation if userId and helperId provided
+    let savedConversationId = conversationId;
+    if (userId && helperId) {
+      try {
+        // Verify auth token if provided
+        const authHeader = req.headers.get?.("Authorization") || req.headers?.authorization;
+        let authenticated = false;
+        
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.substring(7);
+          const payload = verifyToken(token);
+          if (payload && payload.userId === userId) {
+            authenticated = true;
+          }
+        }
+
+        if (authenticated) {
+          // Get or create conversation
+          let conversation;
+          let convId = conversationId;
+
+          if (convId) {
+            conversation = await getConversationBlob(userId, convId);
+            if (!conversation || conversation.userId !== userId) {
+              conversation = null; // Create new if invalid
+              convId = null;
+            }
+          }
+
+          if (!conversation) {
+            // Create new conversation
+            convId = convId || generateConversationId();
+            const now = new Date().toISOString();
+            conversation = {
+              id: convId,
+              userId,
+              helperId,
+              messages: [],
+              createdAt: now,
+              updatedAt: now,
+              messageCount: 0,
+              title: "New Conversation",
+            };
+          }
+
+          // Add new messages
+          const userMsg = {
+            role: "user",
+            content: userMessage,
+            timestamp: new Date().toISOString(),
+          };
+
+          const assistantMsg = {
+            role: "assistant",
+            content: aiResponse,
+            timestamp: new Date().toISOString(),
+          };
+
+          conversation.messages.push(userMsg, assistantMsg);
+          conversation.messageCount = conversation.messages.length;
+          conversation.updatedAt = new Date().toISOString();
+
+          // Auto-generate title from first user message if still "New Conversation"
+          if (conversation.title === "New Conversation" && conversation.messages.length === 2) {
+            conversation.title = userMessage.substring(0, 50).trim() || "New Conversation";
+          }
+
+          // Save conversation
+          await saveConversationBlob(userId, convId, conversation);
+          savedConversationId = convId;
+        }
+      } catch (error) {
+        // Log error but don't fail the chat request
+        console.error("Error saving conversation:", error);
+      }
+    }
+
     // Check for linked WhatsApp session and mirror if found
     if (sessionId) {
       const linkedSession = await getLinkedSession(sessionId);
@@ -159,8 +244,13 @@ export default async (req, context) => {
       }
     }
 
-    // Return the AI response with rate limit headers
-    return new Response(JSON.stringify(aiData), {
+    // Return the AI response with rate limit headers and conversation ID
+    const responseData = {
+      ...aiData,
+      conversationId: savedConversationId, // Include conversation ID in response
+    };
+
+    return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
