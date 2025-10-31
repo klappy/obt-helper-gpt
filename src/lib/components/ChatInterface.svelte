@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { messages, isRecalling } from '$lib/stores/chat.js';
+	import { currentUser, getAuthToken } from '$lib/stores/user-auth.js';
 	import VoiceControls from './VoiceControls.svelte';
 
 	export let tool;
@@ -12,6 +13,11 @@
 	let apiKey = '';
 	let voiceEnabled = false;
 	let interimTranscript = '';
+	
+	// Conversation tracking
+	let user = null;
+	let conversationId = null;
+	let helperId = null;
 
 	// WhatsApp linking variables
 	let showLinkingForm = false;
@@ -43,6 +49,15 @@
 	onMount(() => {
 		// No need for client-side API key - using serverless functions
 		
+		// Get current user and helper info for conversation saving
+		const unsubscribeUser = currentUser.subscribe((value) => {
+			user = value;
+			// Set helperId from tool if it's a user helper
+			if (tool && tool.id && tool.id.startsWith('helper_')) {
+				helperId = tool.id;
+			}
+		});
+		
 		// Add welcome message
 		messages.update(msgs => [...msgs, {
 			id: 0,
@@ -68,7 +83,7 @@
 		}
 		
 		// Save on message changes
-		const unsubscribe = messages.subscribe(saveChatSession);
+		const unsubscribeMessages = messages.subscribe(saveChatSession);
 		
 		// Check online status and show indicators
 		let isOnline = navigator.onLine;
@@ -90,7 +105,8 @@
 		window.addEventListener("offline", updateOnlineStatus);
 		
 		return () => {
-			unsubscribe();
+			unsubscribeUser();
+			unsubscribeMessages();
 			window.removeEventListener("online", updateOnlineStatus);
 			window.removeEventListener("offline", updateOnlineStatus);
 		};
@@ -298,13 +314,22 @@
 
 		try {
 			// Use chat function for bidirectional mirroring
+			const token = user ? getAuthToken() : null;
+			const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+			
 			const response = await fetch('/.netlify/functions/chat', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers,
 				body: JSON.stringify({
 					messages,
 					tool,
-					sessionId: currentSessionId
+					sessionId: currentSessionId,
+					userId: user?.id || null,
+					conversationId: conversationId || null,
+					helperId: helperId || tool?.id || null
 					// No API key needed - server has it
 				})
 			});
@@ -312,6 +337,11 @@
 			// Parse the response (non-streaming)
 			const data = await response.json();
 			const aiContent = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+			
+			// Save conversationId if returned
+			if (data.conversationId && !conversationId) {
+				conversationId = data.conversationId;
+			}
 			
 			// Issue 3.2.3: Update cost tracking with usage data
 			if (data.usage) {
