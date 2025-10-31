@@ -9,6 +9,11 @@
   let error = "";
   let loading = false;
   let isAuth = false;
+  
+  // Field-specific errors
+  let emailError = "";
+  let passwordError = "";
+  let confirmPasswordError = "";
 
   // Check if already authenticated
   onMount(() => {
@@ -21,19 +26,53 @@
     return unsubscribe;
   });
 
+  function validateEmail(email) {
+    if (!email) {
+      return "Email is required.";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address.";
+    }
+    return "";
+  }
+
+  function validatePassword(password) {
+    if (!password) {
+      return "Password is required.";
+    }
+    if (password.length < 6) {
+      return "Password must be at least 6 characters.";
+    }
+    return "";
+  }
+
+  function validateConfirmPassword(confirmPassword, password) {
+    if (!confirmPassword) {
+      return "Please confirm your password.";
+    }
+    if (confirmPassword !== password) {
+      return "Passwords do not match.";
+    }
+    return "";
+  }
+
   async function handleRegister(e) {
     e.preventDefault();
+    
+    // Clear all errors
     error = "";
+    emailError = "";
+    passwordError = "";
+    confirmPasswordError = "";
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      error = "Passwords do not match.";
-      return;
-    }
+    // Validate each field
+    emailError = validateEmail(email);
+    passwordError = validatePassword(password);
+    confirmPasswordError = validateConfirmPassword(confirmPassword, password);
 
-    // Validate password length
-    if (password.length < 6) {
-      error = "Password must be at least 6 characters.";
+    // If any field has an error, stop
+    if (emailError || passwordError || confirmPasswordError) {
       return;
     }
 
@@ -60,20 +99,24 @@
       </div>
     {/if}
 
-    <form on:submit={handleRegister} class="space-y-6">
+    <form on:submit={handleRegister} novalidate class="space-y-6">
       <div>
         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
           Email
         </label>
         <input
           id="email"
-          type="email"
+          type="text"
           bind:value={email}
-          required
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {emailError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="your@email.com"
           disabled={loading}
         />
+        {#if emailError}
+          <p class="mt-1 text-xs text-red-600">{emailError}</p>
+        {:else}
+          <p class="mt-1 text-xs text-gray-500">Enter your email address</p>
+        {/if}
       </div>
 
       <div>
@@ -84,13 +127,15 @@
           id="password"
           type="password"
           bind:value={password}
-          required
-          minlength="6"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {passwordError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="????????"
           disabled={loading}
         />
-        <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+        {#if passwordError}
+          <p class="mt-1 text-xs text-red-600">{passwordError}</p>
+        {:else}
+          <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+        {/if}
       </div>
 
       <div>
@@ -101,12 +146,15 @@
           id="confirmPassword"
           type="password"
           bind:value={confirmPassword}
-          required
-          minlength="6"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {confirmPasswordError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="????????"
           disabled={loading}
         />
+        {#if confirmPasswordError}
+          <p class="mt-1 text-xs text-red-600">{confirmPasswordError}</p>
+        {:else}
+          <p class="mt-1 text-xs text-gray-500">Re-enter your password</p>
+        {/if}
       </div>
 
       <button
