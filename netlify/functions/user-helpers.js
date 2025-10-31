@@ -18,6 +18,8 @@ import {
   saveHelperBlob,
   deleteHelperBlob,
   listUserHelpers,
+  addToPublishedHelpersIndex,
+  removeFromPublishedHelpersIndex,
 } from "../../src/lib/utils/blob-storage.js";
 import {
   verifyToken,
@@ -304,6 +306,9 @@ export const handler = async (event, context) => {
 
       await saveHelperBlob(userId, helperId, updatedHelper);
 
+      // Update published helpers index
+      await addToPublishedHelpersIndex(updatedHelper);
+
       return createResponse({
         success: true,
         helper: updatedHelper,
@@ -337,6 +342,9 @@ export const handler = async (event, context) => {
       };
 
       await saveHelperBlob(userId, helperId, updatedHelper);
+
+      // Remove from published helpers index
+      await removeFromPublishedHelpersIndex(helperId);
 
       return createResponse({
         success: true,

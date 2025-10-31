@@ -237,6 +237,278 @@ export async function listUserHelpers(userId) {
 }
 
 /**
+ * List ALL helpers across all users (for published helpers listing)
+ * Anti-fragile: Dynamically scans all helper blobs
+ */
+export async function listAllHelpers() {
+  const prefix = `helpers/`;
+  
+  if (isLocalDevelopment()) {
+    const baseDir = join(LOCAL_STORAGE_BASE, "helpers");
+    try {
+      const userDirs = await fs.readdir(baseDir);
+      const allHelpers = [];
+      for (const userDir of userDirs) {
+        const userPath = join(baseDir, userDir);
+        const stats = await fs.stat(userPath);
+        if (stats.isDirectory()) {
+          const files = await fs.readdir(userPath);
+          for (const file of files) {
+            if (file.endsWith(".json")) {
+              const helperId = file.replace(".json", "");
+              const helper = await getHelperBlob(userDir, helperId);
+              if (helper) {
+                allHelpers.push(helper);
+              }
+            }
+          }
+        }
+      }
+      return allHelpers;
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        return [];
+      }
+      throw error;
+    }
+  }
+  
+  const store = getHelperStore();
+  const list = await store.list({ prefix });
+  const allHelpers = [];
+  
+  for (const blob of list.blobs) {
+    // Extract userId and helperId from key: helpers/{userId}/{helperId}.json
+    const parts = blob.key.replace("helpers/", "").replace(".json", "").split("/");
+    if (parts.length === 2) {
+      const [userId, helperId] = parts;
+      const helper = await getHelperBlob(userId, helperId);
+      if (helper) {
+        allHelpers.push(helper);
+      }
+    }
+  }
+  
+  return allHelpers;
+}
+
+/**
+ * Get published helpers index (lightweight cache)
+ * Returns null if index doesn't exist (anti-fragile - can rebuild)
+ */
+export async function getPublishedHelpersIndex() {
+  const key = "published-helpers-index.json";
+  
+  if (isLocalDevelopment()) {
+    const filePath = join(LOCAL_STORAGE_BASE, key);
+    try {
+      const data = await fs.readFile(filePath, "utf8");
+      return JSON.parse(data);
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        return null;
+      }
+      throw error;
+    }
+  }
+  
+  const store = getHelperStore();
+  const data = await store.get(key, { type: "json" });
+  return data || null;
+}
+
+/**
+ * Save published helpers index
+ */
+export async function savePublishedHelpersIndex(index) {
+  const key = "published-helpers-index.json";
+  
+  if (isLocalDevelopment()) {
+    const filePath = join(LOCAL_STORAGE_BASE, key);
+    await fs.writeFile(filePath, JSON.stringify(index, null, 2), "utf8");
+    return;
+  }
+  
+  const store = getHelperStore();
+  await store.set(key, JSON.stringify(index));
+}
+
+/**
+ * Update published helpers index (add helper)
+ */
+export async function addToPublishedHelpersIndex(helper) {
+  try {
+    let index = await getPublishedHelpersIndex();
+    if (!index) {
+      index = { helpers: [] };
+    }
+    
+    // Remove existing entry if present
+    index.helpers = index.helpers.filter(h => h.id !== helper.id);
+    
+    // Add new entry
+    index.helpers.push({
+      id: helper.id,
+      userId: helper.userId,
+      shareId: helper.shareId,
+      name: helper.name,
+      description: helper.description,
+      icon: helper.icon,
+      model: helper.model,
+      publishedAt: helper.publishedAt,
+      updatedAt: helper.updatedAt,
+    });
+    
+    // Sort by publishedAt descending
+    index.helpers.sort((a, b) => {
+      const dateA = new Date(a.publishedAt || 0);
+      const dateB = new Date(b.publishedAt || 0);
+      return dateB - dateA;
+    });
+    
+    await savePublishedHelpersIndex(index);
+  } catch (error) {
+    console.error("Error updating published helpers index:", error);
+    // Don't throw - index is optional
+  }
+}
+
+/**
+ * Remove from published helpers index
+ */
+export async function removeFromPublishedHelpersIndex(helperId) {
+  try {
+    const index = await getPublishedHelpersIndex();
+    if (!index) {
+      return; // No index to update
+    }
+    
+    index.helpers = index.helpers.filter(h => h.id !== helperId);
+    await savePublishedHelpersIndex(index);
+  } catch (error) {
+    console.error("Error updating published helpers index:", error);
+    // Don't throw - index is optional
+  }
+}
+
+/**
+ * Rebuild published helpers index from all helpers
+ * Anti-fragile: Can rebuild index if it gets corrupted
+ */
+export async function rebuildPublishedHelpersIndex() {
+  try {
+    const allHelpers = await listAllHelpers();
+    const publishedHelpers = allHelpers
+      .filter(helper => helper.published === true && helper.shareId)
+      .map(helper => ({
+        id: helper.id,
+        userId: helper.userId,
+        shareId: helper.shareId,
+        name: helper.name,
+        description: helper.description,
+        icon: helper.icon,
+        model: helper.model,
+        publishedAt: helper.publishedAt,
+        updatedAt: helper.updatedAt,
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.publishedAt || 0);
+        const dateB = new Date(b.publishedAt || 0);
+        return dateB - dateA;
+      });
+    
+    const index = { helpers: publishedHelpers };
+    await savePublishedHelpersIndex(index);
+    return index;
+  } catch (error) {
+    console.error("Error rebuilding published helpers index:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all published helpers (uses index if available, otherwise scans dynamically)
+ * Anti-fragile: Falls back to dynamic scan if index is missing or corrupted
+ */
+export async function getAllPublishedHelpers() {
+  try {
+    // Try to use index first (faster)
+    const index = await getPublishedHelpersIndex();
+    if (index && index.helpers && index.helpers.length > 0) {
+      // Verify entries are still valid by checking a few
+      const sampleHelper = index.helpers[0];
+      const fullHelper = await getHelperBlob(sampleHelper.userId, sampleHelper.id);
+      
+      if (fullHelper && fullHelper.published && fullHelper.shareId) {
+        // Index looks good, return it
+        return index.helpers;
+      }
+      
+      // Index might be stale, rebuild it
+      console.log("Published helpers index appears stale, rebuilding...");
+      const rebuilt = await rebuildPublishedHelpersIndex();
+      return rebuilt.helpers;
+    }
+    
+    // No index or empty index - scan dynamically
+    console.log("No published helpers index found, scanning dynamically...");
+    const allHelpers = await listAllHelpers();
+    const publishedHelpers = allHelpers
+      .filter(helper => helper.published === true && helper.shareId)
+      .map(helper => ({
+        id: helper.id,
+        userId: helper.userId,
+        shareId: helper.shareId,
+        name: helper.name,
+        description: helper.description,
+        icon: helper.icon,
+        model: helper.model,
+        publishedAt: helper.publishedAt,
+        updatedAt: helper.updatedAt,
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.publishedAt || 0);
+        const dateB = new Date(b.publishedAt || 0);
+        return dateB - dateA;
+      });
+    
+    // Cache the result
+    if (publishedHelpers.length > 0) {
+      await savePublishedHelpersIndex({ helpers: publishedHelpers });
+    }
+    
+    return publishedHelpers;
+  } catch (error) {
+    console.error("Error getting published helpers:", error);
+    // Final fallback: return empty array
+    return [];
+  }
+}
+
+/**
+ * Get published helper by shareId
+ */
+export async function getPublishedHelperByShareId(shareId) {
+  // Try index first
+  const index = await getPublishedHelpersIndex();
+  if (index && index.helpers) {
+    const indexEntry = index.helpers.find(h => h.shareId === shareId);
+    if (indexEntry) {
+      const fullHelper = await getHelperBlob(indexEntry.userId, indexEntry.id);
+      if (fullHelper && fullHelper.published && fullHelper.shareId === shareId) {
+        return fullHelper;
+      }
+    }
+  }
+  
+  // Fallback: scan all helpers
+  const allHelpers = await listAllHelpers();
+  return allHelpers.find(
+    helper => helper.shareId === shareId && helper.published === true
+  ) || null;
+}
+
+/**
  * Conversation blob operations
  */
 

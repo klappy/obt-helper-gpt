@@ -14,21 +14,20 @@
     error = "";
 
     try {
-      // This endpoint needs to be created - GET /api/helpers (public)
-      // For now, we'll note that this needs to be implemented in the backend
-      // In a real scenario, we'd fetch from: ${API_BASE}/helpers
-      
-      // Placeholder - actual endpoint would be:
-      // const response = await fetch(`${API_BASE}/helpers`, {
-      //   method: "GET",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      // });
-      
-      // For now, showing empty state with note
-      helpers = [];
-      error = "Public gallery endpoint needs to be implemented. This will show all published helpers.";
+      const response = await fetch(`${API_BASE}/public-helpers`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load published helpers");
+      }
+
+      helpers = data.helpers || [];
     } catch (err) {
       error = err.message || "Failed to load published helpers";
     } finally {
@@ -107,12 +106,8 @@
     </div>
 
     {#if error && !loading}
-      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-        <p class="text-yellow-800">{error}</p>
-        <p class="text-sm text-yellow-600 mt-2">
-          Note: The public gallery endpoint (`GET /api/helpers`) needs to be implemented in the
-          backend to list all published helpers.
-        </p>
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+        <p class="text-red-800">{error}</p>
       </div>
     {/if}
 

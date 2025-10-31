@@ -2,13 +2,17 @@
  * Public Helpers Endpoint
  * 
  * Lists all published helpers for public gallery
+ * Anti-fragile: Uses index when available, falls back to dynamic scanning
  * 
  * Routes:
  * - GET /api/helpers - List all published helpers
  * - GET /api/helpers/{shareId} - Get published helper by share ID
  */
 
-import { listUserHelpers } from "../../src/lib/utils/blob-storage.js";
+import {
+  getAllPublishedHelpers,
+  getPublishedHelperByShareId,
+} from "../../src/lib/utils/blob-storage.js";
 
 // Helper to create response
 function createResponse(data, status = 200) {
@@ -33,36 +37,53 @@ export const handler = async (event, context) => {
   const pathname = path || event.path || "";
 
   try {
-    // GET /api/helpers/{shareId} - Get published helper by share ID
-    if (httpMethod === "GET" && pathParameters?.shareId) {
-      const shareId = pathParameters.shareId;
+    // GET /api/public-helpers?shareId=xyz - Get published helper by share ID
+    const shareId = pathParameters?.shareId || queryStringParameters?.shareId;
+    
+    if (httpMethod === "GET" && shareId) {
+      // Share ID already extracted above
 
-      // Note: This requires iterating through all users to find the helper
-      // In production, you'd want an index or search capability
-      // For now, return error suggesting we need a different approach
-      return createResponse(
-        {
-          error: "Share ID lookup not yet implemented. This requires helper indexing.",
-        },
-        501
-      );
+      const helper = await getPublishedHelperByShareId(shareId);
+
+      if (!helper) {
+        return createResponse(
+          { error: "Published helper not found" },
+          404
+        );
+      }
+
+      // Return helper without sensitive info
+      const publicHelper = {
+        id: helper.id,
+        name: helper.name,
+        description: helper.description,
+        icon: helper.icon,
+        image: helper.image,
+        systemPrompt: helper.systemPrompt,
+        model: helper.model,
+        temperature: helper.temperature,
+        maxTokens: helper.maxTokens,
+        published: helper.published,
+        publishedAt: helper.publishedAt,
+        shareId: helper.shareId,
+        createdAt: helper.createdAt,
+        updatedAt: helper.updatedAt,
+      };
+
+      return createResponse({
+        success: true,
+        helper: publicHelper,
+      });
     }
 
     // GET /api/helpers - List all published helpers
     if (httpMethod === "GET" && !pathParameters?.shareId) {
-      // Note: This requires listing all users and their helpers
-      // This is not efficient for production - you'd want a search index
-      // For now, return empty list with note about implementation needed
-      
-      // In a real implementation, you'd:
-      // 1. Maintain a published-helpers index blob
-      // 2. Query that index instead of iterating through all users
-      // 3. Return paginated results
+      // Anti-fragile: Uses index if available, falls back to dynamic scanning
+      const publishedHelpers = await getAllPublishedHelpers();
 
       return createResponse({
         success: true,
-        helpers: [],
-        note: "Public helpers listing requires a published-helpers index to be implemented. For now, returning empty list.",
+        helpers: publishedHelpers || [],
       });
     }
 
