@@ -51,10 +51,13 @@
 						AI Tools for <br>
 						<span class="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-pulse">Everyone</span>
 					</h1>
-					<p class="text-2xl text-gray-200 max-w-4xl mx-auto mb-12 leading-relaxed font-light">
-						🚀 Powerful AI assistants to help with writing, math, coding, cooking, and more.<br>
-						<span class="text-purple-300">Clean, fast, and built for 2025.</span>
-					</p>
+				<p class="text-2xl text-gray-200 max-w-4xl mx-auto mb-8 leading-relaxed font-light">
+					🚀 Powerful AI assistants to help with writing, math, coding, cooking, and more.<br>
+					<span class="text-purple-300">Clean, fast, and built for 2025.</span>
+				</p>
+				<p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
+					Create your own AI helpers, save conversation history, and share with others.
+				</p>
 					
 					<!-- Enhanced feature badges -->
 					<div class="flex items-center justify-center space-x-8 text-lg mb-12 flex-wrap gap-6">
@@ -129,6 +132,32 @@
 						Choose any AI tool above to get started. No account needed, works instantly.
 					</p>
 					
+					<!-- Clear Call to Action Buttons -->
+					<div class="flex items-center justify-center gap-6 mb-12 flex-wrap">
+						<a
+							href="/register"
+							class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 font-bold text-lg transition-all duration-300 shadow-2xl hover:scale-105 hover:shadow-purple-500/50"
+						>
+							✨ Create Your Account
+						</a>
+						<a
+							href="/login"
+							class="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 border-2 border-white/30 font-semibold text-lg transition-all duration-300"
+						>
+							🔑 Login
+						</a>
+						<a
+							href="/gallery"
+							class="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 border-2 border-white/30 font-semibold text-lg transition-all duration-300"
+						>
+							🌟 Browse Gallery
+						</a>
+					</div>
+					
+					<p class="text-gray-300 text-lg mb-6">
+						✨ <strong>New!</strong> Create your own AI helpers and share them with others
+					</p>
+
 					<!-- Enhanced tech stack badges -->
 					<div class="flex items-center justify-center space-x-8 text-lg text-white flex-wrap gap-6">
 						<div class="flex items-center bg-white/10 backdrop-blur-sm px-6 py-4 rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300">

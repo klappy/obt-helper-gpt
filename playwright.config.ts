@@ -80,6 +80,7 @@ export default defineConfig({
     command: "netlify dev",
     url: "http://localhost:8888",
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000, // 2 minutes for server to start
+    timeout: 300 * 1000, // 5 minutes for server to start (Netlify dev can be slow in CI)
+    startupTimeout: 300 * 1000, // Also increase startup timeout
   },
 });

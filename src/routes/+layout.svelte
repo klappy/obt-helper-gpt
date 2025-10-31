@@ -1,5 +1,25 @@
 <script>
 	import '../app.css';
+	import { currentUser, isAuthenticated } from '$lib/stores/user-auth.js';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	
+	let user = null;
+	let authenticated = false;
+	
+	onMount(() => {
+		const unsubscribeUser = currentUser.subscribe(value => {
+			user = value;
+		});
+		const unsubscribeAuth = isAuthenticated.subscribe(value => {
+			authenticated = value;
+		});
+		
+		return () => {
+			unsubscribeUser();
+			unsubscribeAuth();
+		};
+	});
 </script>
 
 <!-- 2025 Global Layout with glassmorphic design -->
@@ -20,14 +40,29 @@
 						<span class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">OBT Helper</span>
 					</a>
 				</div>
-				<div class="flex items-center space-x-6">
-					<a href="/admin" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
-						⚙️ Admin
+			<div class="flex items-center space-x-4">
+				<a href="/gallery" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
+					🌟 Gallery
+				</a>
+				{#if authenticated && user}
+					<a href="/dashboard" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
+						📊 Dashboard
 					</a>
-					<a href="/demo" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
-						📱 WhatsApp Demo
+					<a href="/conversations" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
+						💬 Conversations
 					</a>
-				</div>
+				{:else}
+					<a href="/login" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20">
+						🔑 Login
+					</a>
+					<a href="/register" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 rounded-xl transition-all duration-300 font-medium shadow-lg">
+						✨ Get Started
+					</a>
+				{/if}
+				<a href="/admin" class="px-4 py-2 text-gray-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-medium border border-white/20 text-sm">
+					⚙️ Admin
+				</a>
+			</div>
 			</div>
 		</div>
 	</nav>
