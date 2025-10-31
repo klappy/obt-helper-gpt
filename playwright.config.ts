@@ -15,8 +15,8 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Use multiple workers for faster parallel execution */
+  workers: process.env.CI ? 2 : 4, // More workers for faster execution
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
