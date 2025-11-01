@@ -106,7 +106,9 @@
         </label>
         <input
           id="email"
+          name="email"
           type="text"
+          autocomplete="email"
           bind:value={email}
           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {emailError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="your@email.com"
@@ -125,8 +127,20 @@
         </label>
         <input
           id="password"
+          name="password"
           type="password"
+          autocomplete="new-password"
           bind:value={password}
+          on:input={() => {
+            // Clear errors when user/Safari changes password
+            // Use setTimeout to handle Safari autofill which fills both fields
+            setTimeout(() => {
+              if (password === confirmPassword && password.length >= 6) {
+                passwordError = "";
+                confirmPasswordError = "";
+              }
+            }, 50);
+          }}
           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {passwordError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="????????"
           disabled={loading}
@@ -144,8 +158,20 @@
         </label>
         <input
           id="confirmPassword"
+          name="confirmPassword"
           type="password"
+          autocomplete="new-password"
           bind:value={confirmPassword}
+          on:input={() => {
+            // Clear errors when user/Safari changes confirm password
+            // Use setTimeout to handle Safari autofill which fills both fields
+            setTimeout(() => {
+              if (password === confirmPassword && password.length >= 6) {
+                passwordError = "";
+                confirmPasswordError = "";
+              }
+            }, 50);
+          }}
           class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {confirmPasswordError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="????????"
           disabled={loading}
