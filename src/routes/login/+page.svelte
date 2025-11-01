@@ -8,6 +8,10 @@
   let error = "";
   let loading = false;
   let isAuth = false;
+  
+  // Field-specific errors
+  let emailError = "";
+  let passwordError = "";
 
   // Check if already authenticated
   onMount(() => {
@@ -20,9 +24,41 @@
     return unsubscribe;
   });
 
+  function validateEmail(email) {
+    if (!email) {
+      return "Email is required.";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address.";
+    }
+    return "";
+  }
+
+  function validatePassword(password) {
+    if (!password) {
+      return "Password is required.";
+    }
+    return "";
+  }
+
   async function handleLogin(e) {
     e.preventDefault();
+    
+    // Clear all errors
     error = "";
+    emailError = "";
+    passwordError = "";
+
+    // Validate each field
+    emailError = validateEmail(email);
+    passwordError = validatePassword(password);
+
+    // If any field has an error, stop
+    if (emailError || passwordError) {
+      return;
+    }
+
     loading = true;
 
     try {
@@ -46,20 +82,24 @@
       </div>
     {/if}
 
-    <form on:submit={handleLogin} class="space-y-6">
+    <form on:submit={handleLogin} novalidate class="space-y-6">
       <div>
         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
           Email
         </label>
         <input
           id="email"
-          type="email"
+          type="text"
           bind:value={email}
-          required
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {emailError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="your@email.com"
           disabled={loading}
         />
+        {#if emailError}
+          <p class="mt-1 text-xs text-red-600 font-medium">{emailError}</p>
+        {:else}
+          <p class="mt-1 text-xs text-gray-500">Enter your email address</p>
+        {/if}
       </div>
 
       <div>
@@ -70,11 +110,15 @@
           id="password"
           type="password"
           bind:value={password}
-          required
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {passwordError ? 'border-red-500' : 'border-gray-300'}"
           placeholder="????????"
           disabled={loading}
         />
+        {#if passwordError}
+          <p class="mt-1 text-xs text-red-600 font-medium">{passwordError}</p>
+        {:else}
+          <p class="mt-1 text-xs text-gray-500">Enter your password</p>
+        {/if}
       </div>
 
       <button
