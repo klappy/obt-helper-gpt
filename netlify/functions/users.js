@@ -74,11 +74,20 @@ export const handler = async (event, context) => {
   }
 
   const { httpMethod, path, pathParameters, queryStringParameters, body } = event;
+  // Netlify Functions: path will be empty when accessing /.netlify/functions/users directly
+  // Or it might be "/users" or "/api/users" depending on routing
   const pathname = path || event.path || "";
+  
+  // Log for debugging (remove in production)
+  console.log("Users function called:", { httpMethod, pathname, hasAction: !!queryStringParameters?.action });
+  
+  // Check if this is the users endpoint (empty path means we're at the function root)
+  // Accept any request to this function - Netlify routes /.netlify/functions/users to this handler
+  const isUsersEndpoint = true; // Since this IS the users function handler, all requests here are for users
 
   try {
     // POST /api/users - Register new user
-    if (httpMethod === "POST" && pathname === "/api/users" && !queryStringParameters?.action) {
+    if (httpMethod === "POST" && isUsersEndpoint && !queryStringParameters?.action) {
       // Handle both string and already-parsed body
       let data;
       if (typeof body === "string") {
@@ -152,7 +161,7 @@ export const handler = async (event, context) => {
     }
 
     // POST /api/users/login - Login
-    if (httpMethod === "POST" && pathname === "/api/users" && queryStringParameters?.action === "login") {
+    if (httpMethod === "POST" && isUsersEndpoint && queryStringParameters?.action === "login") {
       // Handle both string and already-parsed body
       let data;
       if (typeof body === "string") {
