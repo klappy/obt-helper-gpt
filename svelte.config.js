@@ -15,6 +15,8 @@ const config = {
       // Ensure the adapter works correctly with the build output
       edge: false,
       split: false,
+      // Ensure functions are bundled correctly for deployment
+      functions: 'netlify/functions',
     }),
   },
 };

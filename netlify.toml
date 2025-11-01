@@ -1,5 +1,7 @@
 [build]
   command = "npm run build"
+  # Functions are bundled by SvelteKit adapter
+  # The adapter automatically bundles ES modules to CommonJS
   functions = "netlify/functions"
   publish = "build"
 
