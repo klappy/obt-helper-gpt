@@ -9,7 +9,7 @@ import { test, expect } from "@playwright/test";
  * These tests run in parallel for faster execution.
  */
 
-const BASE_URL = "http://localhost:8888";
+const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:8888";
 
 function generateUniqueEmail() {
   return `test-${Date.now()}-${Math.random().toString(36).substring(7)}@test.com`;

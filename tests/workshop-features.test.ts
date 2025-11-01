@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE_URL = "http://localhost:8888";
+const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:8888";
 
 // Helper functions for common operations
 async function registerUser(page: any, email: string, password: string) {

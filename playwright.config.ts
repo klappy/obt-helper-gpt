@@ -24,7 +24,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:8888",
+    baseURL: process.env.TEST_BASE_URL || "http://localhost:9999",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -76,9 +76,11 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "netlify dev",
-    url: "http://localhost:8888",
+  // Temporarily disabled webServer - run with: npx playwright test --config=playwright.config.ts
+  // Or set SKIP_WEBSERVER=true to skip
+  webServer: process.env.SKIP_WEBSERVER === "true" ? undefined : {
+    command: "netlify dev --port 9999",
+    url: "http://localhost:9999",
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000, // 5 minutes for server to start (Netlify dev can be slow in CI)
     startupTimeout: 300 * 1000, // Also increase startup timeout

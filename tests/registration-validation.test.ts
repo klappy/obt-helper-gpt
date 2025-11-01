@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE_URL = "http://localhost:8888";
+const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:8888";
 
 test.describe("Registration Form Validation", () => {
   test("should show clear error messages for invalid email", async ({ page }) => {
