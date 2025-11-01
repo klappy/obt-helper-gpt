@@ -30,10 +30,20 @@ export async function register(email, password) {
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      const text = await response.text();
+      if (!text) {
+        throw new Error("Empty response from server");
+      }
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse response:", parseError);
+      throw new Error("Invalid response from server. Please try again.");
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || "Registration failed");
+      throw new Error(data.error || data.message || "Registration failed");
     }
 
     // Store token and user data
@@ -70,10 +80,20 @@ export async function login(email, password) {
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      const text = await response.text();
+      if (!text) {
+        throw new Error("Empty response from server");
+      }
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse response:", parseError);
+      throw new Error("Invalid response from server. Please try again.");
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || "Login failed");
+      throw new Error(data.error || data.message || "Login failed");
     }
 
     // Store token and user data

@@ -79,7 +79,20 @@ export const handler = async (event, context) => {
   try {
     // POST /api/users - Register new user
     if (httpMethod === "POST" && pathname === "/api/users" && !queryStringParameters?.action) {
-      const data = JSON.parse(body || "{}");
+      // Handle both string and already-parsed body
+      let data;
+      if (typeof body === "string") {
+        try {
+          data = JSON.parse(body || "{}");
+        } catch (e) {
+          return createResponse(
+            { error: "Invalid JSON in request body" },
+            400
+          );
+        }
+      } else {
+        data = body || {};
+      }
       const { email, password } = data;
 
       if (!email || !password) {
@@ -140,7 +153,20 @@ export const handler = async (event, context) => {
 
     // POST /api/users/login - Login
     if (httpMethod === "POST" && pathname === "/api/users" && queryStringParameters?.action === "login") {
-      const data = JSON.parse(body || "{}");
+      // Handle both string and already-parsed body
+      let data;
+      if (typeof body === "string") {
+        try {
+          data = JSON.parse(body || "{}");
+        } catch (e) {
+          return createResponse(
+            { error: "Invalid JSON in request body" },
+            400
+          );
+        }
+      } else {
+        data = body || {};
+      }
       const { email, password } = data;
 
       if (!email || !password) {
@@ -256,7 +282,20 @@ export const handler = async (event, context) => {
         );
       }
 
-      const data = JSON.parse(body || "{}");
+      // Handle both string and already-parsed body
+      let data;
+      if (typeof body === "string") {
+        try {
+          data = JSON.parse(body || "{}");
+        } catch (e) {
+          return createResponse(
+            { error: "Invalid JSON in request body" },
+            400
+          );
+        }
+      } else {
+        data = body || {};
+      }
       const { preferences } = data;
 
       // Update preferences if provided
@@ -284,10 +323,21 @@ export const handler = async (event, context) => {
     );
   } catch (error) {
     console.error("User endpoint error:", error);
+    // Provide clearer error messages
+    let errorMessage = "Internal server error";
+    if (error.message) {
+      if (error.message.includes("JSON") || error.message.includes("parse")) {
+        errorMessage = "Invalid request data";
+      } else if (error.message.includes("pattern") || error.message.includes("match")) {
+        errorMessage = "Invalid data format";
+      } else {
+        errorMessage = error.message;
+      }
+    }
     return createResponse(
       {
-        error: "Internal server error",
-        details: error.message,
+        error: errorMessage,
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
       },
       500
     );
