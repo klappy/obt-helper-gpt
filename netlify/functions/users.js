@@ -23,7 +23,7 @@ import {
   generateUserId,
 } from "../../src/lib/utils/auth.js";
 
-// Helper to create response
+// Helper to create response - using Response API
 function createResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -68,24 +68,25 @@ async function verifyAuth(request) {
 }
 
 export const handler = async (event, context) => {
-  // Handle CORS preflight
-  if (event.httpMethod === "OPTIONS") {
-    return createResponse({}, 200);
-  }
-
-  const { httpMethod, path, pathParameters, queryStringParameters, body } = event;
-  // Netlify Functions: path will be empty when accessing /.netlify/functions/users directly
-  // Or it might be "/users" or "/api/users" depending on routing
-  const pathname = path || event.path || "";
-  
-  // Log for debugging (remove in production)
-  console.log("Users function called:", { httpMethod, pathname, hasAction: !!queryStringParameters?.action });
-  
-  // Check if this is the users endpoint (empty path means we're at the function root)
-  // Accept any request to this function - Netlify routes /.netlify/functions/users to this handler
-  const isUsersEndpoint = true; // Since this IS the users function handler, all requests here are for users
-
   try {
+    // Handle CORS preflight
+    if (event.httpMethod === "OPTIONS") {
+      return createResponse({}, 200);
+    }
+
+    const { httpMethod, path, pathParameters, queryStringParameters, body } = event;
+    // Netlify Functions: path will be empty when accessing /.netlify/functions/users directly
+    // Or it might be "/users" or "/api/users" depending on routing
+    const pathname = path || event.path || "";
+    
+    // Log for debugging (remove in production)
+    console.log("Users function called:", { httpMethod, pathname, hasAction: !!queryStringParameters?.action });
+    
+    // Check if this is the users endpoint (empty path means we're at the function root)
+    // Accept any request to this function - Netlify routes /.netlify/functions/users to this handler
+    const isUsersEndpoint = true; // Since this IS the users function handler, all requests here are for users
+
+    try {
     // POST /api/users - Register new user
     if (httpMethod === "POST" && isUsersEndpoint && !queryStringParameters?.action) {
       // Handle both string and already-parsed body
@@ -120,8 +121,16 @@ export const handler = async (event, context) => {
       const userId = `user_${Buffer.from(email.toLowerCase()).toString("base64url").substring(0, 20)}`;
       
       // Check if user exists
-      const existingUser = await getUserBlob(userId);
-      if (existingUser && existingUser.email.toLowerCase() === email.toLowerCase()) {
+      let existingUser;
+      try {
+        existingUser = await getUserBlob(userId);
+      } catch (blobError) {
+        console.error("Error checking existing user:", blobError);
+        // Continue anyway - might be first time
+        existingUser = null;
+      }
+      
+      if (existingUser && existingUser.email && existingUser.email.toLowerCase() === email.toLowerCase()) {
         return createResponse(
           { error: "User already exists" },
           409
@@ -141,7 +150,15 @@ export const handler = async (event, context) => {
         },
       };
 
-      await saveUserBlob(userId, userData);
+      try {
+        await saveUserBlob(userId, userData);
+      } catch (saveError) {
+        console.error("Error saving user:", saveError);
+        return createResponse(
+          { error: "Failed to save user. Please try again." },
+          500
+        );
+      }
 
       // Generate token
       const token = generateToken(userId, email);
@@ -332,6 +349,7 @@ export const handler = async (event, context) => {
     );
   } catch (error) {
     console.error("User endpoint error:", error);
+    console.error("Error stack:", error.stack);
     // Provide clearer error messages
     let errorMessage = "Internal server error";
     if (error.message) {
@@ -343,12 +361,21 @@ export const handler = async (event, context) => {
         errorMessage = error.message;
       }
     }
-    return createResponse(
-      {
-        error: errorMessage,
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      500
-    );
+    try {
+      return createResponse(
+        {
+          error: errorMessage,
+          details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        },
+        500
+      );
+    } catch (responseError) {
+      console.error("Failed to create error response:", responseError);
+      // Fallback - return a basic error
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   }
 };

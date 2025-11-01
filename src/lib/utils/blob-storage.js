@@ -33,13 +33,19 @@ export function getUserStore() {
   if (isLocalDevelopment()) {
     return null; // Use file storage in dev
   }
-  if (!userStore) {
-    userStore = getStore({
-      name: "obt-helper-users",
-      consistency: "strong",
-    });
+  try {
+    if (!userStore) {
+      userStore = getStore({
+        name: "obt-helper-users",
+        consistency: "strong",
+      });
+    }
+    return userStore;
+  } catch (error) {
+    console.error("Error creating user store:", error);
+    // Return null as fallback - will use file storage
+    return null;
   }
-  return userStore;
 }
 
 /**
@@ -95,6 +101,20 @@ export async function getUserBlob(userId) {
   }
   
   const store = getUserStore();
+  if (!store) {
+    // Fallback to file storage if blob store unavailable
+    console.warn("Blob store unavailable, using file storage fallback");
+    const filePath = join(LOCAL_STORAGE_BASE, "users", `${userId}.json`);
+    try {
+      const data = await fs.readFile(filePath, "utf8");
+      return JSON.parse(data);
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        return null;
+      }
+      throw error;
+    }
+  }
   const data = await store.get(key, { type: "json" });
   return data || null;
 }
@@ -111,7 +131,26 @@ export async function saveUserBlob(userId, userData) {
   }
   
   const store = getUserStore();
-  await store.set(key, JSON.stringify(userData));
+  if (!store) {
+    // Fallback to file storage if blob store unavailable
+    console.warn("Blob store unavailable, using file storage fallback");
+    const dir = join(LOCAL_STORAGE_BASE, "users");
+    await fs.mkdir(dir, { recursive: true });
+    const filePath = join(dir, `${userId}.json`);
+    await fs.writeFile(filePath, JSON.stringify(userData, null, 2), "utf8");
+    return;
+  }
+  try {
+    await store.set(key, userData);
+  } catch (error) {
+    console.error("Error saving to blob store:", error);
+    // Try file storage fallback
+    console.warn("Falling back to file storage");
+    const dir = join(LOCAL_STORAGE_BASE, "users");
+    await fs.mkdir(dir, { recursive: true });
+    const filePath = join(dir, `${userId}.json`);
+    await fs.writeFile(filePath, JSON.stringify(userData, null, 2), "utf8");
+  }
 }
 
 export async function deleteUserBlob(userId) {
