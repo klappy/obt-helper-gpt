@@ -39,11 +39,37 @@ export async function register(email, password) {
       data = JSON.parse(text);
     } catch (parseError) {
       console.error("Failed to parse response:", parseError);
-      throw new Error("Invalid response from server. Please try again.");
+      // Check if it's a server error (500/502/503) vs client error
+      if (response.status >= 500) {
+        throw new Error("Server error. Please try again in a moment.");
+      } else {
+        throw new Error("Invalid response from server. Please try again.");
+      }
     }
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || "Registration failed");
+      // Provide specific error messages based on status code and response
+      let errorMessage = "Registration failed";
+      
+      if (response.status >= 500) {
+        // Server error - check if it's a syntax/module error (502) or actual server error
+        if (response.status === 502 && data.errorType === "Runtime.UserCodeSyntaxError") {
+          errorMessage = "Server configuration error. Please contact support if this persists.";
+        } else {
+          errorMessage = data.error || data.message || data.errorMessage || "Server error. Please try again in a moment.";
+        }
+      } else if (response.status === 409) {
+        // User already exists
+        errorMessage = data.error || "This email is already registered. Please login instead.";
+      } else if (response.status === 400) {
+        // Bad request - validation error
+        errorMessage = data.error || data.message || "Please check your email and password.";
+      } else {
+        // Other client errors
+        errorMessage = data.error || data.message || data.errorMessage || "Registration failed. Please try again.";
+      }
+      
+      throw new Error(errorMessage);
     }
 
     // Store token and user data
@@ -89,11 +115,37 @@ export async function login(email, password) {
       data = JSON.parse(text);
     } catch (parseError) {
       console.error("Failed to parse response:", parseError);
-      throw new Error("Invalid response from server. Please try again.");
+      // Check if it's a server error (500/502/503) vs client error
+      if (response.status >= 500) {
+        throw new Error("Server error. Please try again in a moment.");
+      } else {
+        throw new Error("Invalid response from server. Please try again.");
+      }
     }
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || "Login failed");
+      // Provide specific error messages based on status code and response
+      let errorMessage = "Login failed";
+      
+      if (response.status >= 500) {
+        // Server error - check if it's a syntax/module error (502) or actual server error
+        if (response.status === 502 && data.errorType === "Runtime.UserCodeSyntaxError") {
+          errorMessage = "Server configuration error. Please contact support if this persists.";
+        } else {
+          errorMessage = data.error || data.message || data.errorMessage || "Server error. Please try again in a moment.";
+        }
+      } else if (response.status === 401) {
+        // Unauthorized - wrong email/password
+        errorMessage = data.error || data.message || "Invalid email or password. Please check your credentials.";
+      } else if (response.status === 400) {
+        // Bad request - validation error
+        errorMessage = data.error || data.message || "Please check your email and password.";
+      } else {
+        // Other client errors
+        errorMessage = data.error || data.message || data.errorMessage || "Login failed. Please try again.";
+      }
+      
+      throw new Error(errorMessage);
     }
 
     // Store token and user data
