@@ -102,8 +102,12 @@ export async function getUserBlob(userId) {
   
   const store = getUserStore();
   if (!store) {
-    // Fallback to file storage if blob store unavailable
-    console.warn("Blob store unavailable, using file storage fallback");
+    // In production, blob store should always be available
+    // If it's not, this is a configuration issue
+    if (!isLocalDevelopment()) {
+      throw new Error("Blob store unavailable in production. Please check Netlify Blob Store configuration.");
+    }
+    // Only use file fallback in local development
     const filePath = join(LOCAL_STORAGE_BASE, "users", `${userId}.json`);
     try {
       const data = await fs.readFile(filePath, "utf8");
@@ -132,8 +136,12 @@ export async function saveUserBlob(userId, userData) {
   
   const store = getUserStore();
   if (!store) {
-    // Fallback to file storage if blob store unavailable
-    console.warn("Blob store unavailable, using file storage fallback");
+    // In production, blob store should always be available
+    // If it's not, this is a configuration issue
+    if (!isLocalDevelopment()) {
+      throw new Error("Blob store unavailable in production. Please check Netlify Blob Store configuration.");
+    }
+    // Only use file fallback in local development
     const dir = join(LOCAL_STORAGE_BASE, "users");
     await fs.mkdir(dir, { recursive: true });
     const filePath = join(dir, `${userId}.json`);
@@ -144,7 +152,11 @@ export async function saveUserBlob(userId, userData) {
     await store.set(key, userData);
   } catch (error) {
     console.error("Error saving to blob store:", error);
-    // Try file storage fallback
+    // In production, fail fast - don't try file storage
+    if (!isLocalDevelopment()) {
+      throw new Error(`Failed to save user blob: ${error.message}`);
+    }
+    // Only try file fallback in local development
     console.warn("Falling back to file storage");
     const dir = join(LOCAL_STORAGE_BASE, "users");
     await fs.mkdir(dir, { recursive: true });
