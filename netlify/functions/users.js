@@ -67,33 +67,35 @@ async function verifyAuth(request) {
   return { authenticated: true, userId: payload.userId, email: payload.email };
 }
 
-export const handler = async (event, context) => {
+export default async (req, context) => {
   try {
     // Handle CORS preflight
-    if (event.httpMethod === "OPTIONS") {
+    if (req.method === "OPTIONS") {
       return createResponse({}, 200);
     }
 
-    const { httpMethod, path, pathParameters, queryStringParameters, body } = event;
+    const httpMethod = req.method;
+    const url = new URL(req.url);
+    const path = url.pathname;
+    const queryStringParameters = Object.fromEntries(url.searchParams);
+    const body = req.method !== "GET" && req.method !== "HEAD" ? await req.text() : null;
+    const pathParameters = {};
     // Netlify Functions: path will be empty when accessing /.netlify/functions/users directly
     // Or it might be "/users" or "/api/users" depending on routing
-    const pathname = path || event.path || "";
+    const pathname = path || "";
     
-    // Log for debugging (remove in production)
-    console.log("Users function called:", { httpMethod, pathname, hasAction: !!queryStringParameters?.action });
     
     // Check if this is the users endpoint (empty path means we're at the function root)
     // Accept any request to this function - Netlify routes /.netlify/functions/users to this handler
     const isUsersEndpoint = true; // Since this IS the users function handler, all requests here are for users
 
     try {
-    // POST /api/users - Register new user
-    if (httpMethod === "POST" && isUsersEndpoint && !queryStringParameters?.action) {
-      // Handle both string and already-parsed body
-      let data;
+    // Parse body first to check for action
+    let parsedBody = {};
+    if (httpMethod === "POST" && body) {
       if (typeof body === "string") {
         try {
-          data = JSON.parse(body || "{}");
+          parsedBody = JSON.parse(body || "{}");
         } catch (e) {
           return createResponse(
             { error: "Invalid JSON in request body" },
@@ -101,8 +103,69 @@ export const handler = async (event, context) => {
           );
         }
       } else {
-        data = body || {};
+        parsedBody = body || {};
       }
+    }
+
+    // Check for action in both query params and body
+    const action = queryStringParameters?.action || parsedBody?.action;
+
+    // Handle login action
+    if (httpMethod === "POST" && action === "login") {
+      const { email, password } = parsedBody;
+      
+      if (!email || !password) {
+        return createResponse(
+          { error: "Email and password are required" },
+          400
+        );
+      }
+
+      // Use email as the userId - simple and unique
+      const userId = email.toLowerCase();
+      
+      const user = await getUserBlob(userId);
+
+      if (!user || user.email.toLowerCase() !== email.toLowerCase()) {
+        return createResponse(
+          { error: "Invalid email or password" },
+          401
+        );
+      }
+
+      // Verify password
+      const passwordValid = verifyPassword(password, user.passwordHash);
+      
+      if (!passwordValid) {
+        return createResponse(
+          { error: "Invalid email or password" },
+          401
+        );
+      }
+
+      // Update last login
+      user.lastLoginAt = new Date().toISOString();
+      await saveUserBlob(userId, user);
+
+      // Generate token
+      const token = generateToken(userId, email);
+
+      return createResponse({
+        success: true,
+        token,
+        user: {
+          id: userId,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+        },
+      });
+    }
+
+    // Handle registration (when action is "register" or no action specified)
+    if (httpMethod === "POST" && isUsersEndpoint && (!action || action === "register")) {
+      const data = parsedBody;
       const { email, password } = data;
 
       if (!email || !password) {
@@ -117,8 +180,8 @@ export const handler = async (event, context) => {
       // For now, we'll use a simple lookup pattern
       // This is a limitation - we'll need to scan or use email as part of ID
       
-      // For workshop, use email-based userId
-      const userId = `user_${Buffer.from(email.toLowerCase()).toString("base64url").substring(0, 20)}`;
+      // Use email as the userId - simple and unique
+      const userId = email.toLowerCase();
       
       // Check if user exists
       let existingUser;
@@ -202,8 +265,8 @@ export const handler = async (event, context) => {
         );
       }
 
-      // For workshop, use email-based userId lookup
-      const userId = `user_${Buffer.from(email.toLowerCase()).toString("base64url").substring(0, 20)}`;
+      // Use email as the userId - simple and unique
+      const userId = email.toLowerCase();
       const user = await getUserBlob(userId);
 
       if (!user || user.email.toLowerCase() !== email.toLowerCase()) {
@@ -251,7 +314,7 @@ export const handler = async (event, context) => {
       }
 
       // Verify auth
-      const auth = await verifyAuth({ headers: event.headers });
+      const auth = await verifyAuth({ headers: req.headers });
       if (!auth.authenticated || auth.userId !== userId) {
         return createResponse(
           { error: "Unauthorized" },
@@ -292,7 +355,7 @@ export const handler = async (event, context) => {
       }
 
       // Verify auth
-      const auth = await verifyAuth({ headers: event.headers });
+      const auth = await verifyAuth({ headers: req.headers });
       if (!auth.authenticated || auth.userId !== userId) {
         return createResponse(
           { error: "Unauthorized" },
@@ -347,6 +410,11 @@ export const handler = async (event, context) => {
       { error: "Method not allowed" },
       405
     );
+    } catch (innerError) {
+      // Handle errors from the inner try block
+      console.error("Inner error:", innerError);
+      throw innerError; // Re-throw to be caught by outer catch
+    }
   } catch (error) {
     console.error("User endpoint error:", error);
     console.error("Error stack:", error.stack);
