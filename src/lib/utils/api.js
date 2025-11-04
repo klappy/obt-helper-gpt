@@ -1,10 +1,7 @@
-// API configuration for handling development vs production endpoints
-const isDevelopment = typeof window !== "undefined" && window.location.hostname === "localhost";
-const BACKEND_URL = isDevelopment
-  ? "http://localhost:9888"
-  : typeof window !== "undefined"
-    ? window.location.origin
-    : "";
+// API configuration - use origin, no hardcoded ports
+const BACKEND_URL = typeof window !== "undefined"
+  ? window.location.origin
+  : "";
 
 /**
  * Get the full API endpoint URL

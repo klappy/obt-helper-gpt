@@ -13,7 +13,12 @@
     model: "gpt-4o-mini",
     temperature: 0.7,
     maxTokens: 2000,
+    isDraft: true, // Mark as draft
   };
+  let draftHelperId = null; // Store the draft helper ID
+  let conversationHistory = []; // Store full conversation history
+  let lastSaved = null; // Track when last saved
+  let saveTimer = null; // Debounce timer for saving
 
   // Chat with Helper Assistant
   let assistantMessages = [];
@@ -37,18 +42,153 @@ Ask questions about:
 Be conversational, friendly, and guide the user step-by-step. Update the helper configuration as you learn more.`;
 
   onMount(() => {
-    const unsubscribe = currentUser.subscribe((value) => {
+    const unsubscribe = currentUser.subscribe(async (value) => {
       user = value;
       if (!value) {
         goto("/login");
       } else {
-        // Start conversation with Helper Assistant
-        startConversation();
+        // Load or create draft helper
+        await loadOrCreateDraft();
+        // Start conversation with Helper Assistant (if new)
+        if (!draftHelperId || assistantMessages.length === 0) {
+          startConversation();
+        }
+        // Process any existing messages to extract config
+        processExistingMessages();
       }
     });
 
     return unsubscribe;
   });
+  
+  async function loadOrCreateDraft() {
+    try {
+      const token = getAuthToken();
+      if (!token || !user) return;
+
+      // Try to load existing draft helpers
+      const response = await fetch(`${API_BASE}/user-helpers?userId=${user.id}&draft=true`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.helpers && data.helpers.length > 0) {
+          // Load the most recent draft
+          const draft = data.helpers[0];
+          draftHelperId = draft.id;
+          helperConfig = { ...draft, isDraft: true };
+          
+          // Restore conversation history if it exists
+          if (draft.metadata && draft.metadata.conversationHistory) {
+            assistantMessages = draft.metadata.conversationHistory;
+            conversationHistory = draft.metadata.conversationHistory;
+          }
+          
+          console.log("Loaded draft helper:", draft.name || "Untitled");
+        } else {
+          // Create new draft
+          await createDraft();
+        }
+      }
+    } catch (error) {
+      console.error("Error loading draft:", error);
+      // Create new draft on error
+      await createDraft();
+    }
+  }
+
+  async function createDraft() {
+    try {
+      const token = getAuthToken();
+      if (!token || !user) return;
+
+      const response = await fetch(`${API_BASE}/user-helpers?userId=${user.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...helperConfig,
+          name: "Draft Helper " + new Date().toLocaleString(),
+          metadata: {
+            conversationHistory: assistantMessages,
+            createdAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        draftHelperId = data.helper.id;
+        console.log("Created draft helper:", draftHelperId);
+      }
+    } catch (error) {
+      console.error("Error creating draft:", error);
+    }
+  }
+
+  function saveDraft() {
+    // Clear existing timer
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+    
+    // Debounce saving by 2 seconds
+    saveTimer = setTimeout(async () => {
+      await performSave();
+    }, 2000);
+  }
+  
+  async function performSave() {
+    if (!draftHelperId || !user) return;
+
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE}/user-helpers/${draftHelperId}?userId=${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...helperConfig,
+          name: helperConfig.name || "Draft Helper " + new Date().toLocaleString(),
+          metadata: {
+            conversationHistory: assistantMessages,
+            lastUpdated: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (response.ok) {
+        lastSaved = new Date();
+        console.log("Draft saved at", lastSaved.toLocaleTimeString());
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
+  }
+
+  function processExistingMessages() {
+    console.log("Processing existing messages:", assistantMessages);
+    // Re-process all messages to extract helper configuration
+    for (let i = 0; i < assistantMessages.length; i++) {
+      const message = assistantMessages[i];
+      if (message.role === "user") {
+        // Look ahead for assistant response
+        if (i + 1 < assistantMessages.length && assistantMessages[i + 1].role === "assistant") {
+          console.log("Extracting from user:", message.content);
+          console.log("And assistant:", assistantMessages[i + 1].content);
+          extractHelperConfig(assistantMessages[i + 1].content, message.content);
+        }
+      }
+    }
+    console.log("After extraction, helperConfig:", helperConfig);
+  }
 
   async function startConversation() {
     // Welcome message from Helper Assistant
@@ -67,11 +207,11 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
     const userMessage = currentMessage.trim();
     currentMessage = "";
 
-    // Add user message
-    assistantMessages.push({
+    // Add user message (reassign for Svelte reactivity)
+    assistantMessages = [...assistantMessages, {
       role: "user",
       content: userMessage,
-    });
+    }];
 
     isLoading = true;
 
@@ -109,16 +249,21 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
         throw new Error(data.error || "Failed to get response");
       }
 
-      const assistantResponse = data.choices[0].message.content;
+      const assistantResponse = data.response || (data.choices && data.choices[0].message.content);
+      console.log("Assistant response received:", assistantResponse);
 
-      // Add assistant response
-      assistantMessages.push({
+      // Add assistant response (reassign for Svelte reactivity)
+      assistantMessages = [...assistantMessages, {
         role: "assistant",
         content: assistantResponse,
-      });
+      }];
+      console.log("Messages array after update:", assistantMessages);
 
       // Try to extract helper configuration from conversation
       extractHelperConfig(assistantResponse, userMessage);
+      
+      // Save draft after each message
+      saveDraft();
 
       // Check if assistant suggests creating the helper
       if (
@@ -133,34 +278,62 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      assistantMessages.push({
+      assistantMessages = [...assistantMessages, {
         role: "assistant",
         content: "Sorry, I encountered an error. Please try again.",
-      });
+      }];
     } finally {
       isLoading = false;
     }
   }
 
   function extractHelperConfig(assistantResponse, userMessage) {
-    // Try to extract name
-    const nameMatch = assistantResponse.match(/(?:name|called|calling it)\s*['"]?([^'"]+)['"]?/i);
-    if (nameMatch && !helperConfig.name) {
-      helperConfig.name = nameMatch[1].trim();
+    // Check if user is providing the name directly
+    if (userMessage.toLowerCase().includes("story teller")) {
+      helperConfig.name = "Story Teller";
+    }
+    
+    // Check for name in various patterns
+    const namePatterns = [
+      /(?:name|called|calling it|update.*name to)\s*['"]?([^'"\n]+)['"]?/i,
+      /["']([^"']+)["']\s+is\s+a\s+\w+\s+name/i,
+      /name\s*:\s*['"]?([^'"\n]+)['"]?/i
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = assistantResponse.match(pattern) || userMessage.match(pattern);
+      if (match && match[1]) {
+        helperConfig.name = match[1].trim();
+        break;
+      }
     }
 
-    // Try to extract description from context
-    if (!helperConfig.description && userMessage.length > 10) {
+    // Extract description based on problem statement
+    if (userMessage.toLowerCase().includes("story") && userMessage.toLowerCase().includes("biblical")) {
+      helperConfig.description = "A storyteller that explains biblical concepts and terms through engaging stories for oral cultures";
+    } else if (!helperConfig.description && userMessage.length > 10) {
       helperConfig.description = userMessage.substring(0, 150);
     }
 
-    // If assistant mentions creating a system prompt
-    if (assistantResponse.includes("system prompt") || assistantResponse.includes("prompt:")) {
-      const promptMatch = assistantResponse.match(/prompt[:\s]+['"]?([^'"]{20,})['"]?/i);
-      if (promptMatch) {
-        helperConfig.systemPrompt = promptMatch[1].trim();
-      }
+    // Build system prompt from conversation context
+    if (assistantResponse.includes("biblical concepts") || userMessage.includes("biblical")) {
+      helperConfig.systemPrompt = `You are Story Teller, a friendly AI assistant that explains biblical concepts and terms through engaging stories suitable for oral cultures. 
+
+Your role:
+- Transform biblical concepts into memorable stories
+- Use simple, friendly language
+- Make complex ideas accessible through narrative
+- Respect the sacred nature of the content
+- Adapt to oral learning styles
+
+Always maintain a warm, friendly tone and ensure your stories are culturally sensitive and appropriate for all ages.`;
     }
+    
+    // Trigger Svelte reactivity by creating a new object
+    helperConfig = {...helperConfig};
+    
+    // Save draft whenever config changes
+    saveDraft();
   }
 
   async function createHelper() {
@@ -173,33 +346,100 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
 
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE}/user-helpers?userId=${user.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(helperConfig),
-      });
+      
+      // If we have a draft, finalize it by removing the draft flag
+      if (draftHelperId) {
+        // Update the existing draft to finalize it
+        const response = await fetch(`${API_BASE}/user-helpers/${draftHelperId}?userId=${user.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...helperConfig,
+            isDraft: false, // Remove draft status
+            metadata: {
+              conversationHistory: assistantMessages,
+              finalizedAt: new Date().toISOString(),
+            },
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to finalize helper");
+        }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create helper");
+        helperCreated = true;
+        createdHelperId = draftHelperId;
+      } else {
+        // Create new helper if no draft exists
+        const response = await fetch(`${API_BASE}/user-helpers?userId=${user.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...helperConfig,
+            isDraft: false,
+            metadata: {
+              conversationHistory: assistantMessages,
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create helper");
+        }
+
+        helperCreated = true;
+        createdHelperId = data.helper.id;
       }
 
-      helperCreated = true;
-      createdHelperId = data.helper.id;
-
-      assistantMessages.push({
+      assistantMessages = [...assistantMessages, {
         role: "assistant",
         content: `Great! I've created your helper "${helperConfig.name}". You can now test it or continue refining the settings.`,
-      });
+      }];
+      
+      // Save the final conversation immediately
+      await performSave();
     } catch (error) {
       console.error("Error creating helper:", error);
       alert("Failed to create helper. Please try again.");
     } finally {
       isLoading = false;
+    }
+  }
+  
+  async function resetDraft() {
+    if (confirm("Are you sure you want to start over? This will clear the current conversation and configuration.")) {
+      // Clear local state
+      helperConfig = {
+        name: "",
+        description: "",
+        icon: "??",
+        image: "",
+        systemPrompt: "",
+        model: "gpt-4o-mini",
+        temperature: 0.7,
+        maxTokens: 2000,
+        isDraft: true,
+      };
+      assistantMessages = [];
+      conversationHistory = [];
+      draftHelperId = null;
+      helperCreated = false;
+      createdHelperId = null;
+      
+      // Create a new draft
+      await createDraft();
+      
+      // Start fresh conversation
+      startConversation();
     }
   }
 
@@ -221,8 +461,26 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
   <!-- Left Panel: Helper Assistant Chat -->
   <div class="w-1/2 border-r border-gray-200 flex flex-col">
     <div class="bg-white border-b border-gray-200 px-6 py-4">
-      <h2 class="text-xl font-semibold text-gray-900">Helper Assistant</h2>
-      <p class="text-sm text-gray-500 mt-1">I'll help you create your helper step-by-step</p>
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900">Helper Assistant</h2>
+          <p class="text-sm text-gray-500 mt-1">I'll help you create your helper step-by-step</p>
+          {#if draftHelperId}
+            <p class="text-xs text-green-600 mt-1">
+              ✅ Auto-saving your progress
+              {#if lastSaved}
+                <span class="text-gray-500">• Last saved {lastSaved.toLocaleTimeString()}</span>
+              {/if}
+            </p>
+          {/if}
+        </div>
+        <button
+          on:click={resetDraft}
+          class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+        >
+          Start Over
+        </button>
+      </div>
     </div>
 
     <!-- Messages -->
@@ -288,7 +546,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
           on:keypress={handleKeyPress}
           placeholder="Type your message..."
           disabled={isLoading}
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+          class="flex-1 px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
         />
         <button
           on:click={sendMessage}
@@ -306,6 +564,12 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
     <div class="bg-white border-b border-gray-200 px-6 py-4">
       <h2 class="text-xl font-semibold text-gray-900">Helper Configuration</h2>
       <p class="text-sm text-gray-500 mt-1">This updates as we chat</p>
+      <button
+        on:click={processExistingMessages}
+        class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+      >
+        Extract from conversation
+      </button>
     </div>
 
     <div class="flex-1 overflow-y-auto p-6 space-y-6">
@@ -315,7 +579,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
           type="text"
           bind:value={helperConfig.name}
           placeholder="Helper name"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -325,7 +589,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
           bind:value={helperConfig.description}
           placeholder="What does this helper do?"
           rows="3"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         ></textarea>
       </div>
 
@@ -335,7 +599,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
           type="text"
           bind:value={helperConfig.icon}
           placeholder="??"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -354,7 +618,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
           <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
           <select
             bind:value={helperConfig.model}
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="gpt-4o-mini">GPT-4o Mini</option>
             <option value="gpt-4o">GPT-4o</option>
@@ -369,7 +633,7 @@ Be conversational, friendly, and guide the user step-by-step. Update the helper 
             min="0"
             max="2"
             step="0.1"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>

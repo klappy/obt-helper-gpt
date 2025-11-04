@@ -8,5 +8,5 @@
 [dev]
   command = "npm run dev"
   targetPort = 9173
-  port = 9888
+  port = 8888
   autoLaunch = false

@@ -102,6 +102,7 @@ export class OpenAIClient extends BaseLLMClient {
       model: data.model,
       provider: "openai",
       rawResponse: response,
+      rawData: data, // Add the parsed data so we don't need to parse again
     };
   }
 
@@ -263,8 +264,8 @@ export async function sendChatMessage(messages, tool, apiKey) {
       stream: false,
     });
 
-    // Return raw response for backward compatibility
-    return response.rawResponse;
+    // Return the full parsed result, not just the consumed rawResponse
+    return response;
   } catch (error) {
     console.error("LLM API call failed:", error);
     throw error;

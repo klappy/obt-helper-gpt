@@ -6,14 +6,8 @@ import {
   withRateLimit,
   getClientIdentifier,
 } from "../../src/lib/utils/rate-limiter.js";
-import {
-  getConversationBlob,
-  saveConversationBlob,
-} from "../../src/lib/utils/blob-storage.js";
-import {
-  verifyToken,
-  generateConversationId,
-} from "../../src/lib/utils/auth.js";
+import { getConversationBlob, saveConversationBlob } from "../../src/lib/utils/blob-storage.js";
+import { verifyToken, generateConversationId } from "../../src/lib/utils/auth.js";
 
 // Storage instances
 function getSessionStore() {
@@ -97,14 +91,42 @@ export default async (req, context) => {
     });
   };
 
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+      },
+    });
+  }
+
   if (req.method !== "POST") {
     return createResponse("Method not allowed", 405, "text/plain");
   }
 
   try {
-    // Handle both string and stream body
-    const bodyText = typeof req.body === "string" ? req.body : await req.text();
-    const { messages, tool, sessionId, userId, conversationId, helperId } = JSON.parse(bodyText);
+    console.log("Chat function: Starting request processing");
+
+    // Parse the request body
+    let bodyText;
+    let bodyData;
+
+    try {
+      console.log("Chat function: Reading body");
+      bodyText = await req.text();
+      console.log("Chat function: Body text length:", bodyText.length);
+      bodyData = JSON.parse(bodyText);
+      console.log("Chat function: Parsed body successfully");
+    } catch (e) {
+      console.error("Chat function: Error parsing body:", e);
+      return createResponse({ error: "Invalid JSON in request body" }, 400);
+    }
+
+    const { messages, tool, sessionId, userId, conversationId, helperId } = bodyData;
+    console.log("Chat function: Extracted data - messages:", !!messages, "tool:", !!tool);
 
     // Apply rate limiting
     const clientId = getClientIdentifier(req, sessionId);
@@ -135,27 +157,51 @@ export default async (req, context) => {
     }
 
     // Get the tool configuration
-    const tools = await getAllTools();
-    const toolConfig = tools.find((t) => t.id === tool.id);
+    let toolConfig;
 
-    if (!toolConfig) {
-      return createResponse(
-        {
-          error: "Tool not found",
-        },
-        404
-      );
+    // Allow inline tool configuration (for helper-assistant and other dynamic tools)
+    if (tool.systemPrompt && tool.model) {
+      // Tool configuration provided directly
+      toolConfig = tool;
+    } else {
+      // Look up tool by ID
+      const tools = await getAllTools();
+      toolConfig = tools.find((t) => t.id === tool.id);
+
+      if (!toolConfig) {
+        return createResponse(
+          {
+            error: "Tool not found",
+          },
+          404
+        );
+      }
     }
 
     // Send to OpenAI
-    const response = await sendChatMessage(messages, toolConfig, apiKey);
-    const aiData = await response.json();
+    console.log("Chat function: Calling OpenAI with model:", toolConfig.model);
+    const llmResult = await sendChatMessage(messages, toolConfig, apiKey);
+    console.log("Chat function: Got response from OpenAI");
 
-    if (!response.ok) {
-      return createResponse(aiData, response.status);
+    // sendChatMessage returns the structured result
+    // It includes: content, usage, model, provider, rawResponse, rawData
+    let aiResponse;
+    let aiData;
+
+    if (llmResult.content) {
+      // New format with structured response
+      aiResponse = llmResult.content;
+      aiData = llmResult.rawData;
+      console.log("Chat function: Using structured response");
+    } else if (llmResult.choices) {
+      // Direct OpenAI response format (for backward compatibility)
+      aiResponse = llmResult.choices[0].message.content;
+      aiData = llmResult;
+      console.log("Chat function: Using direct OpenAI format");
+    } else {
+      console.error("Chat function: Unexpected response format:", llmResult);
+      return createResponse({ error: "Invalid response format from AI" }, 500);
     }
-
-    const aiResponse = aiData.choices[0].message.content;
     const userMessage = messages[messages.length - 1].content;
 
     // Save conversation if userId and helperId provided
@@ -165,7 +211,7 @@ export default async (req, context) => {
         // Verify auth token if provided
         const authHeader = req.headers.get?.("Authorization") || req.headers?.authorization;
         let authenticated = false;
-        
+
         if (authHeader && authHeader.startsWith("Bearer ")) {
           const token = authHeader.substring(7);
           const payload = verifyToken(token);
@@ -246,8 +292,9 @@ export default async (req, context) => {
 
     // Return the AI response with rate limit headers and conversation ID
     const responseData = {
-      ...aiData,
+      response: aiResponse, // The actual AI response text
       conversationId: savedConversationId, // Include conversation ID in response
+      usage: aiData.usage, // Include token usage if available
     };
 
     return new Response(JSON.stringify(responseData), {

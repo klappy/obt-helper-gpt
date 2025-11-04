@@ -14,8 +14,8 @@ export const currentUser = writable(null);
 export const authToken = writable(null);
 export const isAuthenticated = writable(false);
 
-// API base URL
-const API_BASE = browser ? "/.netlify/functions" : "";
+// API base URL - use relative paths, let the proxy handle it
+const API_BASE = "/.netlify/functions";
 
 /**
  * Register a new user

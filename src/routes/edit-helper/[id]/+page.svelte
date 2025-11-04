@@ -268,7 +268,7 @@
                 type="text"
                 bind:value={editedHelper.name}
                 placeholder="Helper name"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -278,7 +278,7 @@
                 bind:value={editedHelper.description}
                 placeholder="What does this helper do?"
                 rows="3"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               ></textarea>
             </div>
 
@@ -288,7 +288,7 @@
                 type="text"
                 bind:value={editedHelper.icon}
                 placeholder="??"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -298,7 +298,7 @@
                 bind:value={editedHelper.systemPrompt}
                 placeholder="The system prompt that defines how the helper behaves..."
                 rows="10"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
               ></textarea>
               <p class="mt-1 text-xs text-gray-500">
                 This is the most important part. It defines how your helper behaves and responds.
@@ -310,7 +310,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
                 <select
                   bind:value={editedHelper.model}
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="gpt-4o-mini">GPT-4o Mini</option>
                   <option value="gpt-4o">GPT-4o</option>
@@ -325,7 +325,7 @@
                   min="0"
                   max="2"
                   step="0.1"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -337,7 +337,7 @@
                   min="100"
                   max="4000"
                   step="100"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full px-4 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>

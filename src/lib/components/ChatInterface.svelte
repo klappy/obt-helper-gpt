@@ -336,7 +336,7 @@
 			
 			// Parse the response (non-streaming)
 			const data = await response.json();
-			const aiContent = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+			const aiContent = data.response || data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 			
 			// Save conversationId if returned
 			if (data.conversationId && !conversationId) {

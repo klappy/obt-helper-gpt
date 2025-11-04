@@ -27,7 +27,7 @@ import {
   generateShareId,
 } from "../../src/lib/utils/auth.js";
 
-// Helper to create response
+// Helper to create response (using new Response API)
 function createResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -53,14 +53,17 @@ function getAuthToken(request) {
 async function verifyAuth(headers) {
   const token = getAuthToken({ headers });
   if (!token) {
+    console.log("No token provided in request");
     return { authenticated: false, error: "No token provided" };
   }
   
   const payload = verifyToken(token);
   if (!payload) {
+    console.log("Token validation failed");
     return { authenticated: false, error: "Invalid token" };
   }
   
+  console.log("Token payload:", payload);
   return { authenticated: true, userId: payload.userId, email: payload.email };
 }
 
@@ -77,7 +80,16 @@ function extractIdsFromPath(pathname) {
   };
 }
 
-export const handler = async (event, context) => {
+export default async (req, context) => {
+  // Convert new format to old format for compatibility
+  const event = {
+    httpMethod: req.method,
+    headers: req.headers,
+    path: new URL(req.url).pathname,
+    queryStringParameters: Object.fromEntries(new URL(req.url).searchParams),
+    body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : null,
+    pathParameters: {},
+  };
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return createResponse({}, 200);
@@ -85,14 +97,28 @@ export const handler = async (event, context) => {
 
   const { httpMethod, path, pathParameters, body } = event;
   const pathname = path || event.path || "";
-  const { userId, helperId } = extractIdsFromPath(pathname) || {
+  
+  // Get userId from query parameters if not in path
+  const queryUserId = event.queryStringParameters?.userId;
+  
+  const { userId: pathUserId, helperId } = extractIdsFromPath(pathname) || {
     userId: pathParameters?.userId,
     helperId: pathParameters?.helperId,
   };
+  
+  // Prefer query parameter userId over path userId for backward compatibility
+  const userId = queryUserId || pathUserId;
+  
+  console.log("Request details:");
+  console.log("- Method:", httpMethod);
+  console.log("- Path:", pathname);
+  console.log("- Query userId:", queryUserId);
+  console.log("- Path userId:", pathUserId);
+  console.log("- Final userId:", userId);
 
   try {
     // Verify authentication
-    const auth = await verifyAuth(event.headers);
+    const auth = await verifyAuth(req.headers);
     if (!auth.authenticated) {
       return createResponse(
         { error: "Unauthorized", details: auth.error },
@@ -100,17 +126,44 @@ export const handler = async (event, context) => {
       );
     }
 
-    // Verify userId matches authenticated user
-    if (!userId || userId !== auth.userId) {
+    // Verify userId matches authenticated user (case-insensitive for emails)
+    console.log("Checking user ID - URL userId:", userId, "Auth userId:", auth.userId);
+    if (!userId || userId.toLowerCase() !== auth.userId?.toLowerCase()) {
+      console.error("User ID mismatch!");
+      console.error("URL userId:", userId, "lowercase:", userId?.toLowerCase());
+      console.error("Auth userId:", auth.userId, "lowercase:", auth.userId?.toLowerCase());
       return createResponse(
-        { error: "Unauthorized - user ID mismatch" },
+        { error: "Unauthorized - user ID mismatch", 
+          details: `URL: ${userId}, Auth: ${auth.userId}` },
         403
       );
     }
+    console.log("User ID match successful!");
 
     // GET /api/users/{userId}/helpers - List user's helpers
     if (httpMethod === "GET" && !helperId) {
-      const helpers = await listUserHelpers(userId);
+      // Always use lowercase userId for consistency
+      const normalizedUserId = userId.toLowerCase();
+      let helpers = await listUserHelpers(normalizedUserId);
+      
+      // Filter by draft status if requested
+      const queryStringParameters = event.queryStringParameters || {};
+      const draftParam = queryStringParameters.draft;
+      
+      if (draftParam !== null && draftParam !== undefined) {
+        const isDraft = draftParam === "true";
+        helpers = helpers?.filter(helper => helper.isDraft === isDraft) || [];
+      }
+      
+      // Sort by most recent first (only if helpers exist)
+      if (helpers && helpers.length > 0) {
+        helpers.sort((a, b) => {
+          const aTime = a.metadata?.lastUpdated || a.createdAt || 0;
+          const bTime = b.metadata?.lastUpdated || b.createdAt || 0;
+          return new Date(bTime) - new Date(aTime);
+        });
+      }
+      
       return createResponse({
         success: true,
         helpers: helpers || [],
@@ -119,7 +172,8 @@ export const handler = async (event, context) => {
 
     // GET /api/users/{userId}/helpers/{helperId} - Get helper details
     if (httpMethod === "GET" && helperId) {
-      const helper = await getHelperBlob(userId, helperId);
+      const normalizedUserId = userId.toLowerCase();
+      const helper = await getHelperBlob(normalizedUserId, helperId);
       
       if (!helper) {
         return createResponse(
@@ -128,8 +182,8 @@ export const handler = async (event, context) => {
         );
       }
 
-      // Verify helper belongs to user
-      if (helper.userId !== userId) {
+      // Verify helper belongs to user (case-insensitive)
+      if (helper.userId?.toLowerCase() !== userId.toLowerCase()) {
         return createResponse(
           { error: "Unauthorized" },
           403
@@ -144,6 +198,7 @@ export const handler = async (event, context) => {
 
     // POST /api/users/{userId}/helpers - Create new helper
     if (httpMethod === "POST" && !helperId) {
+      const normalizedUserId = userId.toLowerCase();
       const data = JSON.parse(body || "{}");
       const {
         name,
@@ -154,6 +209,8 @@ export const handler = async (event, context) => {
         model = "gpt-4o-mini",
         temperature = 0.7,
         maxTokens = 2000,
+        isDraft = false,
+        metadata = {},
       } = data;
 
       if (!name || !systemPrompt) {
@@ -168,7 +225,7 @@ export const handler = async (event, context) => {
 
       const helperData = {
         id: newHelperId,
-        userId,
+        userId: normalizedUserId,
         name,
         description: description || "",
         icon: icon || "??",
@@ -180,11 +237,13 @@ export const handler = async (event, context) => {
         published: false,
         publishedAt: null,
         shareId: null,
+        isDraft,
+        metadata,
         createdAt: now,
         updatedAt: now,
       };
 
-      await saveHelperBlob(userId, newHelperId, helperData);
+      await saveHelperBlob(normalizedUserId, newHelperId, helperData);
 
       return createResponse(
         {
@@ -197,7 +256,8 @@ export const handler = async (event, context) => {
 
     // PUT /api/users/{userId}/helpers/{helperId} - Update helper
     if (httpMethod === "PUT" && helperId) {
-      const helper = await getHelperBlob(userId, helperId);
+      const normalizedUserId = userId.toLowerCase();
+      const helper = await getHelperBlob(normalizedUserId, helperId);
       
       if (!helper) {
         return createResponse(
@@ -206,8 +266,8 @@ export const handler = async (event, context) => {
         );
       }
 
-      // Verify helper belongs to user
-      if (helper.userId !== userId) {
+      // Verify helper belongs to user (case-insensitive)
+      if (helper.userId?.toLowerCase() !== userId.toLowerCase()) {
         return createResponse(
           { error: "Unauthorized" },
           403
@@ -224,6 +284,8 @@ export const handler = async (event, context) => {
         model: data.model,
         temperature: data.temperature,
         maxTokens: data.maxTokens,
+        isDraft: data.isDraft,
+        metadata: data.metadata,
       };
 
       // Remove undefined fields
@@ -239,7 +301,7 @@ export const handler = async (event, context) => {
         updatedAt: new Date().toISOString(),
       };
 
-      await saveHelperBlob(userId, helperId, updatedHelper);
+      await saveHelperBlob(normalizedUserId, helperId, updatedHelper);
 
       return createResponse({
         success: true,
@@ -249,7 +311,8 @@ export const handler = async (event, context) => {
 
     // DELETE /api/users/{userId}/helpers/{helperId} - Delete helper
     if (httpMethod === "DELETE" && helperId) {
-      const helper = await getHelperBlob(userId, helperId);
+      const normalizedUserId = userId.toLowerCase();
+      const helper = await getHelperBlob(normalizedUserId, helperId);
       
       if (!helper) {
         return createResponse(
@@ -258,15 +321,15 @@ export const handler = async (event, context) => {
         );
       }
 
-      // Verify helper belongs to user
-      if (helper.userId !== userId) {
+      // Verify helper belongs to user (case-insensitive)
+      if (helper.userId?.toLowerCase() !== userId.toLowerCase()) {
         return createResponse(
           { error: "Unauthorized" },
           403
         );
       }
 
-      await deleteHelperBlob(userId, helperId);
+      await deleteHelperBlob(normalizedUserId, helperId);
 
       return createResponse({
         success: true,
@@ -276,7 +339,8 @@ export const handler = async (event, context) => {
 
     // POST /api/users/{userId}/helpers/{helperId}/publish - Publish helper
     if (httpMethod === "POST" && helperId && pathname.includes("/publish")) {
-      const helper = await getHelperBlob(userId, helperId);
+      const normalizedUserId = userId.toLowerCase();
+      const helper = await getHelperBlob(normalizedUserId, helperId);
       
       if (!helper) {
         return createResponse(
@@ -285,8 +349,8 @@ export const handler = async (event, context) => {
         );
       }
 
-      // Verify helper belongs to user
-      if (helper.userId !== userId) {
+      // Verify helper belongs to user (case-insensitive)
+      if (helper.userId?.toLowerCase() !== userId.toLowerCase()) {
         return createResponse(
           { error: "Unauthorized" },
           403
@@ -304,7 +368,7 @@ export const handler = async (event, context) => {
         updatedAt: now,
       };
 
-      await saveHelperBlob(userId, helperId, updatedHelper);
+      await saveHelperBlob(normalizedUserId, helperId, updatedHelper);
 
       // Update published helpers index
       await addToPublishedHelpersIndex(updatedHelper);
@@ -318,7 +382,8 @@ export const handler = async (event, context) => {
 
     // POST /api/users/{userId}/helpers/{helperId}/unpublish - Unpublish helper
     if (httpMethod === "POST" && helperId && pathname.includes("/unpublish")) {
-      const helper = await getHelperBlob(userId, helperId);
+      const normalizedUserId = userId.toLowerCase();
+      const helper = await getHelperBlob(normalizedUserId, helperId);
       
       if (!helper) {
         return createResponse(
@@ -327,8 +392,8 @@ export const handler = async (event, context) => {
         );
       }
 
-      // Verify helper belongs to user
-      if (helper.userId !== userId) {
+      // Verify helper belongs to user (case-insensitive)
+      if (helper.userId?.toLowerCase() !== userId.toLowerCase()) {
         return createResponse(
           { error: "Unauthorized" },
           403
@@ -341,7 +406,7 @@ export const handler = async (event, context) => {
         updatedAt: new Date().toISOString(),
       };
 
-      await saveHelperBlob(userId, helperId, updatedHelper);
+      await saveHelperBlob(normalizedUserId, helperId, updatedHelper);
 
       // Remove from published helpers index
       await removeFromPublishedHelpersIndex(helperId);

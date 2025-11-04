@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     port: 9173,
     host: true,
+    proxy: {
+      '/.netlify/functions': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+      }
+    }
   },
   preview: {
     port: 9174,
